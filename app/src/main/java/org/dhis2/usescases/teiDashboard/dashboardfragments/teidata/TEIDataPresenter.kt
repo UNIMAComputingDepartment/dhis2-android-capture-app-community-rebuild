@@ -27,6 +27,7 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.SingleEventEnforcer
 import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.Relationship
 import org.dhis2.community.relationships.RelationshipConfig
 import org.dhis2.community.relationships.RelationshipRepository
@@ -96,8 +97,8 @@ class TEIDataPresenter(
 
     private val relationshipsConfig: MutableList<Relationship> = mutableListOf()
 
-    private val _relationships = MutableLiveData<Map<String, List<CmtRelationshipViewModel>>>()
-    val relationships: LiveData<Map<String, List<CmtRelationshipViewModel>>> = _relationships
+    private val _relationships = MutableLiveData<List<CmtRelationshipTypeViewModel>>()
+    val relationships: LiveData<List<CmtRelationshipTypeViewModel>> = _relationships
 
     fun init() {
         programUid?.let {
@@ -504,11 +505,17 @@ class TEIDataPresenter(
                             relationship = relationship
                         )
                     }.subscribeOn(schedulerProvider.io())
-                        .map { teis -> relationship.description to teis }
+                        .map { teis ->
+                            CmtRelationshipTypeViewModel(
+                                uid = relationship.access.targetRelationshipUid,
+                                name = "",
+                                description = relationship.description,
+                                relatedTeis = teis
+                            )
+                        }
                 }
             ) { results ->
-                results.map { it as Pair<String, List<CmtRelationshipViewModel>> }
-                    .toMap()
+                results.map { it as CmtRelationshipTypeViewModel }
             }
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())

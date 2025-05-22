@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
+import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.ui.components.CollapsibleListButton
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
@@ -31,7 +32,7 @@ fun TeiDetailDashboard(
     timelineEventHeaderModel: TimelineEventsHeaderModel,
     isGrouped: Boolean = true,
     timelineOnEventCreationOptionSelected: (EventCreationType) -> Unit,
-    relationshipsState: State<Map<String, List<CmtRelationshipViewModel>>?>,
+    relationshipsState: State<List<CmtRelationshipTypeViewModel>?>,
     onRelationshipClick: (String) -> Unit,
 ) {
     Column(
@@ -107,10 +108,10 @@ fun TeiDetailDashboard(
 
         val relationships by relationshipsState
 
-        relationships?.forEach { (relationshipType, relationshipList) ->
+        relationships?.forEach { relationship ->
             CollapsibleListButton(
-                tittle = relationshipType,
-                items = relationshipList.map { it.uid },
+                tittle = relationship.description,
+                items = relationship.relatedTeis.map { it.uid },
                 onItemClick = onRelationshipClick,
             )
         }

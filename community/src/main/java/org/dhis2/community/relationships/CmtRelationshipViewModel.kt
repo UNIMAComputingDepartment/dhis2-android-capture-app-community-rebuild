@@ -6,3 +6,10 @@ data class CmtRelationshipViewModel(
     val tertiaryAttribute: String?,
     val uid: String
 )
+
+data class CmtRelationshipTypeViewModel(
+    val uid: String,
+    val name: String,
+    val description: String,
+    val relatedTeis: List<CmtRelationshipViewModel>,
+)
