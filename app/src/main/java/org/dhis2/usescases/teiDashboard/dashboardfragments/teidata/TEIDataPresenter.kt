@@ -27,8 +27,10 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.SingleEventEnforcer
 import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.relationships.Relationship
 import org.dhis2.community.relationships.RelationshipConfig
 import org.dhis2.community.relationships.RelationshipRepository
+import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProviderImpl
@@ -92,6 +94,11 @@ class TEIDataPresenter(
 
     private val singleEventEnforcer = SingleEventEnforcer.get()
 
+    private val relationshipsConfig: MutableList<Relationship> = mutableListOf()
+
+    private val _relationships = MutableLiveData<Map<String, List<CmtRelationshipViewModel>>>()
+    val relationships: LiveData<Map<String, List<CmtRelationshipViewModel>>> = _relationships
+
     fun init() {
         programUid?.let {
             val program = d2.program(it) ?: throw NullPointerException()
@@ -147,7 +154,7 @@ class TEIDataPresenter(
 
         updateCreateEventButtonVisibility()
 
-        retrieveRelationshipConfig()
+        initializeRelationships()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -464,16 +471,54 @@ class TEIDataPresenter(
         }
     }
 
-    fun retrieveRelationshipConfig() {
+    fun initializeRelationships() {
         compositeDisposable.add(
             Single.fromCallable<RelationshipConfig>(Callable<RelationshipConfig> { relationshipRepository.getRelationshipConfig() })
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
-                    { relationshipConfig: RelationshipConfig? ->
+                    { relationshipConfig: RelationshipConfig ->
                         Timber.d("RelationshipConfig: %s", relationshipConfig)
+                        this.relationshipsConfig.addAll(
+                            relationshipConfig.relationships.filter {
+                                it.access.targetProgramUid == programUid
+                            }
+                        )
+                        if (relationshipsConfig.isNotEmpty()) {
+                            retrieveRelationships()
+                        }
                     },
                     { t: Throwable? -> Timber.e(t) }
+                )
+        )
+    }
+
+    private fun retrieveRelationships() {
+        compositeDisposable.add(
+            Single.zip(
+                relationshipsConfig.map { relationship ->
+                    Single.fromCallable {
+                        relationshipRepository.getRelatedTeis(
+                            teiUid = teiUid,
+                            relationshipTypeUid = relationship.access.targetRelationshipUid,
+                            relationship = relationship
+                        )
+                    }.subscribeOn(schedulerProvider.io())
+                        .map { teis -> relationship.description to teis }
+                }
+            ) { results ->
+                results.map { it as Pair<String, List<CmtRelationshipViewModel>> }
+                    .toMap()
+            }
+                .subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { relationshipMap ->
+                        _relationships.value = relationshipMap
+                    },
+                    { error ->
+                        Timber.e(error)
+                    }
                 )
         )
     }

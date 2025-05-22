@@ -2,7 +2,9 @@ package org.dhis2.community.relationships
 
 import com.google.gson.Gson
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.relationship.Relationship
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
+import org.hisp.dhis.android.core.relationship.RelationshipItem
 import timber.log.Timber
 
 class RelationshipRepository(
@@ -55,6 +57,58 @@ class RelationshipRepository(
         } catch (error: Exception) {
             Timber.e(error)
             Result.failure(error)
+        }
+    }
+
+    fun getRelatedTeis(
+        teiUid: String,
+        relationshipTypeUid: String,
+        relationship: org.dhis2.community.relationships.Relationship
+    ): List<CmtRelationshipViewModel> {
+        val relationships: List<Relationship> = d2.relationshipModule().relationships()
+            .byRelationshipType().eq(relationshipTypeUid)
+            .byItem(RelationshipHelper.teiItem(teiUid))
+            .withItems()
+            .blockingGet()
+
+        // Extract related TEI UIDs
+        val relatedTeiUids: List<String> = relationships.mapNotNull { relationship ->
+            val from: RelationshipItem? = relationship.from()
+            val to: RelationshipItem? = relationship.to()
+
+            val fromTei = from?.trackedEntityInstance()?.trackedEntityInstance()
+            val toTei = to?.trackedEntityInstance()?.trackedEntityInstance()
+
+            when {
+                fromTei == teiUid && toTei != null -> toTei
+                toTei == teiUid && fromTei != null -> fromTei
+                else -> null
+            }
+        }
+
+        return if (relatedTeiUids.isNotEmpty()) {
+            d2.trackedEntityModule().trackedEntityInstances()
+                .byUid().`in`(relatedTeiUids)
+                .withTrackedEntityAttributeValues()
+                .blockingGet().map {
+                    CmtRelationshipViewModel(
+                        uid = it.uid()!!,
+                        primaryAttribute = it.trackedEntityAttributeValues()
+                            ?.firstOrNull {
+                                it.trackedEntityAttribute() == relationship.view.teiPrimaryAttribute
+                            }?.value() ?: "",
+                        secondaryAttribute = it.trackedEntityAttributeValues()
+                            ?.firstOrNull {
+                                it.trackedEntityAttribute() == relationship.view.teiSecondaryAttribute
+                            }?.value() ?: "",
+                        tertiaryAttribute = it.trackedEntityAttributeValues()
+                            ?.firstOrNull {
+                                it.trackedEntityAttribute() == relationship.view.teiTertiaryAttribute
+                            }?.value() ?: ""
+                    )
+                }
+        } else {
+            emptyList()
         }
     }
 }
