@@ -29,7 +29,7 @@ fun CollapsibleListButton(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    val filteredItems = items.filter{
+    val filteredItems = items.filter {
         it.contains(searchQuery, ignoreCase = true)
     }
 
@@ -55,7 +55,7 @@ fun CollapsibleListButton(
             )
             Text(
                 text = tittle,
-                fontSize = 15.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .weight(1f)
@@ -67,39 +67,45 @@ fun CollapsibleListButton(
                 contentDescription = null
             )
             Spacer(modifier = Modifier.width(10.dp))
-            IconButton(onClick = {  }) {
-                Icon(Icons.Default.Add, modifier = Modifier.size(20.dp), contentDescription = "Add Household")
+            IconButton(onClick = { }) {
+                Icon(
+                    Icons.Default.Add,
+                    modifier = Modifier.size(20.dp),
+                    contentDescription = "Add Household"
+                )
             }
         }
 
         if (expanded) {
 
-            Box(
-                modifier = Modifier
-                    .height(36.dp)
-                    .fillMaxWidth()
-                    .width(15.dp)
-                    .border(1.dp, Color.Gray, shape = RoundedCornerShape(4.dp))
-                    .padding(horizontal = 20.dp, vertical = 5.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                if (searchQuery.isEmpty()) {
-                    Text(
-                        text = "Search households...",
-                        fontSize = 12.sp,
-                        color = Color.Gray
+            if (items.size > 10) {
+                Box(
+                    modifier = Modifier
+                        .height(36.dp)
+                        .fillMaxWidth()
+                        .width(15.dp)
+                        .border(1.dp, Color.Gray, shape = RoundedCornerShape(4.dp))
+                        .padding(horizontal = 20.dp, vertical = 5.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (searchQuery.isEmpty()) {
+                        Text(
+                            text = "Search households...",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        singleLine = true,
+                        textStyle = TextStyle(fontSize = 12.sp, color = Color.Black),
+                        modifier = Modifier
+                            //.fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 5.dp),
                     )
                 }
-
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    singleLine = true,
-                    textStyle = TextStyle(fontSize = 12.sp, color = Color.Black),
-                    modifier = Modifier
-                        //.fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 5.dp),
-                )
             }
 
             Column(
@@ -110,10 +116,11 @@ fun CollapsibleListButton(
                     .padding(horizontal = 10.dp)
             ) {
                 filteredItems.forEachIndexed { index, item ->
-                    Row (
+                    Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .padding(start = 12.dp)
+                            .heightIn(max = 40.dp)
                             .clickable { onItemClick(item) }
 
                     ) {
@@ -123,15 +130,59 @@ fun CollapsibleListButton(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = item,
-                            fontSize = 13.sp,
+
+                        Column(
+                            modifier = Modifier
+                                .padding(4.dp)
+                                //.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Ainafe Enock Chisati",
+                                fontSize = 14.sp,
+                                lineHeight = 7.sp,
+
+                                modifier = Modifier
+                                    //.fillMaxWidth()
+                                    //.fillMaxHeight()
+                                    //.clickable { onItemClick(item) }
+                                    .padding(vertical = 0.dp)
+                            )
+
+                            Text(
+                                text = "Female",
+                                fontSize = 12.sp,
+                                lineHeight = 7.sp,
+
+                                modifier = Modifier
+                                //.padding(start = 15.dp)
+                                //.fillMaxWidth()
+                                //.clickable { onItemClick(item) }
+                                //.padding(vertical = 8.dp)
+                            )
+
+                        }
+                        //Spacer(modifier = Modifier.width(10.dp))
+                        //Column {
+                            Text(
+                            text = "20 Years",
+                            fontSize = 9.sp,
+                            lineHeight = 7.sp,
+
                             modifier = Modifier
                                 .fillMaxWidth()
-                                //.clickable { onItemClick(item) }
-                                .padding(vertical = 8.dp)
+                                //.windowInsetsTopHeight()
+
+                            //.clickable { onItemClick(item) }
+                                .padding(top = 0.dp)
                         )
+                        //}
+
+
+
+                        //Spacer(modifier = Modifier.height(6.dp))
+
                     }
+                    
 
                 }
             }
@@ -142,11 +193,11 @@ fun CollapsibleListButton(
 
 @Preview(showBackground = true)
 @Composable
-fun CollapsibleButtonPreview(){
+fun CollapsibleButtonPreview() {
     val context = LocalContext.current
-    val sampleItems = List(20){"house#${it + 1}"}
+    val sampleItems = List(9) { "house#${it + 1}" }
 
-    MaterialTheme{
+    MaterialTheme {
         CollapsibleListButton(
             tittle = "Households",
             items = sampleItems,
