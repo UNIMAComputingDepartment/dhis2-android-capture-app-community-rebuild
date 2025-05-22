@@ -6,11 +6,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
+import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
+import org.dhis2.community.relationships.CmtRelationshipViewModel
+import org.dhis2.community.ui.components.CollapsibleListButton
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
@@ -28,6 +32,8 @@ fun TeiDetailDashboard(
     timelineEventHeaderModel: TimelineEventsHeaderModel,
     isGrouped: Boolean = true,
     timelineOnEventCreationOptionSelected: (EventCreationType) -> Unit,
+    relationshipsState: State<List<CmtRelationshipTypeViewModel>?>,
+    onRelationshipClick: (String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -97,6 +103,16 @@ fun TeiDetailDashboard(
                 expandLabelText = card.expandLabelText,
                 shrinkLabelText = card.shrinkLabelText,
                 showLoading = card.showLoading,
+            )
+        }
+
+        val relationships by relationshipsState
+
+        relationships?.forEach { relationship ->
+            CollapsibleListButton(
+                tittle = relationship.description,
+                items = relationship.relatedTeis.map { it.uid },
+                onItemClick = onRelationshipClick,
             )
         }
 

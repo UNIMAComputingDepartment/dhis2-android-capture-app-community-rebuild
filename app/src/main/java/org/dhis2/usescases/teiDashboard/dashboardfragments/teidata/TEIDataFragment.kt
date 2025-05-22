@@ -288,6 +288,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     )
                 }
 
+                val relationships = presenter.relationships.observeAsState()
+
                 TeiDetailDashboard(
                     syncData = syncInfoBar,
                     followUpData = followUpInfoBar,
@@ -303,6 +305,17 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     timelineOnEventCreationOptionSelected = {
                         presenter.onAddNewEventOptionSelected(it, null)
                     },
+                    relationshipsState = relationships,
+                    onRelationshipClick = {
+                        requireActivity().startActivity(
+                            TeiDashboardMobileActivity.intent(
+                                context,
+                                it,
+                                null,
+                                null,
+                            ),
+                        )
+                    }
                 )
             }
         }
