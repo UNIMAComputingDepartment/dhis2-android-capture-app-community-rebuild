@@ -11,11 +11,11 @@ import org.dhis2.community.ui.components.CollapsibleListButton
 @Composable
 fun CollapsibleButtonPreview(){
     val context = LocalContext.current
-    val sampleItems = List(20){"item ${it + 1}"}
+    val sampleItems = List(9){"item ${it + 1}"}
 
     MaterialTheme{
         CollapsibleListButton(
-            tittle = "tracked entities",
+            tittle = "Households",
             items = sampleItems,
             onItemClick = {//item ->
                 //Toast.makeText(context, "Clicked : $item", Toast.LENGTH_SHORT).show()
