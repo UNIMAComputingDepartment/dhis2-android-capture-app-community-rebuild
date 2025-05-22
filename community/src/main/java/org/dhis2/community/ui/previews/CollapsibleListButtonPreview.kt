@@ -11,7 +11,7 @@ import org.dhis2.community.ui.components.CollapsibleListButton
 @Composable
 fun CollapsibleButtonPreview(){
     val context = LocalContext.current
-    val sampleItems = List(9){"item ${it + 1}"}
+    val sampleItems = List(11){"item ${it + 1}"}
 
     MaterialTheme{
         CollapsibleListButton(
