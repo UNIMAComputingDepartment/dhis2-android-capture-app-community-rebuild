@@ -1,5 +1,7 @@
 package org.dhis2.usescases.teiDashboard.ui
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
@@ -22,6 +25,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.CardDetail
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBar
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBarData
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
+import timber.log.Timber
 
 @Composable
 fun TeiDetailDashboard(
@@ -111,8 +115,14 @@ fun TeiDetailDashboard(
         relationships?.forEach { relationship ->
             CollapsibleListButton(
                 tittle = relationship.description,
+
+                /*
                 items = relationship.relatedTeis.map { it.uid },
                 onItemClick = onRelationshipClick,
+                */
+
+                items = relationship.relatedTeis,
+                onItemClick = {  }
             )
         }
 
