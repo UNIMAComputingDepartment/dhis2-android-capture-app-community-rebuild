@@ -1,10 +1,13 @@
 package org.dhis2.community.relationships
 
 import com.google.gson.Gson
+import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.relationship.Relationship
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.relationship.RelationshipItem
+import org.hisp.dhis.android.core.relationship.RelationshipType
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import timber.log.Timber
 
 class RelationshipRepository(
@@ -91,24 +94,57 @@ class RelationshipRepository(
                 .byUid().`in`(relatedTeiUids)
                 .withTrackedEntityAttributeValues()
                 .blockingGet().map {
-                    CmtRelationshipViewModel(
-                        uid = it.uid()!!,
-                        primaryAttribute = it.trackedEntityAttributeValues()
-                            ?.firstOrNull {
-                                it.trackedEntityAttribute() == relationship.view.teiPrimaryAttribute
-                            }?.value() ?: "",
-                        secondaryAttribute = it.trackedEntityAttributeValues()
-                            ?.firstOrNull {
-                                it.trackedEntityAttribute() == relationship.view.teiSecondaryAttribute
-                            }?.value() ?: "",
-                        tertiaryAttribute = it.trackedEntityAttributeValues()
-                            ?.firstOrNull {
-                                it.trackedEntityAttribute() == relationship.view.teiTertiaryAttribute
-                            }?.value() ?: ""
-                    )
+                    mapToCmtModel(it, relationship)
                 }
         } else {
             emptyList()
         }
+    }
+
+    private fun mapToCmtModel(
+        tei: TrackedEntityInstance,
+        relationship: org.dhis2.community.relationships.Relationship
+    ): CmtRelationshipViewModel {
+        return CmtRelationshipViewModel(
+            uid = tei.uid()!!,
+            primaryAttribute = tei.trackedEntityAttributeValues()
+                ?.firstOrNull {
+                    it.trackedEntityAttribute() == relationship.view.teiPrimaryAttribute
+                }?.value() ?: "",
+            secondaryAttribute = tei.trackedEntityAttributeValues()
+                ?.firstOrNull {
+                    it.trackedEntityAttribute() == relationship.view.teiSecondaryAttribute
+                }?.value() ?: "",
+            tertiaryAttribute = tei.trackedEntityAttributeValues()
+                ?.firstOrNull {
+                    it.trackedEntityAttribute() == relationship.view.teiTertiaryAttribute
+                }?.value() ?: ""
+        )
+    }
+
+    fun searchEntities(
+        relationship: org.dhis2.community.relationships.Relationship,
+        keyword: String
+    ): CmtRelationshipTypeViewModel {
+        val teis =  d2.trackedEntityModule()
+            .trackedEntityInstances()
+            .byProgramUids(listOf(relationship.relatedProgram.programUid))
+            .withTrackedEntityAttributeValues()
+            .blockingGet()
+            .filter {
+                it.trackedEntityAttributeValues()?.any {
+                    it.value()?.contains(keyword, ignoreCase = true) == true
+                } == true
+            }.map {
+                mapToCmtModel(it, relationship)
+            }
+
+        return CmtRelationshipTypeViewModel(
+            uid = relationship.access.targetRelationshipUid,
+            name = "",
+            description = "",
+            relatedTeis = teis
+        )
+
     }
 }

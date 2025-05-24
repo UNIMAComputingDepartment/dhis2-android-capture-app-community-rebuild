@@ -28,10 +28,11 @@ import org.dhis2.commons.schedulers.SingleEventEnforcer
 import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
+import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.Relationship
 import org.dhis2.community.relationships.RelationshipConfig
+import org.dhis2.community.relationships.RelationshipConstraintSide
 import org.dhis2.community.relationships.RelationshipRepository
-import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProviderImpl
@@ -100,8 +101,12 @@ class TEIDataPresenter(
     private val _relationships = MutableLiveData<List<CmtRelationshipTypeViewModel>>()
     val relationships: LiveData<List<CmtRelationshipTypeViewModel>> = _relationships
 
+    private val _searchedEntities = MutableLiveData<CmtRelationshipTypeViewModel>()
+    val searchedEntities: LiveData<CmtRelationshipTypeViewModel> = _searchedEntities
+
     fun init() {
         programUid?.let {
+            initializeRelationships()
             val program = d2.program(it) ?: throw NullPointerException()
             val sectionFlowable = view.observeStageSelection(program)
                 .startWith(StageSection("", false, false))
@@ -154,8 +159,6 @@ class TEIDataPresenter(
         }
 
         updateCreateEventButtonVisibility()
-
-        initializeRelationships()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -480,6 +483,7 @@ class TEIDataPresenter(
                 .subscribe(
                     { relationshipConfig: RelationshipConfig ->
                         Timber.d("RelationshipConfig: %s", relationshipConfig)
+                        this.relationshipsConfig.clear()
                         this.relationshipsConfig.addAll(
                             relationshipConfig.relationships.filter {
                                 it.access.targetProgramUid == programUid
@@ -528,5 +532,47 @@ class TEIDataPresenter(
                     }
                 )
         )
+    }
+
+    fun onSearchTEIs(keyword: String, relationshipTypeUid: String) {
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.searchEntities(
+                    relationship = relationshipsConfig.first { it.access.targetRelationshipUid == relationshipTypeUid },
+                    keyword = keyword
+                )
+            }.subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { _searchedEntities.value = it },
+                    { error ->
+                        Timber.e(error)
+                    }
+                )
+        )
+    }
+
+    fun addRelationship(tei: CmtRelationshipViewModel, relationshipTypeUid: String) {
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.createAndAddRelationship(
+                    teiUid = teiUid,
+                    relationshipTypeUid = relationshipTypeUid,
+                    selectedTeiUid = tei.uid,
+                    relationshipSide = RelationshipConstraintSide.TO
+                )
+            }
+                .subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { retrieveRelationships() },
+                    { error -> Timber.e(error) }
+                )
+        )
+    }
+
+    fun programForRelationship(type: String): String {
+        return relationshipsConfig.firstOrNull { it.access.targetRelationshipUid == type }
+            ?.access?.targetProgramUid ?: throw NullPointerException("Program not found for relationship type: $type")
     }
 }

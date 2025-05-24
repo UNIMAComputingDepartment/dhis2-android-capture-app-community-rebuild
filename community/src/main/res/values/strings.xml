@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
+    <string name="add_relationship">Add Relationship</string>
+    <string name="search_placeholder">Search</string>
+</resources>

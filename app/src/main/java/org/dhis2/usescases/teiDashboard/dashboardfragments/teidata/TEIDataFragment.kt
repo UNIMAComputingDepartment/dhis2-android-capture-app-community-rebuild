@@ -288,24 +288,25 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     )
                 }
 
-                val relationships = presenter.relationships.observeAsState()
+                val relationships by presenter.relationships.observeAsState()
+                val searchedEntities by presenter.searchedEntities.observeAsState()
 
                 TeiDetailDashboard(
                     syncData = syncInfoBar,
                     followUpData = followUpInfoBar,
                     enrollmentData = enrollmentInfoBar,
                     card = card,
-                    isGrouped = groupingEvents ?: true,
                     timelineEventHeaderModel = TimelineEventsHeaderModel(
                         displayEventCreationButton,
                         eventCount,
                         eventResourcesProvider.programEventLabel(programUid, eventCount),
                         presenter.getNewEventOptionsByStages(null),
                     ),
+                    isGrouped = groupingEvents ?: true,
                     timelineOnEventCreationOptionSelected = {
                         presenter.onAddNewEventOptionSelected(it, null)
                     },
-                    relationshipsState = relationships,
+                    relationships = relationships,
                     onRelationshipClick = {
                         requireActivity().startActivity(
                             TeiDashboardMobileActivity.intent(
@@ -315,7 +316,19 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                                 null,
                             ),
                         )
-                    }
+                    },
+                    searchedEntities = searchedEntities,
+                    onSearchTEIs = { keyword, type ->
+                        presenter.onSearchTEIs(keyword, type)
+                    },
+                    onEntitySelected = { r, t ->
+                        presenter.addRelationship(r, t)
+                    },
+                    onCreateEntity = { teiUid, relationshipType ->
+                        val program = presenter.programForRelationship(relationshipType)
+                        // Open SearchTEActivity for enrollment, passing the relationshipType as teiTypeToAdd and teiUid as fromRelationshipTeiUid
+
+                    },
                 )
             }
         }

@@ -1,23 +1,18 @@
 package org.dhis2.usescases.teiDashboard.ui
 
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
-import org.dhis2.community.ui.components.CollapsibleListButton
+import org.dhis2.community.ui.components.CollapsibleRelationshipSection
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
@@ -25,7 +20,6 @@ import org.hisp.dhis.mobile.ui.designsystem.component.CardDetail
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBar
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBarData
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
-import timber.log.Timber
 
 @Composable
 fun TeiDetailDashboard(
@@ -36,8 +30,12 @@ fun TeiDetailDashboard(
     timelineEventHeaderModel: TimelineEventsHeaderModel,
     isGrouped: Boolean = true,
     timelineOnEventCreationOptionSelected: (EventCreationType) -> Unit,
-    relationshipsState: State<List<CmtRelationshipTypeViewModel>?>,
+    relationships: List<CmtRelationshipTypeViewModel>?,
     onRelationshipClick: (String) -> Unit,
+    searchedEntities: CmtRelationshipTypeViewModel?,
+    onSearchTEIs: (String, String) -> Unit,
+    onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
+    onCreateEntity: (String, String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -110,19 +108,14 @@ fun TeiDetailDashboard(
             )
         }
 
-        val relationships by relationshipsState
-
         relationships?.forEach { relationship ->
-            CollapsibleListButton(
-                tittle = relationship.description,
-
-                /*
-                items = relationship.relatedTeis.map { it.uid },
-                onItemClick = onRelationshipClick,
-                */
-
-                items = relationship.relatedTeis,
-                onItemClick = {  }
+            CollapsibleRelationshipSection(
+                relationshipTypeView = relationship,
+                availableEntities = searchedEntities,
+                onRelationshipClick = { onRelationshipClick(it.uid) },
+                onSearchTEIs = onSearchTEIs,
+                onEntitySelect = onEntitySelected,
+                onCreateEntity = onCreateEntity
             )
         }
 

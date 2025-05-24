@@ -7,7 +7,8 @@ data class RelationshipConfig(
 data class Relationship(
     val access: Access,
     val description: String,
-    val view: View
+    val view: View,
+    val relatedProgram: RelatedProgram,
 )
 
 data class Access(
@@ -20,4 +21,9 @@ data class View(
     val teiPrimaryAttribute: String,
     val teiSecondaryAttribute: String,
     val teiTertiaryAttribute: String
+)
+
+data class RelatedProgram(
+    val programUid: String,
+
 )
