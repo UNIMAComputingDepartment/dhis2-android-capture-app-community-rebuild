@@ -1,5 +1,6 @@
 package org.dhis2.usescases.teiDashboard.dashboardfragments.teidata
 
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -45,9 +47,14 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext.EnrollmentEvent
 import org.dhis2.databinding.FragmentTeiDataBinding
 import org.dhis2.form.model.EventMode
+import org.dhis2.usescases.enrollment.EnrollmentActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
 import org.dhis2.usescases.general.FragmentGlobalAbstract
+import org.dhis2.usescases.searchTrackEntity.EnrollmentContract
+import org.dhis2.usescases.searchTrackEntity.EnrollmentInput
+import org.dhis2.usescases.searchTrackEntity.EnrollmentResult
+import org.dhis2.usescases.searchTrackEntity.registerActivityResultLauncher
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardTEIModel
 import org.dhis2.usescases.teiDashboard.DashboardViewModel
@@ -83,6 +90,9 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
     lateinit var presenter: TEIDataPresenter
 
     @Inject
+    lateinit var cmtPresenter: CmtRelationshipTEIDataPresenter
+
+    @Inject
     lateinit var colorUtils: ColorUtils
 
     @Inject
@@ -111,6 +121,19 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
     private val dashboardActivity: TEIDataActivityContract by lazy { context as TEIDataActivityContract }
 
     private var programUid: String? = null
+
+    private val enrollmentLauncher: ActivityResultLauncher<EnrollmentInput>
+        get() = requireActivity().registerActivityResultLauncher(contract = EnrollmentContract()) {
+            when (it) {
+                is EnrollmentResult.RelationshipResult -> {
+                    cmtPresenter.addRelationship(teiUid = it.teiUid)
+                }
+                is EnrollmentResult.Success -> {
+                    cmtPresenter.retrieveRelationships()
+                }
+            }
+            enrollmentLauncher.unregister()
+        }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -288,8 +311,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     )
                 }
 
-                val relationships by presenter.relationships.observeAsState()
-                val searchedEntities by presenter.searchedEntities.observeAsState()
+                val relationships by cmtPresenter.relationships.observeAsState()
+                val searchedEntities by cmtPresenter.searchedEntities.observeAsState()
 
                 TeiDetailDashboard(
                     syncData = syncInfoBar,
@@ -319,15 +342,13 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     },
                     searchedEntities = searchedEntities,
                     onSearchTEIs = { keyword, type ->
-                        presenter.onSearchTEIs(keyword, type)
+                        cmtPresenter.onSearchTEIs(keyword, type)
                     },
                     onEntitySelected = { r, t ->
-                        presenter.addRelationship(r, t)
+                        cmtPresenter.addRelationship(r.uid, t)
                     },
-                    onCreateEntity = { teiUid, relationshipType ->
-                        val program = presenter.programForRelationship(relationshipType)
-                        // Open SearchTEActivity for enrollment, passing the relationshipType as teiTypeToAdd and teiUid as fromRelationshipTeiUid
-
+                    onCreateEntity = {  program, relationshipType ->
+                        cmtPresenter.enroll(program, relationshipType)
                     },
                 )
             }
@@ -667,6 +688,20 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
 
     override fun showProgramRuleErrorMessage() {
         dashboardActivity.executeOnUIThread()
+    }
+
+    override fun goToEnrollment(
+        programUid: String,
+        enrollmentUid: String,
+    ) {
+        enrollmentLauncher.launch(
+            EnrollmentInput(
+                enrollmentUid,
+                programUid,
+                EnrollmentActivity.EnrollmentMode.NEW,
+                true,
+            ),
+        )
     }
 
     companion object {

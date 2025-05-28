@@ -1,13 +1,13 @@
 package org.dhis2.community.relationships
 
 import com.google.gson.Gson
-import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.Relationship
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.relationship.RelationshipItem
-import org.hisp.dhis.android.core.relationship.RelationshipType
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 
 class RelationshipRepository(
@@ -143,8 +143,36 @@ class RelationshipRepository(
             uid = relationship.access.targetRelationshipUid,
             name = "",
             description = "",
-            relatedTeis = teis
+            relatedTeis = teis,
+            relatedProgramName = relationship.relatedProgram.teiTypeName,
+            relatedProgramUid = relationship.relatedProgram.programUid
         )
 
     }
+
+    fun saveToEnroll(
+        relationship: org.dhis2.community.relationships.Relationship,
+        orgUnit: String,
+        programUid: String
+    ): Pair<String?, String?> {
+        val teiType = relationship.relatedProgram.teiTypeUid
+
+        val teiUid = d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+            TrackedEntityInstanceCreateProjection.builder()
+                .organisationUnit(orgUnit)
+                .trackedEntityType(teiType)
+                .build()
+        )
+
+        val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+            EnrollmentCreateProjection.builder()
+                .trackedEntityInstance(teiUid)
+                .program(programUid)
+                .organisationUnit(orgUnit)
+                .build()
+        )
+
+        return teiUid to enrollmentUid
+    }
+
 }

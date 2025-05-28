@@ -43,5 +43,7 @@ class TEIDataContracts {
             eventMode: EventMode,
             programUid: String,
         )
+
+        fun goToEnrollment(programUid: String, enrollmentUid: String,)
     }
 }

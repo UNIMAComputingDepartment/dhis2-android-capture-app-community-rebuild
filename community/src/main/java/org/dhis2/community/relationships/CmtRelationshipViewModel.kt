@@ -11,5 +11,7 @@ data class CmtRelationshipTypeViewModel(
     val uid: String,
     val name: String,
     val description: String,
+    val relatedProgramName: String,
+    val relatedProgramUid: String,
     val relatedTeis: List<CmtRelationshipViewModel>,
 )

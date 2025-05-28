@@ -10,6 +10,7 @@ import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Consumer
 import io.reactivex.processors.BehaviorProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -22,6 +23,8 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection
+import org.dhis2.commons.orgunitselector.OUTreeFragment
+import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope.ProgramCaptureScope
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.SingleEventEnforcer
@@ -29,6 +32,7 @@ import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
+import org.dhis2.community.relationships.RelatedProgram
 import org.dhis2.community.relationships.Relationship
 import org.dhis2.community.relationships.RelationshipConfig
 import org.dhis2.community.relationships.RelationshipConstraintSide
@@ -55,6 +59,7 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
 import org.hisp.dhis.mobile.ui.designsystem.component.menu.MenuItemData
@@ -81,7 +86,6 @@ class TEIDataPresenter(
     private val dispatcher: DispatcherProvider,
     private val createEventUseCase: CreateEventUseCase,
     private val d2ErrorUtils: D2ErrorUtils,
-    private val relationshipRepository: RelationshipRepository
 ) {
     private val groupingProcessor: BehaviorProcessor<Boolean> = BehaviorProcessor.create()
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -96,17 +100,8 @@ class TEIDataPresenter(
 
     private val singleEventEnforcer = SingleEventEnforcer.get()
 
-    private val relationshipsConfig: MutableList<Relationship> = mutableListOf()
-
-    private val _relationships = MutableLiveData<List<CmtRelationshipTypeViewModel>>()
-    val relationships: LiveData<List<CmtRelationshipTypeViewModel>> = _relationships
-
-    private val _searchedEntities = MutableLiveData<CmtRelationshipTypeViewModel>()
-    val searchedEntities: LiveData<CmtRelationshipTypeViewModel> = _searchedEntities
-
     fun init() {
         programUid?.let {
-            initializeRelationships()
             val program = d2.program(it) ?: throw NullPointerException()
             val sectionFlowable = view.observeStageSelection(program)
                 .startWith(StageSection("", false, false))
@@ -473,106 +468,5 @@ class TEIDataPresenter(
                 )
             }
         }
-    }
-
-    fun initializeRelationships() {
-        compositeDisposable.add(
-            Single.fromCallable<RelationshipConfig>(Callable<RelationshipConfig> { relationshipRepository.getRelationshipConfig() })
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { relationshipConfig: RelationshipConfig ->
-                        Timber.d("RelationshipConfig: %s", relationshipConfig)
-                        this.relationshipsConfig.clear()
-                        this.relationshipsConfig.addAll(
-                            relationshipConfig.relationships.filter {
-                                it.access.targetProgramUid == programUid
-                            }
-                        )
-                        if (relationshipsConfig.isNotEmpty()) {
-                            retrieveRelationships()
-                        }
-                    },
-                    { t: Throwable? -> Timber.e(t) }
-                )
-        )
-    }
-
-    private fun retrieveRelationships() {
-        compositeDisposable.add(
-            Single.zip(
-                relationshipsConfig.map { relationship ->
-                    Single.fromCallable {
-                        relationshipRepository.getRelatedTeis(
-                            teiUid = teiUid,
-                            relationshipTypeUid = relationship.access.targetRelationshipUid,
-                            relationship = relationship
-                        )
-                    }.subscribeOn(schedulerProvider.io())
-                        .map { teis ->
-                            CmtRelationshipTypeViewModel(
-                                uid = relationship.access.targetRelationshipUid,
-                                name = "",
-                                description = relationship.description,
-                                relatedTeis = teis
-                            )
-                        }
-                }
-            ) { results ->
-                results.map { it as CmtRelationshipTypeViewModel }
-            }
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { relationshipMap ->
-                        _relationships.value = relationshipMap
-                    },
-                    { error ->
-                        Timber.e(error)
-                    }
-                )
-        )
-    }
-
-    fun onSearchTEIs(keyword: String, relationshipTypeUid: String) {
-        compositeDisposable.add(
-            Single.fromCallable {
-                relationshipRepository.searchEntities(
-                    relationship = relationshipsConfig.first { it.access.targetRelationshipUid == relationshipTypeUid },
-                    keyword = keyword
-                )
-            }.subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { _searchedEntities.value = it },
-                    { error ->
-                        Timber.e(error)
-                    }
-                )
-        )
-    }
-
-    fun addRelationship(tei: CmtRelationshipViewModel, relationshipTypeUid: String) {
-        compositeDisposable.add(
-            Single.fromCallable {
-                relationshipRepository.createAndAddRelationship(
-                    teiUid = teiUid,
-                    relationshipTypeUid = relationshipTypeUid,
-                    selectedTeiUid = tei.uid,
-                    relationshipSide = RelationshipConstraintSide.TO
-                )
-            }
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { retrieveRelationships() },
-                    { error -> Timber.e(error) }
-                )
-        )
-    }
-
-    fun programForRelationship(type: String): String {
-        return relationshipsConfig.firstOrNull { it.access.targetRelationshipUid == type }
-            ?.access?.targetProgramUid ?: throw NullPointerException("Program not found for relationship type: $type")
     }
 }
