@@ -25,5 +25,6 @@ data class View(
 
 data class RelatedProgram(
     val programUid: String,
-
+    val teiTypeUid: String,
+    val teiTypeName: String
 )

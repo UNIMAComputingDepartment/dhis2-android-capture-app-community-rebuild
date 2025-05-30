@@ -59,7 +59,6 @@ class TEIDataModule(
         dispatcherProvider: DispatcherProvider,
         createEventUseCase: CreateEventUseCase,
         d2ErrorUtils: D2ErrorUtils,
-        communityRelationshipRepository: RelationshipRepository,
     ): TEIDataPresenter {
         return TEIDataPresenter(
             view,
@@ -79,8 +78,24 @@ class TEIDataModule(
             contractHandler,
             dispatcherProvider,
             createEventUseCase,
-            d2ErrorUtils,
-            communityRelationshipRepository
+            d2ErrorUtils
+        )
+    }
+
+    @Provides
+    @PerFragment
+    fun providesCmtPresenter(
+        d2: D2,
+        schedulerProvider: SchedulerProvider,
+        relationshipRepository: RelationshipRepository
+    ): CmtRelationshipTEIDataPresenter {
+        return CmtRelationshipTEIDataPresenter(
+            view,
+            d2,
+            programUid,
+            teiUid,
+            schedulerProvider,
+            relationshipRepository
         )
     }
 

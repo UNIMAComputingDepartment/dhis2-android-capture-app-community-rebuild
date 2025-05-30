@@ -188,19 +188,19 @@ private fun CollapsibleRelationshipSectionContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Add Relationship",
+                        text = "Add ${relationshipTypeView.description}",
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.weight(1f)
                     )
                     Button(
                         onClick = {
-                            onCreateEntity(sheetSearch, relationshipTypeView.uid)
+                            onCreateEntity(relationshipTypeView.relatedProgramUid, relationshipTypeView.uid)
                             coroutineScope.launch { showAddSheet = false }
                         },
                         modifier = Modifier
                             .padding(start = 8.dp)
                     ) {
-                        Text(text = "Add New Entity", style = MaterialTheme.typography.bodyLarge)
+                        Text(text = "Register New ${relationshipTypeView.relatedProgramName}", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
                 Spacer(Modifier.height(8.dp))

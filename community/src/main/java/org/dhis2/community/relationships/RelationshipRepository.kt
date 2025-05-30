@@ -1,24 +1,13 @@
 package org.dhis2.community.relationships
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import com.google.gson.Gson
-import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.hisp.dhis.android.core.D2
-import org.hisp.dhis.android.core.analytics.trackerlinelist.TrackerLineListItem.CreatedBy.id
+import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.Relationship
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.relationship.RelationshipItem
-import org.hisp.dhis.android.core.relationship.RelationshipType
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 
 class RelationshipRepository(
@@ -137,7 +126,7 @@ class RelationshipRepository(
         relationship: org.dhis2.community.relationships.Relationship,
         keyword: String
     ): CmtRelationshipTypeViewModel {
-        val teis = d2.trackedEntityModule()
+        val teis =  d2.trackedEntityModule()
             .trackedEntityInstances()
             .byProgramUids(listOf(relationship.relatedProgram.programUid))
             .withTrackedEntityAttributeValues()
@@ -150,54 +139,40 @@ class RelationshipRepository(
                 mapToCmtModel(it, relationship)
             }
 
-
-        val trackedEntityTypeUid: String? = try {
-            val program = d2.programModule().programs()
-                .uid(relationship.relatedProgram.programUid)
-                .blockingGet()
-            program?.trackedEntityType()?.uid()
-        } catch (e: Exception) {
-            Timber.e(
-                e,
-                "Error fetching TrackedEntityType UID: ${relationship.access.targetRelationshipUid}"
-            )
-            null
-        }
-
-        var teiIconPainter: ImageVector = Icons.AutoMirrored.Filled.HelpOutline
-
-        if (trackedEntityTypeUid != null) {
-            val trackedEntityType = d2.trackedEntityModule().trackedEntityTypes()
-                .uid(trackedEntityTypeUid)
-                .blockingGet()
-
-            if (trackedEntityType != null && trackedEntityType.style()?.icon() != null) {
-                val iconName = trackedEntityType.style()!!.icon()!!
-                teiIconPainter = getPainterForIconName(iconName)
-
-            }
-
-        }
-
         return CmtRelationshipTypeViewModel(
             uid = relationship.access.targetRelationshipUid,
             name = "",
             description = "",
-            icon = teiIconPainter,
-            relatedTeis = teis
+            relatedTeis = teis,
+            relatedProgramName = relationship.relatedProgram.teiTypeName,
+            relatedProgramUid = relationship.relatedProgram.programUid
         )
 
     }
 
-    private fun getPainterForIconName(iconName: String): ImageVector {
+    fun saveToEnroll(
+        relationship: org.dhis2.community.relationships.Relationship,
+        orgUnit: String,
+        programUid: String
+    ): Pair<String?, String?> {
+        val teiType = relationship.relatedProgram.teiTypeUid
 
-        return when (iconName.lowercase()) {
-            "dhis2_ic_profile_person", "person" -> Icons.Filled.Person // Example from dhis2-android-commons
-            "dhis2_ic_tracker_event", "event" -> Icons.Filled.Event // Example
-            "dhis2_ic_user_outlined", "user" -> Icons.Filled.AccountCircle
-            else -> {
-                Icons.AutoMirrored.Filled.HelpOutline
-            }
-        }
+        val teiUid = d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+            TrackedEntityInstanceCreateProjection.builder()
+                .organisationUnit(orgUnit)
+                .trackedEntityType(teiType)
+                .build()
+        )
+
+        val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+            EnrollmentCreateProjection.builder()
+                .trackedEntityInstance(teiUid)
+                .program(programUid)
+                .organisationUnit(orgUnit)
+                .build()
+        )
+
+        return teiUid to enrollmentUid
     }
+
 }
