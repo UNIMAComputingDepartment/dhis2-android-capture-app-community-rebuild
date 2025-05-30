@@ -18,6 +18,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -25,6 +26,13 @@ import org.dhis2.community.R
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.ui.Dhis2CmtTheme
+import androidx.compose.material3.Icon // Correct import for Material 3
+import androidx.compose.material3.MaterialTheme
+
+
+import androidx.compose.material3.IconButton // <<<< MAKE SURE THIS IS MATERIAL3
+import androidx.compose.material3.Text // <<<< MAKE SURE THIS IS MATERIAL3
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +67,7 @@ private fun CollapsibleRelationshipSectionContent(
     onSearchTEIs: (String, String) -> Unit = { _, _ -> }
 ) {
     val title = relationshipTypeView.description
+    val tieTypeIcon = relationshipTypeView
     val existingRelationships = relationshipTypeView.relatedTeis
     var expanded by remember { mutableStateOf(false) }
     var listSearch by remember { mutableStateOf("") }
@@ -93,7 +102,7 @@ private fun CollapsibleRelationshipSectionContent(
                     .padding(12.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_people_outline),
+                    imageVector = relationshipTypeView.icon, //painterResource(R.drawable.ic_people_outline),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
