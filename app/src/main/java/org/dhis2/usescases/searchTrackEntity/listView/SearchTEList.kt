@@ -142,8 +142,8 @@ class SearchTEList : FragmentGlobalAbstract() {
     ): View {
         return FragmentSearchListBinding.inflate(inflater, container, false).apply {
             configureList(scrollView, savedInstanceState?.getInt(KEY_SCROLL_POSITION))
-            configureOpenSearchButton(openSearchButton)
-            configureCreateButton(createButton)
+            //configureOpenSearchButton(openSearchButton)
+            //configureCreateButton(createButton)
         }.also {
             observeNewData()
         }.root
