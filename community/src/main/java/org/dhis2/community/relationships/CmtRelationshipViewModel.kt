@@ -11,7 +11,7 @@ data class CmtRelationshipViewModel(
 
 data class CmtRelationshipTypeViewModel(
     val uid: String,
-    val icon: ImageVector,
+    //val icon: ImageVector,
     val name: String,
     val description: String,
     val relatedProgramName: String,

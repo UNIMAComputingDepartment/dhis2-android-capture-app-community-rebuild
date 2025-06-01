@@ -102,7 +102,7 @@ private fun CollapsibleRelationshipSectionContent(
                     .padding(12.dp)
             ) {
                 Icon(
-                    imageVector = relationshipTypeView.icon, //painterResource(R.drawable.ic_people_outline),
+                    painter = painterResource(R.drawable.ic_people_outline),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)

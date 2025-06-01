@@ -145,7 +145,8 @@ class RelationshipRepository(
             description = "",
             relatedTeis = teis,
             relatedProgramName = relationship.relatedProgram.teiTypeName,
-            relatedProgramUid = relationship.relatedProgram.programUid
+            relatedProgramUid = relationship.relatedProgram.programUid,
+
         )
 
     }
