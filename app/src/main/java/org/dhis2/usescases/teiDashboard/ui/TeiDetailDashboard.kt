@@ -31,7 +31,7 @@ fun TeiDetailDashboard(
     isGrouped: Boolean = true,
     timelineOnEventCreationOptionSelected: (EventCreationType) -> Unit,
     relationships: List<CmtRelationshipTypeViewModel>?,
-    onRelationshipClick: (String) -> Unit,
+    onRelationshipClick: (String, String, String) -> Unit,
     searchedEntities: CmtRelationshipTypeViewModel?,
     onSearchTEIs: (String, String) -> Unit,
     onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
@@ -112,7 +112,7 @@ fun TeiDetailDashboard(
             CollapsibleRelationshipSection(
                 relationshipTypeView = relationship,
                 availableEntities = searchedEntities,
-                onRelationshipClick = { onRelationshipClick(it.uid) },
+                onRelationshipClick = { onRelationshipClick(it.uid, it.programUid, it.enrollmentUid) } ,
                 onSearchTEIs = onSearchTEIs,
                 onEntitySelect = onEntitySelected,
                 onCreateEntity = onCreateEntity

@@ -1,12 +1,12 @@
 package org.dhis2.community.relationships
 
-import androidx.compose.ui.graphics.vector.ImageVector
-
 data class CmtRelationshipViewModel(
     val primaryAttribute: String,
     val secondaryAttribute: String?,
     val tertiaryAttribute: String?,
-    val uid: String
+    val uid: String,
+    val programUid: String,
+    val enrollmentUid: String
 )
 
 data class CmtRelationshipTypeViewModel(

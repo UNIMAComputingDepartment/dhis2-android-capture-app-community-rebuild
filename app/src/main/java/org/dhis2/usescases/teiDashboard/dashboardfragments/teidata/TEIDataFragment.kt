@@ -1,6 +1,5 @@
 package org.dhis2.usescases.teiDashboard.dashboardfragments.teidata
 
-import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -330,13 +329,13 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                         presenter.onAddNewEventOptionSelected(it, null)
                     },
                     relationships = relationships,
-                    onRelationshipClick = {
+                    onRelationshipClick = { teiUid, programUid, enrollmentUid ->
                         requireActivity().startActivity(
                             TeiDashboardMobileActivity.intent(
                                 context,
-                                it,
-                                null,
-                                null,
+                                teiUid,
+                                programUid,
+                                enrollmentUid,
                             ),
                         )
                     },
@@ -347,7 +346,7 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     onEntitySelected = { r, t ->
                         cmtPresenter.addRelationship(r.uid, t)
                     },
-                    onCreateEntity = {  program, relationshipType ->
+                    onCreateEntity = { program, relationshipType ->
                         cmtPresenter.enroll(program, relationshipType)
                     },
                 )

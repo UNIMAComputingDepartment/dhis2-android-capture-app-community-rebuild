@@ -118,7 +118,13 @@ class RelationshipRepository(
             tertiaryAttribute = tei.trackedEntityAttributeValues()
                 ?.firstOrNull {
                     it.trackedEntityAttribute() == relationship.view.teiTertiaryAttribute
-                }?.value() ?: ""
+                }?.value() ?: "",
+            programUid = relationship.relatedProgram.programUid,
+            enrollmentUid = d2.enrollmentModule()
+                .enrollments()
+                .byTrackedEntityInstance().eq(tei.uid()!!)
+                .byProgram().eq(relationship.relatedProgram.programUid)
+                .blockingGet().firstOrNull()?.uid() ?: "",
         )
     }
 
