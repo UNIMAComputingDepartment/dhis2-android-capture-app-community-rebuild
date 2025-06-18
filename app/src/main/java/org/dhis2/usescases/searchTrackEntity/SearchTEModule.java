@@ -27,6 +27,7 @@ import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.viewmodel.DispatcherProvider;
+import org.dhis2.community.workflow.WorkflowRepository;
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils;
 import org.dhis2.data.enrollment.EnrollmentUiDataHelper;
 import org.dhis2.data.forms.dataentry.SearchTEIRepository;
@@ -309,7 +310,8 @@ public class SearchTEModule {
             ResourceManager resourceManager,
             DisplayNameProvider displayNameProvider,
             FilterManager filterManager,
-            ProgramConfigurationRepository programConfigurationRepository
+            ProgramConfigurationRepository programConfigurationRepository,
+            WorkflowRepository workflowRepository
     ) {
         return new SearchTeiViewModelFactory(
                 searchRepository,
@@ -323,8 +325,17 @@ public class SearchTEModule {
                 new MapStyleConfiguration(d2, initialProgram, programConfigurationRepository),
                 resourceManager,
                 displayNameProvider,
-                filterManager
+                filterManager,
+                workflowRepository
         );
+    }
+
+    @Provides
+    @PerActivity
+    WorkflowRepository provideWorkflowRepository(
+            D2 d2
+    ) {
+        return new WorkflowRepository(d2);
     }
 
     @Provides

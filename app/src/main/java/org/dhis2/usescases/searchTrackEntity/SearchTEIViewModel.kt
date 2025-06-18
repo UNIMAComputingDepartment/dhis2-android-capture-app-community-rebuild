@@ -37,6 +37,7 @@ import org.dhis2.commons.idlingresource.SearchIdlingResourceSingleton
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.search.SearchParametersModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.ui.intent.FormIntent
@@ -72,6 +73,7 @@ class SearchTEIViewModel(
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
     private val filterManager: FilterManager,
+    private val workflowRepository: WorkflowRepository
 ) : ViewModel() {
 
     private var layersVisibility: Map<String, MapLayer> = emptyMap()
@@ -126,6 +128,9 @@ class SearchTEIViewModel(
 
     var uiState by mutableStateOf(SearchParametersUiState())
 
+    private val _canCreateTEInProgram = MutableLiveData(false)
+    val canCreateTEInProgram: LiveData<Boolean> = _canCreateTEInProgram
+
     private var fetchJob: Job? = null
 
     init {
@@ -138,7 +143,16 @@ class SearchTEIViewModel(
             _teTypeName.postValue(
                 searchRepository.trackedEntityType.displayName(),
             )
+
+            setupWorkflow()
         }
+    }
+
+    private fun setupWorkflow() {
+        val workflowConfig = workflowRepository.getWorkflowConfig()
+        _canCreateTEInProgram.postValue(
+            workflowConfig.teiCreatablePrograms.contains(initialProgramUid),
+        )
     }
 
     private fun loadNavigationBarItems() {

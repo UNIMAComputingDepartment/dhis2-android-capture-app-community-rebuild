@@ -6,6 +6,7 @@ import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.form.ui.provider.DisplayNameProvider
 import org.dhis2.maps.usecases.MapStyleConfiguration
 
@@ -22,6 +23,7 @@ class SearchTeiViewModelFactory(
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
     private val filterManager: FilterManager,
+    private val workflowRepository: WorkflowRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return SearchTEIViewModel(
@@ -37,6 +39,7 @@ class SearchTeiViewModelFactory(
             resourceManager,
             displayNameProvider,
             filterManager,
+            workflowRepository
         ) as T
     }
 }
