@@ -18,6 +18,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.community.relationships.RelationshipRepository
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -87,7 +88,8 @@ class TEIDataModule(
     fun providesCmtPresenter(
         d2: D2,
         schedulerProvider: SchedulerProvider,
-        relationshipRepository: RelationshipRepository
+        relationshipRepository: RelationshipRepository,
+        workflowRepository: WorkflowRepository
     ): CmtRelationshipTEIDataPresenter {
         return CmtRelationshipTEIDataPresenter(
             view,
@@ -95,7 +97,8 @@ class TEIDataModule(
             programUid,
             teiUid,
             schedulerProvider,
-            relationshipRepository
+            relationshipRepository,
+            workflowRepository
         )
     }
 
@@ -221,5 +224,12 @@ class TEIDataModule(
         d2: D2,
     ): RelationshipRepository {
         return RelationshipRepository(d2)
+    }
+
+    @Provides
+    fun workflowRepositoryProvider(
+        d2: D2,
+    ): WorkflowRepository {
+        return WorkflowRepository(d2)
     }
 }

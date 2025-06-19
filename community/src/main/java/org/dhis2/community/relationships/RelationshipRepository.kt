@@ -9,6 +9,7 @@ import org.hisp.dhis.android.core.relationship.RelationshipItem
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
+import java.util.Date
 
 class RelationshipRepository(
     private val d2: D2
@@ -178,6 +179,13 @@ class RelationshipRepository(
                 .organisationUnit(orgUnit)
                 .build()
         )
+
+        d2.enrollmentModule().enrollments()
+            .uid(enrollmentUid)
+            .setEnrollmentDate(Date())
+        d2.enrollmentModule().enrollments()
+            .uid(enrollmentUid)
+            .setIncidentDate(Date())
 
         return teiUid to enrollmentUid
     }
