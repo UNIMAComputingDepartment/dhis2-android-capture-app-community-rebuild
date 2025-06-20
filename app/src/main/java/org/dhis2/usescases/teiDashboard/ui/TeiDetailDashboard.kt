@@ -13,6 +13,10 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.ui.components.CollapsibleRelationshipSection
+import org.dhis2.usescases.enrollment.EnrollmentView
+import org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipFragment
+import org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipPresenter
+import org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipView
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
@@ -20,6 +24,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.CardDetail
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBar
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBarData
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
+
 
 @Composable
 fun TeiDetailDashboard(
@@ -36,7 +41,13 @@ fun TeiDetailDashboard(
     onSearchTEIs: (String, String) -> Unit,
     onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
     onCreateEntity: (String, String) -> Unit,
+
+    relation: RelationshipView = RelationshipFragment(),
 ) {
+    val handleRelationshipClick: (String) -> Unit = { uid ->
+        relation.openDashboardFor(uid)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,7 +123,8 @@ fun TeiDetailDashboard(
             CollapsibleRelationshipSection(
                 relationshipTypeView = relationship,
                 availableEntities = searchedEntities,
-                onRelationshipClick = { onRelationshipClick(it.uid) },
+                onRelationshipClick = {onRelationshipClick(it.uid)},
+                //onRelationshipClick = { v.openDashboard(it.) },
                 onSearchTEIs = onSearchTEIs,
                 onEntitySelect = onEntitySelected,
                 onCreateEntity = onCreateEntity

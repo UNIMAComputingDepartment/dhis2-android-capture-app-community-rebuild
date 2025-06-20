@@ -7,6 +7,7 @@ import org.dhis2.commons.prefs.PreferenceProvider;
 import org.dhis2.commons.resources.ColorUtils;
 import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.ResourceManager;
+import org.dhis2.community.workflow.WorkflowRepository;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.usescases.main.program.ProgramViewModelMapper;
 import org.dhis2.utils.analytics.AnalyticsHelper;
@@ -49,8 +50,8 @@ public class TeiProgramListModule {
     @Provides
     @PerActivity
     TeiProgramListContract.Interactor provideInteractor(@NonNull TeiProgramListRepository teiProgramListRepository,
-                                                        SyncStatusController syncStatusController) {
-        return new TeiProgramListInteractor(teiProgramListRepository, syncStatusController);
+                                                        SyncStatusController syncStatusController, WorkflowRepository workflowRepository) {
+        return new TeiProgramListInteractor(teiProgramListRepository, syncStatusController, workflowRepository);
     }
 
     @Provides
@@ -70,4 +71,13 @@ public class TeiProgramListModule {
                 metadataIconProvider
         );
     }
+
+    @Provides
+    @PerActivity
+    WorkflowRepository providesWorkflowRepository(D2 d2){
+
+        return new WorkflowRepository(d2);
+    }
 }
+
+

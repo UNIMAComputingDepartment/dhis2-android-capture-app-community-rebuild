@@ -109,7 +109,7 @@ fun SearchButton(
     val textId = if (createButtonVisible) {
         R.string.search_te_type
     } else {
-        R.string.search_add_new_te_type
+        R.string.search_te_type   // R.string.search_add_new_te_type
     }
 
     OutlinedButton(
