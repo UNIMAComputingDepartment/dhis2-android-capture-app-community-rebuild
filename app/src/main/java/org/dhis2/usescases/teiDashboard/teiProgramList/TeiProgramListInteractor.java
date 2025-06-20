@@ -1,6 +1,7 @@
 package org.dhis2.usescases.teiDashboard.teiProgramList;
 
 
+import android.os.Build;
 import android.widget.DatePicker;
 
 import org.dhis2.R;
@@ -8,6 +9,7 @@ import org.dhis2.commons.dialogs.calendarpicker.CalendarPicker;
 import org.dhis2.commons.dialogs.calendarpicker.OnDatePickerListener;
 import org.dhis2.commons.orgunitselector.OUTreeFragment;
 import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope;
+import org.dhis2.community.workflow.WorkflowRepository;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.usescases.main.program.ProgramDownloadState;
 import org.dhis2.usescases.main.program.ProgramUiModel;
@@ -22,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.processors.PublishProcessor;
@@ -42,13 +45,15 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
     private Date selectedEnrollmentDate;
     private PublishProcessor<Unit> refreshData = PublishProcessor.create();
     private SyncStatusController syncStatusController;
+    private WorkflowRepository workflowRepository;
 
     TeiProgramListInteractor(
             TeiProgramListRepository teiProgramListRepository,
-            SyncStatusController syncStatusController
+            SyncStatusController syncStatusController, WorkflowRepository workflowRepository
     ) {
         this.teiProgramListRepository = teiProgramListRepository;
         this.syncStatusController = syncStatusController;
+        this.workflowRepository = workflowRepository;
     }
 
     @Override
@@ -189,7 +194,23 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
                             Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
-                            view.setOtherEnrollments(enrollments);
+
+                            compositeDisposable.add(
+                                    Single.fromCallable(() -> {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                            return workflowRepository.enrollAblePrograms(
+                                                    enrollments.stream().map(EnrollmentViewModel::programUid).toList(), trackedEntityId);
+                                        }
+                                        return null;
+                                    }).subscribeOn(Schedulers.io())
+                                            .observeOn(AndroidSchedulers.mainThread())
+                                            .subscribe(programUid ->{
+
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                                    view.setOtherEnrollments(enrollments.stream().filter(e -> programUid.contains(e.programUid())).toList());
+                                                }
+                                            },Timber ::d)
+                                    );
                         },
                         Timber::d)
         );

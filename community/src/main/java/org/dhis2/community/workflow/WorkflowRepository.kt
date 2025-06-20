@@ -1,8 +1,6 @@
 package org.dhis2.community.workflow
 
 import com.google.gson.Gson
-import io.reactivex.Single
-import org.dhis2.commons.bindings.trackedEntityTypeMainAttributes
 import org.dhis2.community.relationships.RelationshipConfig
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
@@ -82,5 +80,15 @@ class WorkflowRepository(
 
         return targetTeiUid to enrollmentUid
     }
+
+    fun enrollAblePrograms(){
+
+    }
+
+    fun enrollAblePrograms(stringStream: List<String>, trackedEntityId: String): List<String> {
+
+        return stringStream;
+    }
+
 
 }

@@ -65,7 +65,10 @@ public class TeiProgramListActivity extends ActivityGlobalAbstract implements Te
         if (binding.recycler.getAdapter() == null) {
             binding.recycler.setAdapter(adapter);
         }
-        adapter.setOtherEnrollments(enrollments);
+       /*val filt =  presenter.getFilteredEnrllments(enrollments);
+       /* adapter.setOtherEnrollments(filt);*/
+
+        //enrollments.getFirst().programUid().
     }
 
     @Override
