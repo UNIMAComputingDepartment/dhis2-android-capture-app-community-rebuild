@@ -7,7 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -113,6 +115,12 @@ private fun CollapsibleRelationshipSectionContent(
                         .weight(1f)
                         .padding(start = 12.dp)
                 )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 IconButton(onClick = { coroutineScope.launch { showAddSheet = true } }) {
                     Icon(
                         Icons.Default.Add,
@@ -120,11 +128,7 @@ private fun CollapsibleRelationshipSectionContent(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
             }
 
             // Expanded relationship list with search
@@ -134,13 +138,14 @@ private fun CollapsibleRelationshipSectionContent(
                 exit = shrinkVertically()
             ) {
                 Column {
-                    if (existingRelationships.size > 10) {
+                    if (existingRelationships.size > 5) {
                         TextField(
                             value = listSearch,
                             onValueChange = { listSearch = it },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .verticalScroll(rememberScrollState()),
                             placeholder = { Text("Search relationships...") },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
