@@ -194,23 +194,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
                             Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
-
-                            compositeDisposable.add(
-                                    Single.fromCallable(() -> {
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                            return workflowRepository.enrollAblePrograms(
-                                                    enrollments.stream().map(EnrollmentViewModel::programUid).toList(), trackedEntityId);
-                                        }
-                                        return null;
-                                    }).subscribeOn(Schedulers.io())
-                                            .observeOn(AndroidSchedulers.mainThread())
-                                            .subscribe(programUid ->{
-
-                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                                    view.setOtherEnrollments(enrollments.stream().filter(e -> programUid.contains(e.programUid())).toList());
-                                                }
-                                            },Timber ::d)
-                                    );
+                            view.setOtherEnrollments(enrollments);
                         },
                         Timber::d)
         );
@@ -284,7 +268,22 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
             }
         }
         Collections.sort(programListToPrint, (program1, program2) -> program1.getTitle().compareToIgnoreCase(program2.getTitle()));
-        view.setPrograms(programListToPrint);
+        compositeDisposable.add(
+                Single.fromCallable(() -> {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                List<String> uids = programListToPrint.stream().map(ProgramUiModel::getUid).toList();
+                                return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
+                            }
+                            return null;
+                        }).subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(programUid ->{
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                view.setPrograms(programListToPrint.stream().filter(e -> programUid.contains(e.getUid())).toList());
+                            }
+                        },Timber ::d)
+        );
     }
 
     @Override
