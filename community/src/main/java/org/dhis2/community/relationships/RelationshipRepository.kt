@@ -1,6 +1,7 @@
 package org.dhis2.community.relationships
 
 import com.google.gson.Gson
+import org.dhis2.community.workflow.AutoIncrementAttributes
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.Relationship
@@ -161,7 +162,8 @@ class RelationshipRepository(
     fun saveToEnroll(
         relationship: org.dhis2.community.relationships.Relationship,
         orgUnit: String,
-        programUid: String
+        programUid: String,
+        attributeIncrement: Pair<String, String>?,
     ): Pair<String?, String?> {
         val teiType = relationship.relatedProgram.teiTypeUid
 
@@ -186,6 +188,13 @@ class RelationshipRepository(
         d2.enrollmentModule().enrollments()
             .uid(enrollmentUid)
             .setIncidentDate(Date())
+
+        // Handle auto-increment attributes if any
+        if (attributeIncrement != null) {
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(attributeIncrement.first, teiUid)
+                .blockingSet(attributeIncrement.second)
+        }
 
         return teiUid to enrollmentUid
     }

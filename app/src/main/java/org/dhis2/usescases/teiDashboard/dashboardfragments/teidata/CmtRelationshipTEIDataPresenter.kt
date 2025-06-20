@@ -237,10 +237,14 @@ class CmtRelationshipTEIDataPresenter(
     ) {
         compositeDisposable.add(
             Single.fromCallable {
+                val attributeToIncrement = workflowConfig.autoIncrementAttributes.find { it.programUid == programUid }?.attributeUid
+                val incrementValue = relationships.value?.find { it.relatedProgramUid == programUid }?.relatedTeis?.size?.plus(1)
+
                 relationshipRepository.saveToEnroll(
                     orgUnit = orgUnitUid,
                     programUid = programUid,
-                    relationship = relationship
+                    relationship = relationship,
+                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null
                 )
             }
                 .subscribeOn(schedulerProvider.computation())
