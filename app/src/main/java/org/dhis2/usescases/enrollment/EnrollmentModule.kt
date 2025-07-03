@@ -16,6 +16,7 @@ import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.community.household.HouseholdUtils
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -161,6 +162,7 @@ class EnrollmentModule(
         eventCollectionRepository: EventCollectionRepository,
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
+        householdUtils: HouseholdUtils,
     ): EnrollmentPresenterImpl {
         return EnrollmentPresenterImpl(
             enrollmentView,
@@ -175,6 +177,7 @@ class EnrollmentModule(
             eventCollectionRepository,
             teiAttributesProvider,
             dateEditionWarningHandler,
+            householdUtils
         )
     }
 
@@ -254,5 +257,12 @@ class EnrollmentModule(
     @PerActivity
     fun providesTeiAttributesProvider(d2: D2): TeiAttributesProvider {
         return TeiAttributesProvider(d2)
+    }
+
+    //for household utils
+    @Provides
+    @PerActivity
+    fun providesHouseholdUtils(d2: D2): HouseholdUtils {
+        return HouseholdUtils(d2)
     }
 }

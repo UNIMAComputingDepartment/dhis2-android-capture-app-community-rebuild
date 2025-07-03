@@ -154,7 +154,8 @@ class RelationshipRepository(
     fun saveToEnroll(
         relationship: org.dhis2.community.relationships.Relationship,
         orgUnit: String,
-        programUid: String
+        programUid: String,
+        newMemberNumber: String
     ): Pair<String?, String?> {
         val teiType = relationship.relatedProgram.teiTypeUid
 
@@ -175,5 +176,26 @@ class RelationshipRepository(
 
         return teiUid to enrollmentUid
     }
+
+    //dealing with household head
+    fun getHouseholdMemberUids(householdUid: String): List<String> {
+        return d2.relationshipModule().relationships()
+            .byRelationshipType().eq("wcSMItGpTjL") //  household → member relationship
+            .withItems()
+            .blockingGet()
+            .filter {
+                it.from()?.trackedEntityInstance()?.trackedEntityInstance() == householdUid
+            }
+            .mapNotNull { it.to()?.trackedEntityInstance()?.trackedEntityInstance() }
+    }
+
+    fun getCurrentHeadUid(householdUid: String, isHeadAttrUid: String): String? {
+        return getHouseholdMemberUids(householdUid).firstOrNull { memberUid ->
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(isHeadAttrUid, memberUid)
+                .blockingGet()?.value()?.equals("true", ignoreCase = true) == true
+        }
+    }
+
 
 }
