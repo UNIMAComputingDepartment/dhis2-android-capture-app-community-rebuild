@@ -197,5 +197,34 @@ class RelationshipRepository(
         }
     }
 
+    fun assignOrReplaceHead(
+        newHeadTeiUid: String,
+        householdTeiUid: String,
+        isHeadAttrUid: String,
+        confirmReplace: (oldHeadTeiUid: String, onConfirmed: () -> Unit) -> Unit
+    ) {
+        val currentHeadUid = getCurrentHeadUid(householdTeiUid, isHeadAttrUid)
+
+        if (currentHeadUid != null && currentHeadUid != newHeadTeiUid) {
+            confirmReplace(currentHeadUid) {
+                // Clear old head
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(isHeadAttrUid, currentHeadUid)
+                    .blockingDelete()
+
+                // Set new head
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(isHeadAttrUid, newHeadTeiUid)
+                    .blockingSet("true")
+            }
+        } else {
+            // No head exists, assign directly
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(isHeadAttrUid, newHeadTeiUid)
+                .blockingSet("true")
+        }
+    }
+
+
 
 }
