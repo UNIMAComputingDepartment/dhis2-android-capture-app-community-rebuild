@@ -13,6 +13,7 @@ import org.dhis2.commons.matomo.Labels.Companion.CLICK
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
+import org.dhis2.community.household.HouseholdUtils
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
@@ -50,6 +51,7 @@ class EnrollmentPresenterImpl(
     private val eventCollectionRepository: EventCollectionRepository,
     private val teiAttributesProvider: TeiAttributesProvider,
     private val dateEditionWarningHandler: DateEditionWarningHandler,
+    private val householdUtils: HouseholdUtils
 ) {
 
     private val disposable = CompositeDisposable()
@@ -140,10 +142,26 @@ class EnrollmentPresenterImpl(
                     enrollmentFormRepository.generateEvents()
                         .defaultSubscribe(
                             schedulerProvider,
-                            {
-                                it.second?.let { eventUid ->
+                            { result ->
+                                val enrollment = enrollmentObjectRepository.blockingGet()
+                                val teiUid = enrollment?.trackedEntityInstance().toString()
+
+                                // Get household TEI UID from relationship (mock logic, replace with actual)
+                                val householdUid = getHouseholdUidFromRelationship(teiUid)
+
+                                // Fetch 'isHead' flag from a program attribute or UI
+                                val isHead = getIsHeadFromAttributes(teiUid)
+
+                                // Assign member code and isHead flag
+                                householdUtils.assignHouseholdData(
+                                    householdTeiUid = householdUid,
+                                    householdMemberTeiUid = teiUid,
+                                    isHead = isHead
+                                )
+
+                                result.second?.let { eventUid ->
                                     view.openEvent(eventUid)
-                                } ?: view.openDashboard(it.first)
+                                } ?: view.openDashboard(result.first)
                             },
                             { Timber.tag(TAG).e(it) },
                         ),
@@ -259,4 +277,26 @@ class EnrollmentPresenterImpl(
             true
         }
     }
+
+    //helper function to get household UID from the relationship
+    private fun getHouseholdUidFromRelationship(teiUid: String): String {
+        val relationships = d2.relationshipModule().relationships().blockingGet()
+        val householdRel = relationships.find {
+            it.from()?.trackedEntityInstance()?.trackedEntityInstance() == teiUid &&
+                    it.relationshipType() == "wcSMItGpTjL"
+        }
+        return householdRel?.to()?.trackedEntityInstance()?. trackedEntityInstance()
+            ?: throw IllegalStateException("No household relationship found for TEI: $teiUid")
+    }
+
+    private fun getIsHeadFromAttributes(teiUid: String): Boolean {
+        val attrValue = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value("yourIsHeadAttrUid", teiUid) // Replace with real UID
+            .blockingGet()
+
+        return attrValue?.value()?.lowercase() == "true" || attrValue?.value()?.lowercase() == "yes"
+    }
+
+
+
 }
