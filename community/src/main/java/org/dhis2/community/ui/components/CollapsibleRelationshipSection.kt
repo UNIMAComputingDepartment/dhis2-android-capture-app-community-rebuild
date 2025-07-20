@@ -172,7 +172,8 @@ private fun CollapsibleRelationshipSectionContent(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
                 ) {
 
                     if (existingRelationships.size > 10) {
@@ -193,8 +194,9 @@ private fun CollapsibleRelationshipSectionContent(
 
                     LazyColumn(
                         modifier = Modifier
-                            .heightIn(max = 300.dp)
+                            //.heightIn(max = 300.dp)
                             .fillMaxWidth()
+                            .weight(1f)
                     ) {
                         items(displayedRelationships) { rel ->
                             RelationshipItem(
