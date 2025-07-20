@@ -1,9 +1,9 @@
 package org.dhis2.community.relationships
 
 import com.google.gson.Gson
-import org.dhis2.community.workflow.AutoIncrementAttributes
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
+import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.relationship.Relationship
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.relationship.RelationshipItem
@@ -13,7 +13,9 @@ import timber.log.Timber
 import java.util.Date
 
 class RelationshipRepository(
-    private val d2: D2
+    private val d2: D2,
+    //private val res: ResourceManager
+
 ) {
 
     fun getRelationshipConfig(): RelationshipConfig {
@@ -107,6 +109,32 @@ class RelationshipRepository(
         tei: TrackedEntityInstance,
         relationship: org.dhis2.community.relationships.Relationship
     ): CmtRelationshipViewModel {
+        val teiTypeUid = tei.trackedEntityType()
+
+
+
+        val program = d2.programModule().programs()
+            .uid(relationship.relatedProgram.programUid)
+            //.withStyle()
+            .blockingGet()
+
+        val iconName = program?.style()?.icon()
+
+        /*if (teiTypeUid != null) {
+            try {
+                val trackedEntityType = d2.trackedEntityModule()
+                    .trackedEntityTypes()
+                    //.uid(teiTypeUid)
+                    .blockingGet()
+                iconName = trackedEntityType?.style()?.icon()
+                //iconName = getDrawableResource(iconNameFromServer)
+            } catch (e: Exception) {
+                Timber.e(e, "Error fetching TEI type icon")
+            }
+        }*/
+        Timber.e("The Icon name: $iconName")
+
+
         return CmtRelationshipViewModel(
             uid = tei.uid()!!,
             primaryAttribute = tei.trackedEntityAttributeValues()
@@ -127,6 +155,9 @@ class RelationshipRepository(
                 .byTrackedEntityInstance().eq(tei.uid()!!)
                 .byProgram().eq(relationship.relatedProgram.programUid)
                 .blockingGet().firstOrNull()?.uid() ?: "",
+            //iconResId = res.getObjectStyleDrawableResource(iconName, R.drawable.ic_default_icon)
+            iconName = iconName.toString()
+
         )
     }
 
@@ -134,7 +165,7 @@ class RelationshipRepository(
         relationship: org.dhis2.community.relationships.Relationship,
         keyword: String
     ): CmtRelationshipTypeViewModel {
-        val teis =  d2.trackedEntityModule()
+        val teis = d2.trackedEntityModule()
             .trackedEntityInstances()
             .byProgramUids(listOf(relationship.relatedProgram.programUid))
             .withTrackedEntityAttributeValues()
@@ -147,6 +178,12 @@ class RelationshipRepository(
                 mapToCmtModel(it, relationship)
             }
 
+        val program = d2.programModule().programs()
+            .uid(relationship.relatedProgram.programUid)
+            .blockingGet()
+
+        val iconName = program?.style()?.icon()
+
         return CmtRelationshipTypeViewModel(
             uid = relationship.access.targetRelationshipUid,
             name = "",
@@ -154,8 +191,9 @@ class RelationshipRepository(
             relatedTeis = teis,
             relatedProgramName = relationship.relatedProgram.teiTypeName,
             relatedProgramUid = relationship.relatedProgram.programUid,
+            //icon = iconName.toString()
 
-        )
+            )
 
     }
 
