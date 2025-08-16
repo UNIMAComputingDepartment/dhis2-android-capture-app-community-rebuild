@@ -36,6 +36,14 @@ data class ProgramEnrollmentControl(
         return when (condition) {
             "equals" -> attributeValue == this.attributeValue
             "not_equals" -> attributeValue != this.attributeValue
+            "between" -> {
+                val values = this.attributeValue.split(",").map { it.trim() }
+                if (values.size != 2) return false
+                val lowerBound = values[0].toDoubleOrNull() ?: return false
+                val upperBound = values[1].toDoubleOrNull() ?: return false
+                val value = attributeValue.toDoubleOrNull() ?: return false
+                value in lowerBound..upperBound
+            }
             "contains" -> this.attributeValue in attributeValue
             "not_contains" -> this.attributeValue !in attributeValue
             "greater_than" -> (attributeValue.toDoubleOrNull()
