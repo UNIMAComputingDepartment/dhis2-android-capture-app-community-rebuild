@@ -1,5 +1,14 @@
 package org.dhis2.community.tasking.models
 
+data class EvaluationResult(
+    val taskingConfig: TaskingConfig.TaskConfig,
+    val teiUid: String,
+    val programUid: String,
+    val isTriggered: Boolean,
+    val dueDate: String? = null,
+    val tieAttrs: Triple<String, String, String>? = null
+)
+
 data class Task(
     val name: String,
     val description: String,
