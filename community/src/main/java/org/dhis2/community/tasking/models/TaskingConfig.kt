@@ -1,8 +1,16 @@
 package org.dhis2.community.tasking.models
 
 data class TaskingConfig(
-    val taskConfigs: List<TaskConfig>
+    val taskConfigs: List<TaskConfig>,
+    val taskProgramConfig: List<TaskProgramConfig>
 ) {
+    data class TaskProgramConfig(
+        val programUid: String,
+        val programName: String,
+        val statusUid: String,
+        val tieTypeUid: String
+    )
+
     data class TaskConfig(
         val taskTypeId: String,
         val name: String,

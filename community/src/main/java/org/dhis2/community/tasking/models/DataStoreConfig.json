@@ -1,0 +1,58 @@
+{
+  "taskProgramConfigs": [
+    {
+      "programUid": "TASK_PROGRAM_UID",
+      "programName": "Task Program",
+      "statusUid": "STATUS_ATTR_UID",
+      "teiTypeUid": "TEI_TYPE_UID"
+    }
+  ],
+
+  "taskConfigs": [
+    {
+      "name": "Danger Sign Follow-up",
+      "description": "Trigger a follow-up task if danger sign is YES",
+      "priority": "HIGH",
+      "trigger": {
+        "program": "PROGRAM_UID_WOMAN",
+        "condition": {
+          "lhs": {
+            "ref": "eventData",
+            "uid": "DANGER_SIGN_DE_UID"
+          },
+          "op": "EQUALS",
+          "rhs": {
+            "value": "YES"
+          }
+        }
+      },
+      "teiView": {
+        "teiPrimaryAttribute": "PRIMARY_ATTR_UID",
+        "teiSecondaryAttribute": "SECONDARY_ATTR_UID",
+        "teiTertiaryAttribute": "TERTIARY_ATTR_UID"
+      },
+      "period": {
+        "dueIn": {
+          "days": 2
+        }
+      },
+      "completion": {
+        "condition": {
+          "args": [
+            {
+              "lhs": {
+                "ref": "teiAttribute",
+                "fn": "status",
+                "uid": "STATUS_ATTR_UID"
+              },
+              "op": "EQUALS",
+              "rhs": {
+                "value": "COMPLETED"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

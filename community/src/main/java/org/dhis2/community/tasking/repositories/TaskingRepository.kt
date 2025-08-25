@@ -15,6 +15,7 @@ class TaskingRepository(
 ) {
 
     private var cachedConfig: TaskingConfig? = null
+
     private val statusAttributeUid: String by lazy {
         getTaskingConfig().taskConfigs
             .firstOrNull()?.completion?.condition?.args?.filter
@@ -31,7 +32,10 @@ class TaskingRepository(
 
         val config = entries.firstOrNull { it.key() == "tasking" }
             ?.let { Gson().fromJson(it.value(), TaskingConfig::class.java) }
-            ?: TaskingConfig(emptyList())
+            ?: TaskingConfig(
+                taskConfigs = emptyList(),
+                taskProgramConfig = emptyList()
+            )
 
         cachedConfig = config
         return config
