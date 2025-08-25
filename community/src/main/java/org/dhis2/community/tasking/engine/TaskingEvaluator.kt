@@ -25,7 +25,7 @@ open class TaskingEvaluator(
                     repository.evaluateCondition(taskConfig.trigger.condition, tieUid)
 
                 if (shouldTrigger) {
-                    val dueDate = repository.calculateDueDate(taskConfig)
+                    val dueDate = repository.calculateDueDate(taskConfig, tieUid, programUid)
                     val tieAttrs = repository.getTieAttributes(tieUid, taskConfig.teiView)
 
                     result.add(

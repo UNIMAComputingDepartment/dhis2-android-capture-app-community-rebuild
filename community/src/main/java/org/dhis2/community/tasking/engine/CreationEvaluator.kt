@@ -30,6 +30,11 @@ class CreationEvaluator(
             primary
         )
 
+        val openTies = existingTeis.filter { tie ->
+            val status = repository.getTaskStatus(tie.uid())
+            status != "COMPLETED" && status != "CANCELLED"
+        }
+
         return if (existingTeis.isNotEmpty()) {
             existingTeis.map { tei ->
                 updateTeiAttributes(tei.uid(), primary, secondary, tertiary)

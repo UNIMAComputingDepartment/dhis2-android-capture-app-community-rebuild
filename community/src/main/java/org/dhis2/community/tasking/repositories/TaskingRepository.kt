@@ -8,12 +8,14 @@ import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import org.hisp.dhis.android.core.event.Event
+import java.time.chrono.ChronoLocalDate
+import java.util.Date
 
 
 class TaskingRepository(
     private val d2: org.hisp.dhis.android.core.D2,
 ) {
-    private val taskStorage = mutableListOf<Task>()
 
     fun getTaskingConfig(): TaskingConfig{
         val entries = d2.dataStoreModule()
@@ -27,12 +29,38 @@ class TaskingRepository(
             ?: TaskingConfig(emptyList())
     }
 
+    private fun getFollowUpDataElementValue(
+        teiUid: String,
+        programUid: String,
+        stageUid: String,
+        dataElementUid: String
+    ): String? {
+        val enrollments = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        val events = enrollments.flatMap { enrollment ->
+            d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollment.uid())
+                .byProgramStageUid().eq(stageUid)
+                .withTrackedEntityDataValues()
+                .blockingGet()
+        }
+
+        val event = events.firstOrNull() ?: return null
+
+        return event.trackedEntityDataValues()
+            ?.firstOrNull { it.dataElement() == dataElementUid }
+            ?.value()
+    }
+
     fun evaluateCondition(
         condition: TaskingConfig.TaskConfig.Condition,
         tieUid: String
     ): Boolean {
 
-        val lhsValue = resolvedReference(condition.lhs, tieUid)
+        val lhsValue = resolvedReference(condition.lhs, tieUid,)
         val rhsValue = condition.rhs.value
 
         return when (condition.op) {
@@ -44,25 +72,63 @@ class TaskingRepository(
 
     private fun resolvedReference(
         ref: TaskingConfig.TaskConfig.Reference,
-        tieUid: String
+        teiUid: String,
+        programUid: String? = null
     ): Any? {
-        return when (ref.type) {
-            "attribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
-                .byTrackedEntityInstance().eq(tieUid)
-                .byTrackedEntityAttribute().eq(ref.uid)
-                .one().blockingGet()?.value()
+        return when (ref.ref) {
+            "teiAttribute" -> {
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .byTrackedEntityInstance().eq(teiUid)
+                    .byTrackedEntityAttribute().eq(ref.uid!!)
+                    .one().blockingGet()
+                    ?.value()
+            }
 
-            "constant" -> ref.value
+            "eventData" -> {
+                if (programUid == null || ref.uid == null) return null
+
+                val enrollments = d2.enrollmentModule().enrollments()
+                    .byTrackedEntityInstance().eq(teiUid)
+                    .byProgram().eq(programUid)
+                    .blockingGet()
+
+                val events = enrollments.flatMap { enrollment ->
+                    d2.eventModule().events()
+                        .byEnrollmentUid().eq(enrollment.uid())
+                        .byProgramStageUid().eq(ref.uid) // follow-up stage
+                        .withTrackedEntityDataValues()
+                        .blockingGet()
+                }
+
+                val event = events.firstOrNull()
+                event?.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == ref.uid }  // ref.uid = data element UID
+                    ?.value()
+            }
+            "static" -> ref.value?.toString()
             else -> null
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun calculateDueDate(
-        taskConfig: TaskingConfig.TaskConfig
-    ): String {
-        val anchorDate = LocalDate.now()
-        val dueDate = anchorDate.plusDays(taskConfig.period.dueIn.days.toLong())
+        taskConfig: TaskingConfig.TaskConfig,
+        teiUid: String,
+        programUid: String
+    ): String? {
+
+        val enrollment = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .blockingGet()
+            .firstOrNull()
+            ?: throw IllegalArgumentException("No enrollment found for TEI $teiUid in program $programUid")
+
+        val anchorDate = enrollment.incidentDate() ?: enrollment.enrollmentDate()
+            ?: throw IllegalArgumentException("No valid date found for enrollment ${enrollment.uid()}")
+
+        val localDate = anchorDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        val dueDate = localDate.plusDays(taskConfig.period.dueIn.days.toLong())
 
         return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
@@ -108,6 +174,28 @@ class TaskingRepository(
 
         return query.blockingGet()
     }
+    private val statusAttributeUid = getTaskingConfig().taskConfigs
+        .firstOrNull()?.completion?.condition?.args?.filter
+        ?.firstOrNull { it.lhs.ref == "teiAttribute" && it.lhs.fn == "status" }?.lhs?.uid
+        ?: ""
+
+    fun updateTaskStatus(taskTieUid: String, newStatus : String){
+        d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(statusAttributeUid, taskTieUid)
+            .blockingSet(newStatus)
+    }
+
+    fun getAllTasks(
+        tieTypeUid: String,
+        orgUnitUid: String,
+        programUid: String
+    ) : List<TrackedEntityInstance> {
+        return d2.trackedEntityModule().trackedEntityInstances()
+            .byTrackedEntityType().eq(tieTypeUid)
+            .byOrganisationUnitUid().eq(orgUnitUid)
+            .byProgramUids(listOf(programUid))
+            .blockingGet()
+    }
 
     fun filterTiesByAttributes(
         ties : List<TrackedEntityInstance>,
@@ -125,5 +213,13 @@ class TaskingRepository(
 
             attrValue == attributeValue
         }
+    }
+
+    fun getTaskStatus(tieUid: String): String {
+        return d2.trackedEntityModule().trackedEntityAttributeValues()
+            .byTrackedEntityInstance().eq(tieUid)
+            .byTrackedEntityAttribute().eq(statusAttributeUid)
+            .one().blockingGet()
+            ?.value() ?: ""
     }
 }
