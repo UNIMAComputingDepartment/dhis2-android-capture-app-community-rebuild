@@ -6,20 +6,22 @@ import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
+import timber.log.Timber
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 class StatusEvaluator(
     private val statusAttributeUid: String,
-    private val d2 : D2,
+    private val d2: D2,
     private val repository: TaskingRepository
 ) {
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun updateTaskStatusIfNeeded(
         teiUid: String,
-        taskConfig : TaskingConfig.TaskConfig,
-        programUid : String
-    ){
+        taskConfig: TaskingConfig.TaskConfig,
+        programUid: String
+    ) {
         try {
             val tei = d2.trackedEntityModule().trackedEntityInstances()
                 .uid(teiUid)
@@ -30,7 +32,8 @@ class StatusEvaluator(
             val enrollment = d2.enrollmentModule().enrollments()
                 .byTrackedEntityInstance().eq(teiUid)
                 .byProgram().eq(programUid)
-                .blockingGet().firstOrNull() ?: return
+                .blockingGet()
+                .firstOrNull() ?: return
 
             if (enrollment.status() == EnrollmentStatus.COMPLETED) return
 
@@ -38,10 +41,12 @@ class StatusEvaluator(
             val dueDate = LocalDate.parse(dueDateString, java.time.format.DateTimeFormatter.ISO_DATE)
             val today = LocalDate.now()
 
+            val daysUntilDue = ChronoUnit.DAYS.between(today, dueDate)
+
             val newStatus = when {
                 today.isAfter(dueDate) -> "OVERDUE"
                 today.isEqual(dueDate) -> "DUE_TODAY"
-                ChronoUnit.DAYS.between(today, dueDate) <= 3 -> "DUE_SOON"
+                daysUntilDue in 1..3 -> "DUE_SOON"
                 else -> "OPEN"
             }
 
@@ -53,9 +58,7 @@ class StatusEvaluator(
                 repository.updateTaskStatus(teiUid, newStatus)
             }
         } catch (e: Exception) {
-            println("Failed to update status for TEI $teiUid: ${e.message}")
+            Timber.tag("StatusEvaluator").e(e, "Failed to update status for TEI $teiUid")
         }
     }
-
-
 }

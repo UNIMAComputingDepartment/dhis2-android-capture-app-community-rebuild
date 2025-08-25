@@ -35,8 +35,8 @@ class CreationEvaluator(
             status != "COMPLETED" && status != "CANCELLED"
         }
 
-        return if (existingTeis.isNotEmpty()) {
-            existingTeis.map { tei ->
+        return if (openTies.isNotEmpty()) {
+            openTies.map { tei ->
                 updateTeiAttributes(tei.uid(), primary, secondary, tertiary)
                 Task(
                     name = result.taskingConfig.name,
@@ -70,8 +70,15 @@ class CreationEvaluator(
                         .build()
                 )
 
-            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(Date())
-            d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(Date())
+          d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setEnrollmentDate(Date())
+                //.blockingUpdate()
+
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setIncidentDate(Date())
+                //.blockingUpdate()
 
             updateTeiAttributes(newTeiUid, primary, secondary, tertiary)
 

@@ -14,13 +14,16 @@ class CompletionEvaluator(
         taskTeiUid: String,
         programUid: String,
         stageUid: String,
-        completionDataElement: String? = null,  // optional: specific DE that signals completion
-        completionValue: String? = null         // optional: expected value e.g. "YES"
-    ) {
+        completionDataElement: String? = null,  // optional DE
+        completionValue: String? = null         // optional expected value
+    ): Boolean {
+
         val enrollments = d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(taskTeiUid)
             .byProgram().eq(programUid)
             .blockingGet()
+
+        if (enrollments.isEmpty()) return false
 
         val followupEvents = enrollments.flatMap { enrollment ->
             d2.eventModule().events()
@@ -32,22 +35,25 @@ class CompletionEvaluator(
 
         val completed = if (completionDataElement != null && completionValue != null) {
             followupEvents.any { event ->
-                event.trackedEntityDataValues()?.any { it.dataElement() == completionDataElement && it.value() == completionValue } == true
+                event.trackedEntityDataValues()
+                    ?.any { it.dataElement() == completionDataElement && it.value() == completionValue } == true
             }
         } else {
             followupEvents.any { it.status() == EventStatus.COMPLETED }
         }
-        if (completed) {
 
-           // val enrollmentUid = enrollments.firstOrNull()?.uid()
+        if (completed) {
             repository.updateTaskStatus(taskTeiUid, "COMPLETED")
 
             enrollments.forEach { enrollment ->
-                d2.enrollmentModule().enrollments().uid(enrollment.uid())
+                d2.enrollmentModule().enrollments()
+                    .uid(enrollment.uid())
                     .setStatus(EnrollmentStatus.COMPLETED)
-                    // Snr dev note: consider working on this
-
+                    //.blockingUpdate()
             }
+            return true
         }
+
+        return false
     }
 }
