@@ -13,6 +13,8 @@ import org.dhis2.community.relationships.Relationship
 import org.dhis2.community.relationships.RelationshipConfig
 import org.dhis2.community.relationships.RelationshipConstraintSide
 import org.dhis2.community.relationships.RelationshipRepository
+import org.dhis2.community.workflow.WorkflowConfig
+import org.dhis2.community.workflow.WorkflowRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import timber.log.Timber
@@ -24,12 +26,15 @@ class CmtRelationshipTEIDataPresenter(
     private var programUid: String?,
     private val teiUid: String,
     private val schedulerProvider: SchedulerProvider,
-    private val relationshipRepository: RelationshipRepository
+    private val relationshipRepository: RelationshipRepository,
+    private val workflowRepository: WorkflowRepository
 ) {
 
     private val compositeDisposable: CompositeDisposable = CompositeDisposable()
 
     private val relationshipsConfig: MutableList<Relationship> = mutableListOf()
+
+    private lateinit var workflowConfig: WorkflowConfig
 
     private val _relationships = MutableLiveData<List<CmtRelationshipTypeViewModel>>()
     val relationships: LiveData<List<CmtRelationshipTypeViewModel>> = _relationships
@@ -40,7 +45,23 @@ class CmtRelationshipTEIDataPresenter(
     init {
         programUid?.let {
             initializeRelationships()
+            initializeWorkflow()
         }
+    }
+
+    private fun initializeWorkflow() {
+        compositeDisposable.add(
+            Single.fromCallable<WorkflowConfig>(Callable<WorkflowConfig> { workflowRepository.getWorkflowConfig() })
+                .subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { workflowConfig: WorkflowConfig ->
+                        Timber.d("WorkflowConfig: %s", workflowConfig)
+                        this.workflowConfig = workflowConfig
+                    },
+                    { t: Throwable? -> Timber.e(t) }
+                )
+        )
     }
 
     fun initializeRelationships() {
@@ -122,6 +143,27 @@ class CmtRelationshipTEIDataPresenter(
         )
     }
 
+    private fun checkForAutoCreation(programUid: String, teiUid: String) {
+        val autoCreationConfig = workflowConfig.entityAutoCreation.firstOrNull {
+            it.triggerProgram == programUid
+        }
+        autoCreationConfig?.let {
+            compositeDisposable.add(
+                Single.fromCallable {
+                    workflowRepository.autoCreateEntity(
+                        teiUid = teiUid,
+                        autoCreationConfig = it
+                    )
+                }.subscribeOn(schedulerProvider.io())
+                    .observeOn(schedulerProvider.ui())
+                    .subscribe(
+                        { Timber.d("Created ${it.first}") },
+                        {error -> Timber.e(error)}
+                    )
+            )
+        }
+    }
+
     fun addRelationship(teiUid: String, relationshipTypeUid: String) {
         compositeDisposable.add(
             Single.fromCallable {
@@ -142,9 +184,12 @@ class CmtRelationshipTEIDataPresenter(
     }
 
     private var relationshipToAdd: String? = null
+    private var programUidToCheck: String? = null
     fun addRelationship(teiUid: String) {
         relationshipToAdd?.let { this.addRelationship(teiUid, relationshipTypeUid = it) }
+        programUidToCheck?.let { checkForAutoCreation(it, teiUid) }
         relationshipToAdd = null
+        programUidToCheck = null
     }
 
     fun enroll(
@@ -192,10 +237,14 @@ class CmtRelationshipTEIDataPresenter(
     ) {
         compositeDisposable.add(
             Single.fromCallable {
+                val attributeToIncrement = workflowConfig.autoIncrementAttributes.find { it.programUid == programUid }?.attributeUid
+                val incrementValue = relationships.value?.find { it.relatedProgramUid == programUid }?.relatedTeis?.size?.plus(1)
+
                 relationshipRepository.saveToEnroll(
                     orgUnit = orgUnitUid,
                     programUid = programUid,
-                    relationship = relationship
+                    relationship = relationship,
+                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null
                 )
             }
                 .subscribeOn(schedulerProvider.computation())
@@ -207,6 +256,7 @@ class CmtRelationshipTEIDataPresenter(
                             enrollmentAndTEI.second.toString(),
                         )
                         relationshipToAdd = relationship.access.targetRelationshipUid
+                        programUidToCheck = programUid
                     },
                     Consumer { t: Throwable? -> Timber.d(t) })
         )

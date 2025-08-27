@@ -1,6 +1,7 @@
 package org.dhis2.community.relationships
 
 import com.google.gson.Gson
+import org.dhis2.community.workflow.AutoIncrementAttributes
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.Relationship
@@ -9,6 +10,7 @@ import org.hisp.dhis.android.core.relationship.RelationshipItem
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
+import java.util.Date
 
 class RelationshipRepository(
     private val d2: D2
@@ -118,7 +120,13 @@ class RelationshipRepository(
             tertiaryAttribute = tei.trackedEntityAttributeValues()
                 ?.firstOrNull {
                     it.trackedEntityAttribute() == relationship.view.teiTertiaryAttribute
-                }?.value() ?: ""
+                }?.value() ?: "",
+            programUid = relationship.relatedProgram.programUid,
+            enrollmentUid = d2.enrollmentModule()
+                .enrollments()
+                .byTrackedEntityInstance().eq(tei.uid()!!)
+                .byProgram().eq(relationship.relatedProgram.programUid)
+                .blockingGet().firstOrNull()?.uid() ?: "",
         )
     }
 
@@ -155,7 +163,7 @@ class RelationshipRepository(
         relationship: org.dhis2.community.relationships.Relationship,
         orgUnit: String,
         programUid: String,
-        newMemberNumber: String
+        attributeIncrement: Pair<String, String>?,
     ): Pair<String?, String?> {
         val teiType = relationship.relatedProgram.teiTypeUid
 
@@ -174,57 +182,21 @@ class RelationshipRepository(
                 .build()
         )
 
+        d2.enrollmentModule().enrollments()
+            .uid(enrollmentUid)
+            .setEnrollmentDate(Date())
+        d2.enrollmentModule().enrollments()
+            .uid(enrollmentUid)
+            .setIncidentDate(Date())
+
+        // Handle auto-increment attributes if any
+        if (attributeIncrement != null) {
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(attributeIncrement.first, teiUid)
+                .blockingSet(attributeIncrement.second)
+        }
+
         return teiUid to enrollmentUid
     }
-
-    //dealing with household head
-    fun getHouseholdMemberUids(householdUid: String): List<String> {
-        return d2.relationshipModule().relationships()
-            .byRelationshipType().eq("wcSMItGpTjL") //  household → member relationship
-            .withItems()
-            .blockingGet()
-            .filter {
-                it.from()?.trackedEntityInstance()?.trackedEntityInstance() == householdUid
-            }
-            .mapNotNull { it.to()?.trackedEntityInstance()?.trackedEntityInstance() }
-    }
-
-    fun getCurrentHeadUid(householdUid: String, isHeadAttrUid: String): String? {
-        return getHouseholdMemberUids(householdUid).firstOrNull { memberUid ->
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(isHeadAttrUid, memberUid)
-                .blockingGet()?.value()?.equals("true", ignoreCase = true) == true
-        }
-    }
-
-    fun assignOrReplaceHead(
-        newHeadTeiUid: String,
-        householdTeiUid: String,
-        isHeadAttrUid: String,
-        confirmReplace: (oldHeadTeiUid: String, onConfirmed: () -> Unit) -> Unit
-    ) {
-        val currentHeadUid = getCurrentHeadUid(householdTeiUid, isHeadAttrUid)
-
-        if (currentHeadUid != null && currentHeadUid != newHeadTeiUid) {
-            confirmReplace(currentHeadUid) {
-                // Clear old head
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(isHeadAttrUid, currentHeadUid)
-                    .blockingDelete()
-
-                // Set new head
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(isHeadAttrUid, newHeadTeiUid)
-                    .blockingSet("true")
-            }
-        } else {
-            // No head exists, assign directly
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(isHeadAttrUid, newHeadTeiUid)
-                .blockingSet("true")
-        }
-    }
-
-
 
 }

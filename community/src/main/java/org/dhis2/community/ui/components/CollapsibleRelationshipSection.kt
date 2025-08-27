@@ -18,7 +18,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -39,9 +38,9 @@ import androidx.compose.material3.Text // <<<< MAKE SURE THIS IS MATERIAL3
 fun CollapsibleRelationshipSection(
     relationshipTypeView: CmtRelationshipTypeViewModel,
     availableEntities: CmtRelationshipTypeViewModel?,
-    onRelationshipClick: (CmtRelationshipViewModel) -> Unit = {},
-    onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = {_,_ ->},
-    onCreateEntity: (String, String) -> Unit = {_ , _ -> },
+    onRelationshipClick: (CmtRelationshipViewModel) -> Unit = { },
+    onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
+    onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> }
 ) {
     Dhis2CmtTheme {
@@ -61,7 +60,7 @@ fun CollapsibleRelationshipSection(
 private fun CollapsibleRelationshipSectionContent(
     relationshipTypeView: CmtRelationshipTypeViewModel,
     availableEntities: CmtRelationshipTypeViewModel?,
-    onRelationshipClick: (CmtRelationshipViewModel) -> Unit = {},
+    onRelationshipClick: (CmtRelationshipViewModel) -> Unit = { },
     onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> }

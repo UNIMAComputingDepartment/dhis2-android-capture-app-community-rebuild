@@ -4,7 +4,9 @@ data class CmtRelationshipViewModel(
     val primaryAttribute: String,
     val secondaryAttribute: String?,
     val tertiaryAttribute: String?,
-    val uid: String
+    val uid: String,
+    val programUid: String,
+    val enrollmentUid: String
 )
 
 data class CmtRelationshipTypeViewModel(
