@@ -18,6 +18,7 @@ import org.dhis2.usescases.about.AboutFragment
 import org.dhis2.usescases.main.program.ProgramFragment
 import org.dhis2.usescases.qrReader.QrReaderFragment
 import org.dhis2.usescases.settings.SyncManagerFragment
+import org.dhis2.usescases.tasks.TasksFragment
 import org.dhis2.usescases.troubleshooting.TroubleshootingFragment
 
 class MainNavigator(
@@ -29,9 +30,11 @@ class MainNavigator(
         showFilterButton: Boolean,
         showBottomNavigation: Boolean,
     ) -> Unit,
+    private val onTabChanged: (menuItemId: Int) -> Unit
 ) {
     enum class MainScreen(@StringRes val title: Int, @IdRes val navViewId: Int) {
         PROGRAMS(R.string.done_task, R.id.menu_home),
+        TASKS(R.string.navigation_tasks, R.id.menu_tasks),
         VISUALIZATIONS(R.string.done_task, R.id.menu_home),
         QR(R.string.QR_SCANNER, R.id.qr_scan),
         SETTINGS(R.string.SYNC_MANAGER, R.id.sync_manager),
@@ -46,6 +49,8 @@ class MainNavigator(
     fun isHome(): Boolean = isPrograms() || isVisualizations()
 
     fun isPrograms(): Boolean = currentScreen.value == MainScreen.PROGRAMS
+
+    fun isTasks(): Boolean = currentScreen.value == MainScreen.TASKS
 
     fun isVisualizations(): Boolean = currentScreen.value == MainScreen.VISUALIZATIONS
 
@@ -91,6 +96,7 @@ class MainNavigator(
             MainScreen.SETTINGS -> openSettings()
             MainScreen.ABOUT -> openAbout()
             MainScreen.TROUBLESHOOTING -> openTroubleShooting(languageSelectorOpened)
+            MainScreen.TASKS -> openTasks()
         }
     }
 
@@ -127,6 +133,14 @@ class MainNavigator(
         )
     }
 
+    fun openTasks() {
+        beginTransaction(
+            TasksFragment(),
+            MainScreen.TASKS,
+            useFadeInTransition = false
+        )
+    }
+
     private fun beginTransaction(
         fragment: Fragment,
         screen: MainScreen,
@@ -137,7 +151,7 @@ class MainNavigator(
             onTransitionStart()
             currentScreen.value = screen
             currentFragment = fragment
-
+            onTabChanged(screen.navViewId)
             CoroutineScope(dispatcherProvider.main).launch {
                 withContext(dispatcherProvider.io) {
                     val transaction: FragmentTransaction = fragmentManager.beginTransaction()
@@ -161,8 +175,8 @@ class MainNavigator(
                 }
                 onScreenChanged(
                     screen.title,
-                    isPrograms(),
-                    isHome(),
+                    shouldShowFilter(screen),
+                    shouldShowBottomNavigation(screen)
                 )
             }
         }
@@ -181,6 +195,20 @@ class MainNavigator(
             Pair(android.R.anim.fade_in, android.R.anim.fade_out)
         } else {
             Pair(R.anim.fragment_enter_right, R.anim.fragment_exit_left)
+        }
+    }
+
+    private fun shouldShowFilter(screen: MainScreen): Boolean {
+        return when (screen) {
+            MainScreen.PROGRAMS, MainScreen.TASKS -> true
+            else -> false
+        }
+    }
+
+    private fun shouldShowBottomNavigation(screen: MainScreen): Boolean {
+        return when (screen) {
+            MainScreen.PROGRAMS, MainScreen.TASKS, MainScreen.VISUALIZATIONS -> true
+            else -> false
         }
     }
 }

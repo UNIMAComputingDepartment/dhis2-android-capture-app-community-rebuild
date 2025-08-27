@@ -155,11 +155,15 @@ class MainActivity :
                     showHideFilter()
                 }
             },
-        ) { titleRes, showFilterButton, showBottomNavigation ->
-            setTitle(getString(titleRes))
-            setFilterButtonVisibility(showFilterButton)
-            setBottomNavigationVisibility(showBottomNavigation)
-        }
+            { titleRes, showFilterButton, showBottomNavigation ->
+                setTitle(getString(titleRes))
+                setFilterButtonVisibility(showFilterButton)
+                setBottomNavigationVisibility(showBottomNavigation)
+            },
+            { menuItemId ->
+                binding.navView.setCheckedItem(menuItemId)
+            }
+        )
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
@@ -279,7 +283,8 @@ class MainActivity :
                     derivedStateOf {
                         when (currentScreen) {
                             MainNavigator.MainScreen.PROGRAMS -> 0
-                            MainNavigator.MainScreen.VISUALIZATIONS -> 1
+                            MainNavigator.MainScreen.TASKS -> 1
+                            MainNavigator.MainScreen.VISUALIZATIONS -> 2
                             else -> null
                         }
                     }
@@ -294,10 +299,13 @@ class MainActivity :
                                 presenter.trackHomeAnalytics()
                                 mainNavigator.openVisualizations()
                             }
-
-                            NavigationPage.PROGRAMS -> mainNavigator.openPrograms()
+                            NavigationPage.TASKS -> {
+                                mainNavigator.openTasks()
+                            }
+                            NavigationPage.PROGRAMS -> {
+                                mainNavigator.openPrograms()
+                            }
                             else -> {
-                                /*no-op*/
                             }
                         }
                     }
@@ -513,6 +521,10 @@ class MainActivity :
         mainNavigator.openHome()
     }
 
+    override fun goToTasks() {
+        mainNavigator.openTasks()
+    }
+
     override fun changeFragment(id: Int) {
         binding.navView.setCheckedItem(id)
         binding.mainDrawerLayout.closeDrawers()
@@ -531,19 +543,15 @@ class MainActivity :
     }
 
     override fun onDrawerStateChanged(newState: Int) {
-        // no op
     }
 
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-        // no op
     }
 
     override fun onDrawerClosed(drawerView: View) {
-        initCurrentScreen()
     }
 
     override fun onDrawerOpened(drawerView: View) {
-        // no op
     }
 
     private fun initCurrentScreen() {
