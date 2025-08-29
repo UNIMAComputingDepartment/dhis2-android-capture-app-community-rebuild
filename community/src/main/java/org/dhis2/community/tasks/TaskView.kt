@@ -1,5 +1,6 @@
-package org.dhis2.usescases.tasks
+package org.dhis2.community.tasks
 
 interface TaskView {
     fun showSyncDialog()
 }
+

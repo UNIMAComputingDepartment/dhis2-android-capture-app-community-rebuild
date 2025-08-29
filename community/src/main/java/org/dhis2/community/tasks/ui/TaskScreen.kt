@@ -1,4 +1,4 @@
-package org.dhis2.usescases.tasks.ui
+package org.dhis2.community.tasks.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -21,3 +21,4 @@ fun TaskScreen() {
         }
     }
 }
+
