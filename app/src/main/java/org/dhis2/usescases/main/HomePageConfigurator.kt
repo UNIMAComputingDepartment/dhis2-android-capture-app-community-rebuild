@@ -2,6 +2,7 @@ package org.dhis2.usescases.main
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.TaskAlt
 import org.dhis2.R
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.ui.icons.imagevectors.Form
@@ -18,6 +19,10 @@ class HomePageConfigurator(
         return true
     }
 
+    override fun displayTasks(): Boolean {
+        return true
+    }
+
     override fun displayAnalytics(): Boolean {
         return homeRepository.hasHomeAnalytics()
     }
@@ -31,12 +36,19 @@ class HomePageConfigurator(
                     label = resourceManager.getString(R.string.navigation_programs),
                 ),
             )
+            add(
+                NavigationBarItem(
+                    id = NavigationPage.TASKS,
+                    icon = Icons.Filled.TaskAlt,
+                    label = resourceManager.getString(R.string.navigation_tasks),
+                ),
+            )
             if (displayAnalytics()) {
                 add(
                     NavigationBarItem(
                         id = NavigationPage.ANALYTICS,
                         icon = Icons.Filled.BarChart,
-                        label = resourceManager.getString(R.string.navigation_charts),
+                        label = resourceManager.getString(R.string.navigation_analytics),
                     ),
                 )
             }
