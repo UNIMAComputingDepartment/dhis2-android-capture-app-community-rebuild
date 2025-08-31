@@ -1,4 +1,4 @@
-package org.dhis2.community.tasks.ui
+package org.dhis2.community.tasking.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
