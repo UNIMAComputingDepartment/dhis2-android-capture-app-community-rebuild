@@ -65,4 +65,6 @@ interface MainView : AbstractActivityContracts.View {
     fun obtainFileView(): File?
 
     fun cancelNotifications()
+
+    fun goToTasks()
 }

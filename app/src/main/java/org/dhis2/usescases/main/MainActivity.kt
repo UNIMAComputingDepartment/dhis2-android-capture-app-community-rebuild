@@ -155,11 +155,15 @@ class MainActivity :
                     showHideFilter()
                 }
             },
-        ) { titleRes, showFilterButton, showBottomNavigation ->
-            setTitle(getString(titleRes))
-            setFilterButtonVisibility(showFilterButton)
-            setBottomNavigationVisibility(showBottomNavigation)
-        }
+            { titleRes, showFilterButton, showBottomNavigation ->
+                setTitle(getString(titleRes))
+                setFilterButtonVisibility(showFilterButton)
+                setBottomNavigationVisibility(showBottomNavigation)
+            },
+            { menuItemId ->
+                binding.navView.setCheckedItem(menuItemId)
+            }
+        )
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
@@ -279,7 +283,8 @@ class MainActivity :
                     derivedStateOf {
                         when (currentScreen) {
                             MainNavigator.MainScreen.PROGRAMS -> 0
-                            MainNavigator.MainScreen.VISUALIZATIONS -> 1
+                            MainNavigator.MainScreen.TASKS -> 1
+                            MainNavigator.MainScreen.VISUALIZATIONS -> 2
                             else -> null
                         }
                     }
@@ -294,10 +299,13 @@ class MainActivity :
                                 presenter.trackHomeAnalytics()
                                 mainNavigator.openVisualizations()
                             }
-
-                            NavigationPage.PROGRAMS -> mainNavigator.openPrograms()
+                            NavigationPage.TASKS -> {
+                                mainNavigator.openTasks()
+                            }
+                            NavigationPage.PROGRAMS -> {
+                                mainNavigator.openPrograms()
+                            }
                             else -> {
-                                /*no-op*/
                             }
                         }
                     }
@@ -356,7 +364,7 @@ class MainActivity :
 
     override fun showHideFilter() {
         val transition = ChangeBounds()
-        transition.duration = 200
+        transition.duration = 100
         TransitionManager.beginDelayedTransition(binding.backdropLayout, transition)
         backDropActive = !backDropActive
         val initSet = ConstraintSet()
@@ -367,9 +375,8 @@ class MainActivity :
                 ConstraintSet.TOP,
                 R.id.filterRecycler,
                 ConstraintSet.BOTTOM,
-                50,
+                0,
             )
-            binding.navigationBar.hide()
         } else {
             initSet.connect(
                 R.id.fragment_container,
@@ -378,9 +385,47 @@ class MainActivity :
                 ConstraintSet.BOTTOM,
                 0,
             )
-            binding.navigationBar.show()
         }
         initSet.applyTo(binding.backdropLayout)
+        updateNavigationBarVisibility()
+    }
+
+    private fun updateNavigationBarVisibility() {
+        val currentScreen = mainNavigator.selectedScreen.value
+        val navBar = binding.navigationBar
+        if (backDropActive) {
+            if (navBar.visibility == View.VISIBLE) {
+                navBar.animate()
+                    .translationY(navBar.height.toFloat())
+                    .setDuration(200)
+                    .withEndAction { navBar.visibility = View.GONE }
+                    .start()
+            } else {
+                navBar.visibility = View.GONE
+                navBar.translationY = navBar.height.toFloat()
+            }
+        } else if (
+            currentScreen == MainNavigator.MainScreen.PROGRAMS ||
+            currentScreen == MainNavigator.MainScreen.TASKS ||
+            currentScreen == MainNavigator.MainScreen.VISUALIZATIONS
+        ) {
+            if (navBar.visibility != View.VISIBLE) {
+                navBar.visibility = View.VISIBLE
+                navBar.translationY = navBar.height.toFloat()
+                navBar.animate()
+                    .translationY(0f)
+                    .setDuration(200)
+                    .start()
+            } else {
+                navBar.animate()
+                    .translationY(0f)
+                    .setDuration(200)
+                    .start()
+            }
+        } else {
+            navBar.visibility = View.GONE
+            navBar.translationY = navBar.height.toFloat()
+        }
     }
 
     override fun showGranularSync() {
@@ -513,9 +558,14 @@ class MainActivity :
         mainNavigator.openHome()
     }
 
+    override fun goToTasks() {
+        mainNavigator.openTasks()
+    }
+
     override fun changeFragment(id: Int) {
         binding.navView.setCheckedItem(id)
         binding.mainDrawerLayout.closeDrawers()
+        initCurrentScreen()
     }
 
     fun setTitle(title: String) {
@@ -523,27 +573,20 @@ class MainActivity :
     }
 
     private fun setBottomNavigationVisibility(showBottomNavigation: Boolean) {
-        if (showBottomNavigation) {
-            binding.navigationBar.show()
-        } else {
-            binding.navigationBar.hide()
-        }
+        // Instead of directly showing/hiding, update based on all state
+        updateNavigationBarVisibility()
     }
 
     override fun onDrawerStateChanged(newState: Int) {
-        // no op
     }
 
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-        // no op
     }
 
     override fun onDrawerClosed(drawerView: View) {
-        initCurrentScreen()
     }
 
     override fun onDrawerOpened(drawerView: View) {
-        // no op
     }
 
     private fun initCurrentScreen() {
