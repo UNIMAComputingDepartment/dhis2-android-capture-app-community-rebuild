@@ -8,7 +8,7 @@ import org.hisp.dhis.android.core.event.EventStatus
 class CompletionEvaluator(
     private val d2: D2,
     private val repository: TaskingRepository
-) : TaskingEvaluator(repository) {
+) : TaskingEvaluator(d2,repository) {
 
     fun completeTaskIfFollowupDone(
         taskTeiUid: String,

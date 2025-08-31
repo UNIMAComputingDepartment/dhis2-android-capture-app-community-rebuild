@@ -5,10 +5,14 @@ data class TaskingConfig(
     val taskProgramConfig: List<TaskProgramConfig>
 ) {
     data class TaskProgramConfig(
+        val name: String,
+        val description: String,
         val programUid: String,
         val programName: String,
-        val statusUid: String,
-        val tieTypeUid: String
+        val teiUid: String,
+        val dueDate: String,
+        val priority: String,
+        val status: String = "OPEN"
     )
 
     data class TaskConfig(
@@ -20,7 +24,9 @@ data class TaskingConfig(
         val priority: String,
         val completion: Completion,
         val singleIncomplete: Boolean,
-        val teiView: TeiView
+        val teiView: TeiView,
+        val programUid: String,
+        val anchorDate: String
     ) {
         data class Trigger(
             val program: String,

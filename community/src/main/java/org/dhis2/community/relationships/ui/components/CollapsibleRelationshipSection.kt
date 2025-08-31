@@ -1,4 +1,4 @@
-package org.dhis2.community.ui.components
+package org.dhis2.community.relationships.ui.components
 
 
 import android.content.Context
@@ -54,7 +54,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.community.R
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
-import org.dhis2.community.ui.Dhis2CmtTheme
+import org.dhis2.community.relationships.ui.Dhis2CmtTheme
 
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,11 +1,11 @@
-package org.dhis2.community.ui.previews
+package org.dhis2.community.relationships.ui.previews
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import org.dhis2.community.relationships.CmtRelationshipViewModel
-import org.dhis2.community.ui.components.CollapsibleListButton
+import org.dhis2.community.relationships.ui.components.CollapsibleListButton
 
 
 @Preview(showBackground = true)

@@ -3,10 +3,13 @@ package org.dhis2.community.tasking.repositories
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
+import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
+import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -16,7 +19,7 @@ class TaskingRepository(
 
     private var cachedConfig: TaskingConfig? = null
 
-    private val statusAttributeUid: String by lazy {
+    val statusAttributeUid: String by lazy {
         getTaskingConfig().taskConfigs
             .firstOrNull()?.completion?.condition?.args?.filter
             ?.firstOrNull { it.lhs.ref == "teiAttribute" && it.lhs.fn == "status" }?.lhs?.uid
@@ -56,79 +59,12 @@ class TaskingRepository(
         return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
 
-    fun evaluateCondition(
-        condition: TaskingConfig.TaskConfig.Condition,
-        teiUid: String
-    ): Boolean {
-        val lhsValue = resolvedReference(condition.lhs, teiUid)
-        val rhsValue = condition.rhs.value
-
-        return when (condition.op) {
-            "EQUALS" -> lhsValue == rhsValue
-            "NOT_EQUALS" -> lhsValue != rhsValue
-            else -> false
-        }
-    }
-
-  private fun resolvedReference(
-        ref: TaskingConfig.TaskConfig.Reference,
-        teiUid: String,
-        programUid: String? = null
-    ): Any? {
-        return when (ref.ref) {
-            "teiAttribute" -> {
-                ref.uid?.let { uid ->
-                    d2.trackedEntityModule().trackedEntityAttributeValues()
-                        .byTrackedEntityInstance().eq(teiUid)
-                        .byTrackedEntityAttribute().eq(uid)
-                        .one().blockingGet()?.value()
-                }
-            }
-
-            "eventData" -> {
-                if (programUid == null || ref.uid == null) return null
-
-                val enrollment = getLatestEnrollment(teiUid, programUid) ?: return null
-                val events = d2.eventModule().events()
-                    .byEnrollmentUid().eq(enrollment.uid())
-                    .byProgramStageUid().eq(ref.uid)
-                    .withTrackedEntityDataValues()
-                    .blockingGet()
-
-                events.firstOrNull()?.trackedEntityDataValues()
-                    ?.firstOrNull { it.dataElement() == ref.uid }
-                    ?.value()
-            }
-
-            "static" -> ref.value?.toString()
-            else -> null
-        }
-    }
-
-
     fun getLatestEnrollment(teiUid: String, programUid: String): Enrollment? {
         return d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
             .blockingGet()
             .maxByOrNull { it.enrollmentDate()?.time ?: 0 }
-    }
-
-    fun getTieAttributes(
-        tieUid: String,
-        tieView: TaskingConfig.TaskConfig.TeiView
-    ): Triple<String, String, String> {
-        fun getAttr(uid: String) =
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .byTrackedEntityInstance().eq(tieUid)
-                .byTrackedEntityAttribute().eq(uid)
-                .one().blockingGet()?.value() ?: ""
-
-        return Triple(
-            getAttr(tieView.teiPrimaryAttribute),
-            getAttr(tieView.teiSecondaryAttribute),
-            getAttr(tieView.teiTertiaryAttribute)
-        )
     }
 
     fun getProgramName(programUid: String): String {
@@ -151,39 +87,51 @@ class TaskingRepository(
         return query.blockingGet()
     }
 
-   fun getAllTasks(
+
+    fun getAllTasks(
         tieTypeUid: String,
         orgUnitUid: String,
-        programUid: String
-    ): List<TrackedEntityInstance> {
-        return getTieByType(tieTypeUid, orgUnitUid, programUid)
-    }
+        programUid: String,
+    ): List<Task> {
+        val teis = getTieByType(tieTypeUid, orgUnitUid, programUid)
 
- fun filterTiesByAttributes(
-        ties: List<TrackedEntityInstance>,
-        attributeUid: String,
-        attributeValue: String
-    ): List<TrackedEntityInstance> {
-        return ties.filter { tie ->
-            val attrValue = d2.trackedEntityModule().trackedEntityAttributeValues()
-                .byTrackedEntityInstance().eq(tie.uid())
-                .byTrackedEntityAttribute().eq(attributeUid)
-                .blockingGet()
-                .firstOrNull()
-                ?.value()
-            attrValue == attributeValue
+        // Find the config for this program
+        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
+        val attr = getTaskingConfig().taskConfigs.firstOrNull()
+            //taskingConfig.taskConfigs
+            //.firstOrNull { it.programUid == programUid }
+
+        return teis.map { tei ->
+            Task(
+                name = tei.getAttributeValue(programConfig?.name) ?: "Unnamed Task",
+                description = tei.getAttributeValue(programConfig?.description) ?: "",
+                programUid = programUid,
+                programName = programConfig?.programName ?: "",
+                teiUid = tei.uid(),
+                teiPrimary = tei.getAttributeValue(attr?.teiView?.teiPrimaryAttribute) ?: "",
+                teiSecondary = tei.getAttributeValue(attr?.teiView?.teiSecondaryAttribute) ?: "",
+                teiTertiary = tei.getAttributeValue(attr?.teiView?.teiTertiaryAttribute) ?: "",
+                dueDate = tei.getAttributeValue(programConfig?.dueDate) ?: "",
+                priority = tei.getAttributeValue(programConfig?.priority) ?: "Normal",
+                status = tei.getAttributeValue(programConfig?.status) ?: "OPEN"
+            )
         }
     }
 
-   fun getTaskStatus(tieUid: String): String {
-        if (statusAttributeUid.isEmpty()) return ""
-        return d2.trackedEntityModule().trackedEntityAttributeValues()
-            .byTrackedEntityInstance().eq(tieUid)
-            .byTrackedEntityAttribute().eq(statusAttributeUid)
-            .one().blockingGet()?.value() ?: ""
+    // Same helper as before
+    fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
+        if (attributeUid.isNullOrEmpty()) return null
+        return attribute(attributeUid)
+            ?.value()
+
+        /**
+         * trackedEntityAttributeValues()
+            ?.firstOrNull { it.trackedEntityAttribute() == attributeUid }
+            ?.value()
+        **/
     }
 
-  fun updateTaskStatus(taskTieUid: String, newStatus: String) {
+    fun updateTaskStatus(taskTieUid: String, newStatus: String) {
         if (statusAttributeUid.isEmpty()) return
         d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(statusAttributeUid, taskTieUid)

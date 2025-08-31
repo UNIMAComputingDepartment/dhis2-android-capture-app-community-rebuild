@@ -5,6 +5,7 @@ import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import java.util.Date
 
@@ -17,21 +18,23 @@ class CreationEvaluator(
     private val primaryAttributeUid: String,
     private val secondaryAttributeUid: String,
     private val tertiaryAttributeUid: String
-) : TaskingEvaluator(repository) {
+) : TaskingEvaluator(
+    d2,
+    repository) {
 
     fun createTasks(result: EvaluationResult): List<Task> {
         if (!result.isTriggered || result.tieAttrs == null || result.dueDate == null) return emptyList()
 
         val (primary, secondary, tertiary) = result.tieAttrs
 
-        val existingTeis = repository.filterTiesByAttributes(
+        val existingTeis = filterTiesByAttributes(
             repository.getTieByType(taskTIETypeUid, orgUnitUid, taskProgramUid),
             primaryAttributeUid,
             primary
         )
 
         val openTies = existingTeis.filter { tie ->
-            val status = repository.getTaskStatus(tie.uid())
+            val status = getTaskStatus(tie.uid())
             status != "COMPLETED" && status != "CANCELLED"
         }
 
@@ -98,6 +101,30 @@ class CreationEvaluator(
                 )
             )
         }
+    }
+
+    fun filterTiesByAttributes(
+        ties: List<TrackedEntityInstance>,
+        attributeUid: String,
+        attributeValue: String
+    ): List<TrackedEntityInstance> {
+        return ties.filter { tie ->
+            val attrValue = d2.trackedEntityModule().trackedEntityAttributeValues()
+                .byTrackedEntityInstance().eq(tie.uid())
+                .byTrackedEntityAttribute().eq(attributeUid)
+                .blockingGet()
+                .firstOrNull()
+                ?.value()
+            attrValue == attributeValue
+        }
+    }
+
+    fun getTaskStatus(tieUid: String): String {
+        if (repository.statusAttributeUid.isEmpty()) return ""
+        return d2.trackedEntityModule().trackedEntityAttributeValues()
+            .byTrackedEntityInstance().eq(tieUid)
+            .byTrackedEntityAttribute().eq(repository.statusAttributeUid)
+            .one().blockingGet()?.value() ?: ""
     }
 
     private fun updateTeiAttributes(

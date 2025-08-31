@@ -1,4 +1,4 @@
-package org.dhis2.community.ui.components
+package org.dhis2.community.relationships.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
