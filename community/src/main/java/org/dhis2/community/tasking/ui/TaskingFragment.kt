@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import org.dhis2.community.tasking.ui.TaskingList
+import org.dhis2.community.tasking.engine.TaskingPresenter
 
 class TaskingFragment : Fragment(), TaskingView {
 
@@ -26,7 +26,7 @@ class TaskingFragment : Fragment(), TaskingView {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskingList(tasks = presenter.tasks)
+                TaskingUi(tasks = presenter.tasks)
             }
         }
     }
