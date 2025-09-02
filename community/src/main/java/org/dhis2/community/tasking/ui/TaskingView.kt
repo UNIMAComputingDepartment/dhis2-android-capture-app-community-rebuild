@@ -1,6 +1,5 @@
 package org.dhis2.community.tasking.ui
 
-interface TaskView {
+interface TaskingView {
     fun showSyncDialog()
 }
-

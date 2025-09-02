@@ -7,14 +7,15 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
+import org.dhis2.community.tasking.engine.TaskingPresenter
 
-class TasksFragment : Fragment(), TaskView {
+class TaskingFragment : Fragment(), TaskingView {
 
-    private lateinit var presenter: TasksPresenter
+    private lateinit var presenter: TaskingPresenter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        presenter = TasksPresenter(this)
+        presenter = TaskingPresenter(this)
     }
 
     override fun onCreateView(
@@ -25,7 +26,7 @@ class TasksFragment : Fragment(), TaskView {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskScreen()
+                TaskingUi(tasks = presenter.tasks)
             }
         }
     }
