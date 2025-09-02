@@ -14,7 +14,7 @@ open class TaskingEvaluator(
     private val d2: D2,
     private val repository: TaskingRepository
 ) {
-    @TargetApi(Build.VERSION_CODES.N)
+    //@RequiresApi(Build.VERSION_CODES.N)
     @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForTie(
         tieUid: String,
@@ -42,17 +42,6 @@ open class TaskingEvaluator(
                             isTriggered = true,
                             dueDate = dueDate,
                             tieAttrs = tieAttrs
-                        )
-                    )
-
-                    // remove this else part
-                } else {
-                    result.add(
-                        EvaluationResult(
-                            taskingConfig = taskConfig,
-                            teiUid = tieUid,
-                            programUid = programUid,
-                            isTriggered = false
                         )
                     )
                 }
@@ -110,7 +99,7 @@ open class TaskingEvaluator(
             }
 
             "eventData" -> {
-                if (programUid == null || ref.uid == null) return null
+                if (ref.uid == null) return null
 
                 val enrollment = repository.getLatestEnrollment(teiUid, programUid) ?: return null
                 val events = d2.eventModule().events()

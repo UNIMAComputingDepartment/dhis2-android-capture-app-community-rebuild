@@ -13,6 +13,7 @@ import org.dhis2.commons.reporting.CrashReportModule;
 import org.dhis2.commons.schedulers.SchedulerModule;
 import org.dhis2.commons.service.SessionManagerModule;
 import org.dhis2.commons.service.SessionManagerService;
+import org.dhis2.community.tasking.di.TaskingModule;
 import org.dhis2.data.dispatcher.DispatcherModule;
 import org.dhis2.data.forms.dataentry.validation.ValidatorModule;
 import org.dhis2.data.server.ServerComponent;
@@ -53,7 +54,8 @@ import dispatch.core.DispatcherProvider;
         DispatcherModule.class,
         FeatureConfigModule.class,
         NetworkUtilsModule.class,
-        CustomDispatcherModule.class
+        CustomDispatcherModule.class,
+        TaskingModule.class
 })
 public  interface AppComponent {
 
@@ -80,6 +82,8 @@ public  interface AppComponent {
         Builder networkUtilsModule(NetworkUtilsModule networkUtilsModule);
 
         Builder customDispatcher(CustomDispatcherModule dispatcherProvider);
+
+        Builder taskingModule(TaskingModule taskingModule);
 
         AppComponent build();
     }
