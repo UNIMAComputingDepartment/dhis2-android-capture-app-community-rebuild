@@ -9,7 +9,7 @@ data class TaskingConfig(
         val description: String,
         val programUid: String,
         val programName: String,
-        val teiUid: String,
+        val teiTypeUid: String,
         val dueDate: String,
         val priority: String,
         val status: String = "OPEN"

@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.engine
 
 //import kotlinx.datetime.LocalDate
+import android.annotation.TargetApi
 import android.os.Build
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.EvaluationResult
@@ -13,6 +14,7 @@ open class TaskingEvaluator(
     private val d2: D2,
     private val repository: TaskingRepository
 ) {
+    @TargetApi(Build.VERSION_CODES.N)
     @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForTie(
         tieUid: String,
@@ -25,7 +27,7 @@ open class TaskingEvaluator(
         config.taskConfigs.forEach { taskConfig ->
             if (taskConfig.trigger.program == programUid) {
                 val shouldTrigger =
-                    evaluateCondition(taskConfig.trigger.condition, tieUid)
+                    evaluateCondition(taskConfig.trigger.condition, tieUid, programUid)
 
                 if (shouldTrigger) {
                     val dueDate = repository.calculateDueDate(taskConfig, tieUid, programUid)
@@ -42,6 +44,8 @@ open class TaskingEvaluator(
                             tieAttrs = tieAttrs
                         )
                     )
+
+                    // remove this else part
                 } else {
                     result.add(
                         EvaluationResult(
@@ -77,9 +81,10 @@ open class TaskingEvaluator(
 
     private fun evaluateCondition(
         condition: TaskingConfig.TaskConfig.Condition,
-        teiUid: String
+        teiUid: String,
+        programUid : String
     ): Boolean {
-        val lhsValue = resolvedReference(condition.lhs, teiUid)
+        val lhsValue = resolvedReference(condition.lhs, teiUid, programUid)
         val rhsValue = condition.rhs.value
 
         return when (condition.op) {
@@ -92,8 +97,8 @@ open class TaskingEvaluator(
     private fun resolvedReference(
         ref: TaskingConfig.TaskConfig.Reference,
         teiUid: String,
-        programUid: String? = null
-    ): Any? {
+        programUid: String
+    ): String? {
         return when (ref.ref) {
             "teiAttribute" -> {
                 ref.uid?.let { uid ->
@@ -110,13 +115,18 @@ open class TaskingEvaluator(
                 val enrollment = repository.getLatestEnrollment(teiUid, programUid) ?: return null
                 val events = d2.eventModule().events()
                     .byEnrollmentUid().eq(enrollment.uid())
-                    .byProgramStageUid().eq(ref.uid)
+                   // .byProgramStageUid().eq(ref.ref)
                     .withTrackedEntityDataValues()
                     .blockingGet()
 
-                events.firstOrNull()?.trackedEntityDataValues()
-                    ?.firstOrNull { it.dataElement() == ref.uid }
+                return events.asSequence()
+                    .flatMap { it.trackedEntityDataValues()?: emptyList() }
+                    .firstOrNull() {it.dataElement() == ref.uid}
                     ?.value()
+
+                /*events.firstOrNull()?.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == ref.uid }
+                    ?.value()*/
             }
 
             "static" -> ref.value?.toString()

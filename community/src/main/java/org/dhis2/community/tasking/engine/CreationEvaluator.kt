@@ -30,7 +30,7 @@ class CreationEvaluator(
         val existingTeis = filterTiesByAttributes(
             repository.getTieByType(taskTIETypeUid, orgUnitUid, taskProgramUid),
             primaryAttributeUid,
-            primary
+            primary // tieuid not primary
         )
 
         val openTies = existingTeis.filter { tie ->

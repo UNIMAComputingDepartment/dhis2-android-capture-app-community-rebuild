@@ -18,7 +18,7 @@
         "condition": {
           "lhs": {
             "ref": "eventData",
-            "uid": "DANGER_SIGN_DE_UID"
+            "uid": "REFERRAL_DE_UID"
           },
           "op": "EQUALS",
           "rhs": {
