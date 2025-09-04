@@ -16,6 +16,69 @@ open class TaskingEvaluator (
     @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForTie(
         sourceTieUid: String?,
+        programUid: String,          // <- target program UID (the one whose event/enrollment you’re in)
+        sourceTieOrgUnit: String
+    ): List<EvaluationResult> {
+
+        val config = repository.getTaskingConfig()
+        require(config.taskConfigs.isNotEmpty()) { "Tasking Config is Empty" }
+
+        // 1) Find only the configs that are meant for this target program
+        val configsForProgram = config.taskConfigs
+            .filter { it.trigger.programUid == programUid }
+
+        if (configsForProgram.isEmpty()) {
+            Timber.d("TASKING: No taskConfigs configured for target programUid=$programUid. Skipping.")
+            return emptyList()
+        }
+
+        // (optional but handy for logs/diagnostics)
+        val availableTriggerProgramUids = config.taskConfigs.map { it.trigger.programUid }.toSet()
+        Timber.d("TASKING: available trigger program UIDs: $availableTriggerProgramUids")
+        Timber.d("TASKING: using ${configsForProgram.size} config(s) for programUid=$programUid")
+
+        val results = mutableListOf<EvaluationResult>()
+
+        // 2) Only consider TEIs from this target program context
+        val ties = repository.getAllTrackedEntityInstances(programUid, sourceTieUid, sourceTieOrgUnit)
+        Timber.d("TASKING: Found ${ties.size} TEIs in target program=$programUid for sourceTie=$sourceTieUid")
+
+        ties.forEach { tei ->
+            configsForProgram.forEach { taskConfig ->
+                val shouldTrigger = sourceTieUid != null &&
+                        evaluateCondition(taskConfig.trigger, sourceTieUid, programUid)
+
+                if (shouldTrigger) {
+                    val dueDate = repository.calculateDueDate(taskConfig, tei.uid(), programUid) ?: return@forEach
+                    val tieAttrs = getTieAttributes(tei.uid(), taskConfig.teiView)
+
+                    val taskTieOrgUnit = d2.enrollmentModule().enrollments()
+                        .byTrackedEntityInstance().eq(tei.uid())
+                        .blockingGet()
+                        .firstOrNull()
+                        ?.organisationUnit()
+
+                    results += EvaluationResult(
+                        taskingConfig = taskConfig,
+                        teiUid = tei.uid(),
+                        programUid = programUid,
+                        isTriggered = true,
+                        dueDate = dueDate,
+                        tieAttrs = tieAttrs,
+                        orgUnit = taskTieOrgUnit
+                    )
+                }
+            }
+        }
+
+        Timber.tag("CREATED_TASK_EVALUATION").d(results.toString())
+        return results
+    }
+
+/*
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun evaluateForTie(
+        sourceTieUid: String?,
         programUid: String,
         sourceTieOrgUnit: String
     ): List<EvaluationResult> {
@@ -71,7 +134,7 @@ open class TaskingEvaluator (
         Timber.tag("CREATED_TASK_EVALUATION").d(result.toString())
         return result
     }
-
+*/
 
     fun getTieAttributes(
         tieUid: String,
