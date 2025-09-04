@@ -1,5 +1,7 @@
 package org.dhis2.usescases.eventsWithoutRegistration.eventCapture
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.StickyNote2
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
@@ -23,6 +25,8 @@ import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
+import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
 import org.dhis2.ui.icons.DataEntryFilled
@@ -46,6 +50,8 @@ class EventCapturePresenterImpl(
     private val preferences: PreferenceProvider,
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
+    private val creation: CreationEvaluator,
+    private val taskingRepository: TaskingRepository,
 ) : ViewModel(), EventCaptureContract.Presenter {
 
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -222,9 +228,19 @@ class EventCapturePresenterImpl(
 
     override fun onBackClick() {
         view.goBack()
+
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun saveAndExit(eventStatus: EventStatus?) {
+        creation.createTasks(
+            taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+            taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+            eventCaptureRepository.getProgramUid().blockingFirst(),
+            sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+            sourceTieUid = eventCaptureRepository.getTeiUid()
+        )
+
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {
             view.saveAndFinish()
         } else {

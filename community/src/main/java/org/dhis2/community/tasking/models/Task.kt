@@ -6,7 +6,8 @@ data class EvaluationResult(
     val programUid: String,
     val isTriggered: Boolean,
     val dueDate: String? = null,
-    val tieAttrs: Triple<String, String, String>? = null
+    val tieAttrs: Triple<String, String, String>? = null,
+    val orgUnit: String?
 )
 
 data class Task(

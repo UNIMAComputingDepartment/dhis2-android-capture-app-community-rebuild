@@ -3,25 +3,38 @@ package org.dhis2.community.tasking.repositories
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
+import io.reactivex.subjects.PublishSubject
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.Enrollment
+import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
-import java.time.LocalDate
+import timber.log.Timber
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javax.inject.Singleton
 
-class TaskingRepository(
+@Singleton
+class TaskingRepository (
     private val d2: D2,
 ) {
+
+    private val dataElementChangedSubject = PublishSubject.create<String>()
+    fun observeDataElementChanges(): io.reactivex.Observable<String> = dataElementChangedSubject.hide()
+
+    private fun notifyDataElementChanged(dataElement: String){
+        dataElementChangedSubject.onNext(dataElement)
+    }
 
     private var cachedConfig: TaskingConfig? = null
 
     val statusAttributeUid: String by lazy {
         getTaskingConfig().taskConfigs
-            .firstOrNull()?.completion?.condition?.args?.filter
+            .firstOrNull()?.completion?.condition?.args
+            ?.flatMap { it.filter }
             ?.firstOrNull { it.lhs.ref == "teiAttribute" && it.lhs.fn == "status" }?.lhs?.uid
             ?: ""
     }
@@ -56,15 +69,21 @@ class TaskingRepository(
         val localDate = anchorDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
         val dueDate = localDate.plusDays(taskConfig.period.dueIn.days.toLong())
 
+        Timber.d("DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
+
         return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
 
     fun getLatestEnrollment(teiUid: String, programUid: String): Enrollment? {
-        return d2.enrollmentModule().enrollments()
+         val v = d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
+            .byStatus().eq(EnrollmentStatus.ACTIVE)
+            .one()
             .blockingGet()
-            .maxByOrNull { it.enrollmentDate()?.time ?: 0 }
+            //.maxByOrNull { it.enrollmentDate()?.time ?: 0 }
+
+        return v
     }
 
     fun getProgramName(programUid: String): String {
@@ -136,5 +155,27 @@ class TaskingRepository(
         d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(statusAttributeUid, taskTieUid)
             .blockingSet(newStatus)
+    }
+
+    val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(
+        OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+        .blockingGet().map { it.uid()
+        }
+
+
+    fun getAllTrackedEntityInstances(programUid: String, sourceTieUid: String?, sourceTieOrgUnit: String) : List<TrackedEntityInstance>{
+        val enrollments = d2.enrollmentModule().enrollments()
+                .byOrganisationUnit().eq(sourceTieOrgUnit)
+                .byProgram().eq(programUid)
+                .byTrackedEntityInstance().eq(sourceTieUid)
+                .blockingGet()
+                //.map {it.trackedEntityInstance()}
+
+
+       return enrollments.mapNotNull { uid ->
+            d2.trackedEntityModule().trackedEntityInstances()
+                .uid(uid.trackedEntityInstance())
+                .blockingGet()
+        }
     }
 }

@@ -29,7 +29,8 @@ data class TaskingConfig(
         val anchorDate: String
     ) {
         data class Trigger(
-            val program: String,
+            val programName: String,
+            val programUid: String,
             val condition: Condition
         )
 
@@ -62,7 +63,7 @@ data class TaskingConfig(
 
         data class CompletionCondition(
             val op: String,
-            val args: CompletionArgs
+            val args: List<CompletionArgs>
         )
 
         data class CompletionArgs(

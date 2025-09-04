@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.ui.TaskView
 import org.dhis2.community.tasking.ui.TasksPresenter
@@ -13,11 +14,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object TaskingModule {
 
-    @Provides
+   /* @Provides
     @Singleton
     fun provideTaskingRepository(
         taskingRepository: TaskingRepository
-    ): TaskingRepository = taskingRepository
+    ): TaskingRepository = taskingRepository*/
 
     @Provides
     @Singleton
@@ -28,5 +29,12 @@ object TaskingModule {
     @Provides
     @Singleton
     fun providePresenter(tasksPresenter: TasksPresenter): TasksPresenter = tasksPresenter
+
+
+    /*@Provides
+    @Singleton
+    fun provideCreationEvaluator(
+        creationEvaluator: CreationEvaluator
+    ): CreationEvaluator = creationEvaluator*/
 
 }
