@@ -3,12 +3,16 @@ package org.dhis2.community.tasking.engine
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.maintenance.D2Error
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttribute
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 import java.util.Date
@@ -96,6 +100,86 @@ class CreationEvaluator (
                 return@forEach
             }
 
+            val (primary, secondary, tertiary) = tieAttrs
+
+            val statusAttrUid = d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task Status")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val nameAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task Name")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val primaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task PrimaryAttribute")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val secondaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task SecondaryAttribute")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val tertiaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task TertiaryAttribute")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val priorityAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task Priority")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+            val dueDateAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+                .byDisplayName().eq("Task Due Date")
+                .one()
+                .blockingGet()
+                ?.uid()
+
+
+            if (statusAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(statusAttrUid, newTeiUid)
+                    .blockingSet("OPEN")
+
+            if (nameAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(nameAttrUid, newTeiUid)
+                    .blockingSet(result.taskingConfig.name)
+
+            if (priorityAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(priorityAttrUid, newTeiUid)
+                    .blockingSet("HIGH")
+
+            if (dueDateAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(dueDateAttrUid, newTeiUid)
+                    .blockingSet(dueDate)
+
+            if (primaryAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(primaryAttrUid, newTeiUid)
+                    .blockingSet(primary)
+
+            if (secondaryAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(secondaryAttrUid, newTeiUid)
+                    .blockingSet(secondary)
+
+            if (tertiaryAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(tertiaryAttrUid, newTeiUid)
+                    .blockingSet(tertiary)
+
             // 4) Enroll it (also safe-guarded)
             try {
                 val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
@@ -117,7 +201,7 @@ class CreationEvaluator (
                 return@forEach
             }
 
-            val (primary, secondary, tertiary) = tieAttrs
+
 
             created += Task(
                 name = result.taskingConfig.name,

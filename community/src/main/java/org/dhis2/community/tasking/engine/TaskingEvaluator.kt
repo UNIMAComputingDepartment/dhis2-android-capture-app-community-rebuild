@@ -124,7 +124,7 @@ open class TaskingEvaluator (
                                 isTriggered = true,
                                 dueDate = dueDate,
                                 tieAttrs = tieAttrs,
-                                orgUnit = taskTieOrgUnit
+                                orgUnit = sourceTieOrgUnit
                             )
                         )
                     }
