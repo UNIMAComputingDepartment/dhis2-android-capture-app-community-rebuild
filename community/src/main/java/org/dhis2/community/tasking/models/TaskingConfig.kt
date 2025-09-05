@@ -5,14 +5,18 @@ data class TaskingConfig(
     val taskProgramConfig: List<TaskProgramConfig>
 ) {
     data class TaskProgramConfig(
-        val name: String,
+        val taskNameUid: String,
         val description: String,
         val programUid: String,
         val programName: String,
         val teiTypeUid: String,
-        val dueDate: String,
-        val priority: String,
-        val status: String = "OPEN"
+        val dueDateUid: String,
+        val priorityUid: String,
+        val statusUid: String,
+        val taskPrimaryAttrUid: String,
+        val taskSecondaryAttrUid: String,
+        val taskTertiaryAttrUid: String
+
     )
 
     data class TaskConfig(

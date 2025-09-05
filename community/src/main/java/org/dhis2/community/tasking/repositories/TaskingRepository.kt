@@ -31,14 +31,17 @@ class TaskingRepository (
 
     private var cachedConfig: TaskingConfig? = null
 
-    val statusAttributeUid: String? by lazy {
+    val taskStatusAttributeUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid ?: ""
+    /*: String? by lazy {
         getTaskingConfig().taskConfigs
             .firstOrNull()?.completion?.condition?.args
             ?.flatMap { it.filter }
             ?.firstOrNull { it.lhs.ref == "teiAttribute" && it.lhs.fn == "status" }?.lhs?.uid
             ?: ""
-    }
+    }*/
 
+
+    fun getCachedConfig() = cachedConfig
     fun getTaskingConfig(): TaskingConfig {
         cachedConfig?.let { return it }
 
@@ -122,7 +125,7 @@ class TaskingRepository (
 
         return teis.map { tei ->
             Task(
-                name = tei.getAttributeValue(programConfig?.name) ?: "Unnamed Task",
+                name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
                 programUid = programUid,
                 programName = programConfig?.programName ?: "",
@@ -130,9 +133,9 @@ class TaskingRepository (
                 teiPrimary = tei.getAttributeValue(attr?.teiView?.teiPrimaryAttribute) ?: "",
                 teiSecondary = tei.getAttributeValue(attr?.teiView?.teiSecondaryAttribute) ?: "",
                 teiTertiary = tei.getAttributeValue(attr?.teiView?.teiTertiaryAttribute) ?: "",
-                dueDate = tei.getAttributeValue(programConfig?.dueDate) ?: "",
-                priority = tei.getAttributeValue(programConfig?.priority) ?: "Normal",
-                status = tei.getAttributeValue(programConfig?.status) ?: "OPEN"
+                dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
+                priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
             )
         }
     }
@@ -150,12 +153,12 @@ class TaskingRepository (
         **/
     }
 
-    fun updateTaskStatus(taskTieUid: String, newStatus: String) {
-        if (statusAttributeUid == null) return
+    /*fun updateTaskStatus(taskTieUid: String, newStatus: String) {
+        if (taskStatusAttributeUid == null) return
         d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(statusAttributeUid!!, taskTieUid)
+            .value(taskStatusAttributeUid!!, taskTieUid)
             .blockingSet(newStatus)
-    }
+    }*/
 
 
 
@@ -165,7 +168,6 @@ class TaskingRepository (
                 .value(taskAttrUid, taskTieUid)
                 .blockingSet(newTaskAttrValue)
     }
-
 
 
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(

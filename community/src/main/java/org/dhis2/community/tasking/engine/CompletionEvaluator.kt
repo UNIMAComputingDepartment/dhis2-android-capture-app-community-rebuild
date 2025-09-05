@@ -44,7 +44,7 @@ class CompletionEvaluator(
 
         if (completed) {
             //repository.updateTaskStatus(taskTeiUid, "COMPLETED")
-            repository.updateTaskAttrValue(repository.statusAttributeUid, "COMPLETE", taskTeiUid)
+            repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "COMPLETE", taskTeiUid)
 
             enrollments.forEach { enrollment ->
                 d2.enrollmentModule().enrollments()

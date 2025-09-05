@@ -56,7 +56,7 @@ class StatusEvaluator(
 
             if (currentStatus != newStatus) {
                 //repository.updateTaskStatus(teiUid, newStatus)
-                repository.updateTaskAttrValue(repository.statusAttributeUid, newStatus, teiUid)
+                repository.updateTaskAttrValue(repository.taskStatusAttributeUid, newStatus, teiUid)
             }
         } catch (e: Exception) {
             Timber.tag("StatusEvaluator").e(e, "Failed to update status for TEI $teiUid")

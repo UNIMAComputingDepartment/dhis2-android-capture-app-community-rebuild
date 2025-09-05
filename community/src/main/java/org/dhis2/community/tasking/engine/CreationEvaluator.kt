@@ -150,14 +150,23 @@ class CreationEvaluator (
                     .one().blockingGet()?.uid()
             }
 
-            val statusAttrUid = getAttrUidByDisplayName("Task Status")
+            //repository.getTaskingConfig().taskProgramConfig.first().
+
+            /*val statusAttrUid = getAttrUidByDisplayName("Task Status")
             val nameAttrUid = getAttrUidByDisplayName("Task Name")
             val priorityAttrUid = getAttrUidByDisplayName("Task Priority")
             val primaryAttrUid = getAttrUidByDisplayName("Task PrimaryAttribute")
             val secondaryAttrUid = getAttrUidByDisplayName("Task SecondaryAttribute")
             val tertiaryAttrUid = getAttrUidByDisplayName("Task TertiaryAttribute")
-            val dueDateAttrUid = getAttrUidByDisplayName("Task Due Date")
+            val dueDateAttrUid = getAttrUidByDisplayName("Task Due Date")*/
 
+            val statusAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:""
+            val nameAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskNameUid?:""
+            val priorityAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.priorityUid?:""
+            val primaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskPrimaryAttrUid?:""
+            val secondaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSecondaryAttrUid?:""
+            val tertiaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskTertiaryAttrUid?:""
+            val dueDateAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:""
 
             /*if (statusAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
