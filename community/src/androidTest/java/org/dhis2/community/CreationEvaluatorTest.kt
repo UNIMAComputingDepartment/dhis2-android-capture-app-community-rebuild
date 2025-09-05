@@ -26,7 +26,10 @@ class CreationEvaluatorTest {
         val tasks = evaluator.createTasks(
             repository.getTaskingConfig().taskProgramConfig.first().programUid,
             repository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-            repository.getTaskingConfig().taskConfigs.first().programUid
+            repository.getTaskingConfig().taskConfigs.first().programUid,
+            sourceTieUid = "",
+            sourceTieOrgUnitUid = "",
+            sourceTieProgramEnrollment = "",
         )
 
         assertTrue("Expected tasks to be created", tasks.isNotEmpty())

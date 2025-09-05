@@ -1,6 +1,10 @@
 package org.dhis2.community.tasking.ui
 
-class TasksPresenter() {
+import org.dhis2.community.tasking.repositories.TaskingRepository
+
+class TasksPresenter(
+    //private val  taskingRepository: TaskingRepository
+) {
     fun onResume() {
     }
 }

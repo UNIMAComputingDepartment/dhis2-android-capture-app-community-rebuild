@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.dhis2.community.relationships.ui.Dhis2CmtTheme
 import org.dhis2.community.tasking.models.Task
@@ -171,8 +172,9 @@ fun TaskCardContents(
     }
 }
 
+@Preview
 @Composable
-fun PriorityChip(priority: String) {
+fun PriorityChip(priority: String = "High") {
     val (bgColor, textColor) = when (priority) {
         "High Priority" -> Pair(Color(0xFFFFCDD2), Color.Red)
         "Medium Priority" -> Pair(Color(0xFFFFF9C4), Color(0xFFF57C00))
@@ -193,6 +195,7 @@ fun PriorityChip(priority: String) {
     }
 }
 
+@Preview(showBackground = true)
 @Composable
 fun TaskIconBox(
     icon: ImageVector = Icons.Default.Assignment, // default icon

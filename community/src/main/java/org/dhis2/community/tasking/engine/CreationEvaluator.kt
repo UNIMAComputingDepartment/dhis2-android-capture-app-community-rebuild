@@ -123,6 +123,11 @@ class CreationEvaluator (
             repository.updateTaskAttrValue(secondaryAttrUid, secondary, newTeiUid)
             repository.updateTaskAttrValue(primaryAttrUid, primary, newTeiUid)
 
+            val checkOne = d2.trackedEntityModule().trackedEntityAttributes().uid(taskSourceProgramUid).blockingExists()
+
+            Timber.d("value of source : $checkOne ")
+
+
             repository.updateTaskAttrValue(taskSourceProgramUid, targetProgramUid, newTeiUid)
             repository.updateTaskAttrValue(taskSourceEnrollmentUid, sourceTieProgramEnrollment, newTeiUid)
 
