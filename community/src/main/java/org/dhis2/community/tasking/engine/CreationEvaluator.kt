@@ -102,7 +102,7 @@ class CreationEvaluator (
 
             val (primary, secondary, tertiary) = tieAttrs
 
-            val statusAttrUid = d2.trackedEntityModule().trackedEntityAttributes()
+            /*val statusAttrUid = d2.trackedEntityModule().trackedEntityAttributes()
                 .byDisplayName().eq("Task Status")
                 .one()
                 .blockingGet()
@@ -112,9 +112,9 @@ class CreationEvaluator (
                 .byDisplayName().eq("Task Name")
                 .one()
                 .blockingGet()
-                ?.uid()
+                ?.uid()*/
 
-            val primaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+            /*val primaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
                 .byDisplayName().eq("Task PrimaryAttribute")
                 .one()
                 .blockingGet()
@@ -136,16 +136,30 @@ class CreationEvaluator (
                 .byDisplayName().eq("Task Priority")
                 .one()
                 .blockingGet()
-                ?.uid()
+                ?.uid()*/
 
-            val dueDateAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
+            /*val dueDateAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
                 .byDisplayName().eq("Task Due Date")
                 .one()
                 .blockingGet()
-                ?.uid()
+                ?.uid()*/
+
+            fun getAttrUidByDisplayName(displayName: String):String?{
+                return d2.trackedEntityModule().trackedEntityAttributes()
+                    .byDisplayName().eq(displayName)
+                    .one().blockingGet()?.uid()
+            }
+
+            val statusAttrUid = getAttrUidByDisplayName("Task Status")
+            val nameAttrUid = getAttrUidByDisplayName("Task Name")
+            val priorityAttrUid = getAttrUidByDisplayName("Task Priority")
+            val primaryAttrUid = getAttrUidByDisplayName("Task PrimaryAttribute")
+            val secondaryAttrUid = getAttrUidByDisplayName("Task SecondaryAttribute")
+            val tertiaryAttrUid = getAttrUidByDisplayName("Task TertiaryAttribute")
+            val dueDateAttrUid = getAttrUidByDisplayName("Task Due Date")
 
 
-            if (statusAttrUid != null)
+            /*if (statusAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                     .value(statusAttrUid, newTeiUid)
                     .blockingSet("OPEN")
@@ -153,9 +167,9 @@ class CreationEvaluator (
             if (nameAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                     .value(nameAttrUid, newTeiUid)
-                    .blockingSet(result.taskingConfig.name)
+                    .blockingSet(result.taskingConfig.name)*/
 
-            if (priorityAttrUid != null)
+            /*if (priorityAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                     .value(priorityAttrUid, newTeiUid)
                     .blockingSet("HIGH")
@@ -173,12 +187,27 @@ class CreationEvaluator (
             if (secondaryAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                     .value(secondaryAttrUid, newTeiUid)
-                    .blockingSet(secondary)
+                    .blockingSet(secondary)*/
 
-            if (tertiaryAttrUid != null)
+            /*fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String){
+                if(taskAttrUid != null)
+                    d2.trackedEntityModule().trackedEntityAttributeValues()
+                        .value(taskAttrUid, taskTieUid)
+                        .blockingSet(newTaskAttrValue)
+            }*/
+
+            repository.updateTaskAttrValue(statusAttrUid, "OPEN", newTeiUid)
+            repository.updateTaskAttrValue(nameAttrUid, result.taskingConfig.name, newTeiUid)
+            repository.updateTaskAttrValue(priorityAttrUid, "HIGH", newTeiUid)
+            repository.updateTaskAttrValue(dueDateAttrUid, dueDate, newTeiUid)
+            repository.updateTaskAttrValue(tertiaryAttrUid, tertiary, newTeiUid)
+            repository.updateTaskAttrValue(secondaryAttrUid, secondary, newTeiUid)
+            repository.updateTaskAttrValue(primaryAttrUid, primary, newTeiUid)
+
+            /*if (tertiaryAttrUid != null)
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                     .value(tertiaryAttrUid, newTeiUid)
-                    .blockingSet(tertiary)
+                    .blockingSet(tertiary)*/
 
             // 4) Enroll it (also safe-guarded)
             try {

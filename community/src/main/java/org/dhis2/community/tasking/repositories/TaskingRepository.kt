@@ -31,7 +31,7 @@ class TaskingRepository (
 
     private var cachedConfig: TaskingConfig? = null
 
-    val statusAttributeUid: String by lazy {
+    val statusAttributeUid: String? by lazy {
         getTaskingConfig().taskConfigs
             .firstOrNull()?.completion?.condition?.args
             ?.flatMap { it.filter }
@@ -151,11 +151,22 @@ class TaskingRepository (
     }
 
     fun updateTaskStatus(taskTieUid: String, newStatus: String) {
-        if (statusAttributeUid.isEmpty()) return
+        if (statusAttributeUid == null) return
         d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(statusAttributeUid, taskTieUid)
+            .value(statusAttributeUid!!, taskTieUid)
             .blockingSet(newStatus)
     }
+
+
+
+    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String){
+        if(taskAttrUid != null)
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(taskAttrUid, taskTieUid)
+                .blockingSet(newTaskAttrValue)
+    }
+
+
 
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(
         OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
