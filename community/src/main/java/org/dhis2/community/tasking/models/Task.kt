@@ -13,8 +13,9 @@ data class EvaluationResult(
 data class Task(
     val name: String,
     val description: String,
-    val programUid: String,
-    val programName: String,
+    val sourceProgramUid: String,
+    val sourceEnrollmentUid: String,
+    val sourceProgramName: String,
     val teiUid: String, //source teiUid
     val teiPrimary: String,
     val teiSecondary: String,

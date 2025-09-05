@@ -89,7 +89,7 @@ fun TaskCardContents(
 
                     ) {
                         Text(
-                            text = task.programName,
+                            text = task.sourceProgramName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             // maxLines = Int.MAX_VALUE

@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.dhis2.community.tasking.models.Task
-import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
 
 
 @SuppressLint("RememberReturnType")
@@ -53,41 +50,44 @@ fun TaskListPreview() {
         Task(
             name = "HIV Follow-up",
             description = "Follow up patient for HIV treatment",
-            programUid = "prog1",
-            programName = "HIV Program",
+            sourceProgramUid = "prog1",
+            sourceProgramName = "HIV Program",
             teiUid = "tei001",
             teiPrimary = "John Doe",
             teiSecondary = "Clinic A",
             teiTertiary = "25 yrs",
             dueDate = "2025-09-05",
             priority = "High Priority",
-            status = "OVERDUE"
+            status = "OVERDUE",
+            sourceEnrollmentUid = "",
         ),
         Task(
             name = "TB Screening",
             description = "Screen patient for TB symptoms",
-            programUid = "prog2",
-            programName = "TB Program",
+            sourceProgramUid = "prog2",
+            sourceProgramName = "TB Program",
             teiUid = "tei002",
             teiPrimary = "Jane Smith",
             teiSecondary = "Clinic B",
             teiTertiary = "30 yrs",
             dueDate = "2025-09-10",
             priority = "Low Priority",
-            status = "COMPLETED"
+            status = "COMPLETED",
+            sourceEnrollmentUid = "",
         ),
         Task(
             name = "Nutrition Check",
             description = "Assess nutritional status of child Follow up in 6 months",
-            programUid = "prog3",
-            programName = "Nutrition Program",
+            sourceProgramUid = "prog3",
+            sourceProgramName = "Nutrition Program",
             teiUid = "tei003",
             teiPrimary = "Baby Joe",
             teiSecondary = "Clinic C",
             teiTertiary = "2 yrs",
             dueDate = "2025-09-12",
             priority = "Medium Priority",
-            status = "OPEN"
+            status = "OPEN",
+            sourceEnrollmentUid = ""
         )
     )
 

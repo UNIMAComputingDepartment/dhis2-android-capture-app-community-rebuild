@@ -1,18 +1,13 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.maintenance.D2Error
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttribute
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 import java.util.Date
@@ -34,7 +29,8 @@ class CreationEvaluator (
         taskTIETypeUid: String,
         targetProgramUid: String,
         sourceTieUid: String?,
-        sourceTieOrgUnitUid: String
+        sourceTieOrgUnitUid: String,
+        sourceTieProgramEnrollment: String
     ): List<Task> {
 
         val results = evaluateForTie(sourceTieUid, targetProgramUid, sourceTieOrgUnitUid)
@@ -90,7 +86,7 @@ class CreationEvaluator (
             val newTeiUid = try {
                 d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
                     TrackedEntityInstanceCreateProjection.builder()
-                        .organisationUnit(ouToUse)
+                        .organisationUnit(sourceTieOrgUnitUid)
                         .trackedEntityType(taskTIETypeUid)
                         .build()
                 )
@@ -102,63 +98,12 @@ class CreationEvaluator (
 
             val (primary, secondary, tertiary) = tieAttrs
 
-            /*val statusAttrUid = d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task Status")
-                .one()
-                .blockingGet()
-                ?.uid()
-
-            val nameAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task Name")
-                .one()
-                .blockingGet()
-                ?.uid()*/
-
-            /*val primaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task PrimaryAttribute")
-                .one()
-                .blockingGet()
-                ?.uid()
-
-            val secondaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task SecondaryAttribute")
-                .one()
-                .blockingGet()
-                ?.uid()
-
-            val tertiaryAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task TertiaryAttribute")
-                .one()
-                .blockingGet()
-                ?.uid()
-
-            val priorityAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task Priority")
-                .one()
-                .blockingGet()
-                ?.uid()*/
-
-            /*val dueDateAttrUid =d2.trackedEntityModule().trackedEntityAttributes()
-                .byDisplayName().eq("Task Due Date")
-                .one()
-                .blockingGet()
-                ?.uid()*/
-
             fun getAttrUidByDisplayName(displayName: String):String?{
                 return d2.trackedEntityModule().trackedEntityAttributes()
                     .byDisplayName().eq(displayName)
                     .one().blockingGet()?.uid()
             }
 
-            //repository.getTaskingConfig().taskProgramConfig.first().
-
-            /*val statusAttrUid = getAttrUidByDisplayName("Task Status")
-            val nameAttrUid = getAttrUidByDisplayName("Task Name")
-            val priorityAttrUid = getAttrUidByDisplayName("Task Priority")
-            val primaryAttrUid = getAttrUidByDisplayName("Task PrimaryAttribute")
-            val secondaryAttrUid = getAttrUidByDisplayName("Task SecondaryAttribute")
-            val tertiaryAttrUid = getAttrUidByDisplayName("Task TertiaryAttribute")
-            val dueDateAttrUid = getAttrUidByDisplayName("Task Due Date")*/
 
             val statusAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:""
             val nameAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskNameUid?:""
@@ -167,43 +112,8 @@ class CreationEvaluator (
             val secondaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSecondaryAttrUid?:""
             val tertiaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskTertiaryAttrUid?:""
             val dueDateAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:""
-
-            /*if (statusAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(statusAttrUid, newTeiUid)
-                    .blockingSet("OPEN")
-
-            if (nameAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(nameAttrUid, newTeiUid)
-                    .blockingSet(result.taskingConfig.name)*/
-
-            /*if (priorityAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(priorityAttrUid, newTeiUid)
-                    .blockingSet("HIGH")
-
-            if (dueDateAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(dueDateAttrUid, newTeiUid)
-                    .blockingSet(dueDate)
-
-            if (primaryAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(primaryAttrUid, newTeiUid)
-                    .blockingSet(primary)
-
-            if (secondaryAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(secondaryAttrUid, newTeiUid)
-                    .blockingSet(secondary)*/
-
-            /*fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String){
-                if(taskAttrUid != null)
-                    d2.trackedEntityModule().trackedEntityAttributeValues()
-                        .value(taskAttrUid, taskTieUid)
-                        .blockingSet(newTaskAttrValue)
-            }*/
+            val taskSourceProgramUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceProgramUid?: ""
+            val taskSourceEnrollmentUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceEnrollmentUid?: ""
 
             repository.updateTaskAttrValue(statusAttrUid, "OPEN", newTeiUid)
             repository.updateTaskAttrValue(nameAttrUid, result.taskingConfig.name, newTeiUid)
@@ -213,10 +123,9 @@ class CreationEvaluator (
             repository.updateTaskAttrValue(secondaryAttrUid, secondary, newTeiUid)
             repository.updateTaskAttrValue(primaryAttrUid, primary, newTeiUid)
 
-            /*if (tertiaryAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(tertiaryAttrUid, newTeiUid)
-                    .blockingSet(tertiary)*/
+            repository.updateTaskAttrValue(taskSourceProgramUid, targetProgramUid, newTeiUid)
+            repository.updateTaskAttrValue(taskSourceEnrollmentUid, sourceTieProgramEnrollment, newTeiUid)
+
 
             // 4) Enroll it (also safe-guarded)
             try {
@@ -224,7 +133,7 @@ class CreationEvaluator (
                     EnrollmentCreateProjection.builder()
                         .trackedEntityInstance(newTeiUid)
                         .program(taskProgramUid)
-                        .organisationUnit(ouToUse)
+                        .organisationUnit(sourceTieOrgUnitUid)
                         .build()
                 )
                 val today = Date()
@@ -244,199 +153,24 @@ class CreationEvaluator (
             created += Task(
                 name = result.taskingConfig.name,
                 description = result.taskingConfig.description,
-                programUid = result.programUid,
-                programName = repository.getProgramName(result.programUid),
+                sourceProgramUid = taskSourceProgramUid,
+                sourceProgramName = repository.getProgramName(result.programUid),
                 teiUid = newTeiUid,
                 teiPrimary = primary,
                 teiSecondary = secondary,
                 teiTertiary = tertiary,
                 dueDate = dueDate,
                 priority = result.taskingConfig.priority,
-                status = "OPEN"
+                status = "OPEN",
+                sourceEnrollmentUid = sourceTieProgramEnrollment
             )
         }
 
+
+        Timber.tag("FETCHED_TASKS").d(repository.getAllTasks(sourceTieOrgUnitUid).toString())
         Timber.tag("CREATED_TASKS").d(created.toString())
         return created.toList()
     }
 
-
-//    @RequiresApi(Build.VERSION_CODES.O)
-//    fun createTasks(taskProgramUid: String,
-//                    taskTIETypeUid: String,
-//                    targetProgramUid: String,
-//                    sourceTieUid: String?,
-//                    sourceTieOrgUnitUid: String
-//                    /*result: EvaluationResult*/
-//    ): List<Task> {
-//
-//        val evaluatedResult = evaluateForTie(
-//            sourceTieUid,
-//            targetProgramUid,
-//            sourceTieOrgUnitUid,
-//        )
-//
-//        val tasks = mutableListOf<Task>()
-//        evaluatedResult.forEach { result ->
-//            if (result.tieAttrs == null || result.dueDate == null) return emptyList()
-//
-//        val (primary, secondary, tertiary) = result.tieAttrs
-//
-////        TODO()
-//            /*val existingTeis = filterTiesByAttributes(
-//            repository.getTieByType(taskTIETypeUid, orgUnitUid, taskProgramUid),
-//            primaryAttributeUid,
-//            primary // tieuid not primary
-//        )
-//
-//        val openTies = existingTeis.filter { tie ->
-//            val status = getTaskStatus(tie.uid())
-//            status != "COMPLETED" && status != "CANCELLED"
-//        }
-//
-//        return if (openTies.isNotEmpty()) {
-//            openTies.map { tei ->
-//                updateTeiAttributes(tei.uid(), primary, secondary, tertiary)
-//                Task(
-//                    name = result.taskingConfig.name,
-//                    description = result.taskingConfig.description,
-//                    programUid = result.programUid,
-//                    programName = repository.getProgramName(result.programUid),
-//                    teiUid = tei.uid(),
-//                    teiPrimary = primary,
-//                    teiSecondary = secondary,
-//                    teiTertiary = tertiary,
-//                    dueDate = result.dueDate,
-//                    priority = result.taskingConfig.priority,
-//                    status = "OPEN"
-//                )
-//            }
-//        } else {*/
-//            val newTeiUid = d2.trackedEntityModule().trackedEntityInstances()
-//                .blockingAdd(
-//                    TrackedEntityInstanceCreateProjection.builder()
-//                        .organisationUnit(result.orgUnit)
-//                        .trackedEntityType(taskTIETypeUid)
-//                        .build()
-//                )
-//
-//
-//
-//            try {
-//                val enrollmentUid = d2.enrollmentModule().enrollments()
-//                    .blockingAdd(
-//                        EnrollmentCreateProjection.builder()
-//                            .trackedEntityInstance(newTeiUid)
-//                            .program(taskProgramUid)
-//                            .organisationUnit(result.orgUnit)
-//                            .build()
-//                    )
-//
-//                val today = Date()
-//
-//                d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(today)
-//                d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(today)
-//                d2.enrollmentModule().enrollments().uid(enrollmentUid).setStatus(EnrollmentStatus.ACTIVE)
-//
-//            } catch (d2Error: D2Error) {
-//                Timber.tag("EnrollmentCreation")
-//                    .d("Failed: code=${d2Error.errorCode()} desc=${d2Error.errorDescription()}")
-//            }
-//
-//            /*val enrollmentUid = d2.enrollmentModule().enrollments()
-//                .blockingAdd(
-//                    EnrollmentCreateProjection.builder()
-//                        .trackedEntityInstance(newTeiUid)
-//                        .program(taskProgramUid)
-//                        .organisationUnit(result.orgUnit)
-//                        .build()
-//                )
-//
-//            d2.enrollmentModule().enrollments()
-//                .uid(enrollmentUid)
-//                .setEnrollmentDate(Date())
-//            //.blockingUpdate()
-//
-//            d2.enrollmentModule().enrollments()
-//                .uid(enrollmentUid)
-//                .setIncidentDate(Date())
-//            //.blockingUpdate()
-//
-//            d2.enrollmentModule().enrollments()
-//                .uid(enrollmentUid)
-//                .setStatus(EnrollmentStatus.ACTIVE)*/
-//
-//            // updateTeiAttributes(newTeiUid, primary, secondary, tertiary)
-//
-//
-//            tasks.add(
-//                Task(
-//                    name = result.taskingConfig.name,
-//                    description = result.taskingConfig.description,
-//                    programUid = result.programUid,
-//                    programName = repository.getProgramName(result.programUid),
-//                    teiUid = newTeiUid,
-//                    teiPrimary = primary,
-//                    teiSecondary = secondary,
-//                    teiTertiary = tertiary,
-//                    dueDate = result.dueDate,
-//                    priority = result.taskingConfig.priority,
-//                    status = "OPEN"
-//                )
-//            )
-//        }
-//
-//        Timber.tag("CREATED_TASKS").d(tasks.toString())
-//
-//        return  tasks.toList()
-//    }
 }
 
-   /* fun filterTiesByAttributes(
-        ties: List<TrackedEntityInstance>,
-        attributeUid: String,
-        attributeValue: String
-    ): List<TrackedEntityInstance> {
-        return ties.filter { tie ->
-            val attrValue = d2.trackedEntityModule().trackedEntityAttributeValues()
-                .byTrackedEntityInstance().eq(tie.uid())
-                .byTrackedEntityAttribute().eq(attributeUid)
-                .blockingGet()
-                .firstOrNull()
-                ?.value()
-            attrValue == attributeValue
-        }
-    }
-
-    fun getTaskStatus(tieUid: String): String {
-        if (repository.statusAttributeUid.isEmpty()) return ""
-        return d2.trackedEntityModule().trackedEntityAttributeValues()
-            .byTrackedEntityInstance().eq(tieUid)
-            .byTrackedEntityAttribute().eq(repository.statusAttributeUid)
-            .one().blockingGet()?.value() ?: ""
-    }
-
-    private fun updateTeiAttributes(
-        teiUid: String,
-        primary: String,
-        secondary: String?,
-        tertiary: String?
-    ) {
-        d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(primaryAttributeUid, teiUid)
-            .blockingSet(primary)
-
-        secondary?.let {
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(secondaryAttributeUid, teiUid)
-                .blockingSet(it)
-        }
-
-        tertiary?.let {
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(tertiaryAttributeUid, teiUid)
-                .blockingSet(it)
-        }
-    }
-}
-*/

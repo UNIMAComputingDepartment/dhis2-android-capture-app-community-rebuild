@@ -50,7 +50,7 @@ class EventCapturePresenterImpl(
     private val preferences: PreferenceProvider,
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
-    private val creation: CreationEvaluator,
+    private val creationEvaluator: CreationEvaluator,
     private val taskingRepository: TaskingRepository,
 ) : ViewModel(), EventCaptureContract.Presenter {
 
@@ -233,13 +233,19 @@ class EventCapturePresenterImpl(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun saveAndExit(eventStatus: EventStatus?) {
-        creation.createTasks(
-            taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-            taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-            eventCaptureRepository.getProgramUid().blockingFirst(),
+
+        if (eventCaptureRepository.getEnrollmentUid() != null){
+        creationEvaluator.createTasks(
+            taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+            taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+            targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
             sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-            sourceTieUid = eventCaptureRepository.getTeiUid()
+            sourceTieUid = eventCaptureRepository.getTeiUid(),
+            sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+
         )
+
+        }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {
             view.saveAndFinish()

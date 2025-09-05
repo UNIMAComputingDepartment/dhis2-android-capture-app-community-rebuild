@@ -15,7 +15,9 @@ data class TaskingConfig(
         val statusUid: String,
         val taskPrimaryAttrUid: String,
         val taskSecondaryAttrUid: String,
-        val taskTertiaryAttrUid: String
+        val taskTertiaryAttrUid: String,
+        val taskSourceProgramUid: String,
+        val taskSourceEnrollmentUid: String
 
     )
 

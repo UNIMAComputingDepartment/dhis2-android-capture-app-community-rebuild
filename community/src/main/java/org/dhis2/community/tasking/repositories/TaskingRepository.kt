@@ -110,16 +110,26 @@ class TaskingRepository (
     }
 
 
+    fun getTaskTei(
+        orgUnitUid: String
+    ): List<TrackedEntityInstance> {
+        val taskTeiUid = cachedConfig?.taskProgramConfig?.firstOrNull()?.teiTypeUid
+        if (taskTeiUid.isNullOrEmpty()) return emptyList()
+
+        return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType().eq(taskTeiUid)
+            .blockingGet()
+    }
+
     fun getAllTasks(
-        tieTypeUid: String,
+//        tieTypeUid: String,
         orgUnitUid: String,
-        programUid: String,
+//        programUid: String,
     ): List<Task> {
-        val teis = getTieByType(tieTypeUid, orgUnitUid, programUid)
+        val teis = getTaskTei(orgUnitUid)
 
         // Find the config for this program
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val attr = getCachedConfig()?.taskConfigs?.firstOrNull()
+        val taskConfig = getCachedConfig()?.taskConfigs?.firstOrNull()
             //taskingConfig.taskConfigs
             //.firstOrNull { it.programUid == programUid }
 
@@ -127,12 +137,13 @@ class TaskingRepository (
             Task(
                 name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
-                programUid = programUid,
-                programName = programConfig?.programName ?: "",
+                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"",
+                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)?:"",
+                sourceProgramName = programConfig?.programName ?: "",
                 teiUid = tei.uid(),
-                teiPrimary = tei.getAttributeValue(attr?.teiView?.teiPrimaryAttribute) ?: "",
-                teiSecondary = tei.getAttributeValue(attr?.teiView?.teiSecondaryAttribute) ?: "",
-                teiTertiary = tei.getAttributeValue(attr?.teiView?.teiTertiaryAttribute) ?: "",
+                teiPrimary = tei.getAttributeValue(taskConfig?.teiView?.teiPrimaryAttribute) ?: "",
+                teiSecondary = tei.getAttributeValue(taskConfig?.teiView?.teiSecondaryAttribute) ?: "",
+                teiTertiary = tei.getAttributeValue(taskConfig?.teiView?.teiTertiaryAttribute) ?: "",
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
