@@ -31,7 +31,7 @@ class TaskingRepository (
 
     private var cachedConfig: TaskingConfig? = null
 
-    val taskStatusAttributeUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid ?: ""
+    val taskStatusAttributeUid = getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?: ""
     /*: String? by lazy {
         getTaskingConfig().taskConfigs
             .firstOrNull()?.completion?.condition?.args
@@ -118,8 +118,8 @@ class TaskingRepository (
         val teis = getTieByType(tieTypeUid, orgUnitUid, programUid)
 
         // Find the config for this program
-        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
-        val attr = getTaskingConfig().taskConfigs.firstOrNull()
+        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
+        val attr = getCachedConfig()?.taskConfigs?.firstOrNull()
             //taskingConfig.taskConfigs
             //.firstOrNull { it.programUid == programUid }
 
