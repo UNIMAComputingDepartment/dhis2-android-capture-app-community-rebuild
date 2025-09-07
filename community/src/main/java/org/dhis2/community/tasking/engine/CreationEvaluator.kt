@@ -98,12 +98,6 @@ class CreationEvaluator (
 
             val (primary, secondary, tertiary) = tieAttrs
 
-            fun getAttrUidByDisplayName(displayName: String):String?{
-                return d2.trackedEntityModule().trackedEntityAttributes()
-                    .byDisplayName().eq(displayName)
-                    .one().blockingGet()?.uid()
-            }
-
 
             val statusAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:""
             val nameAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskNameUid?:""
@@ -122,17 +116,10 @@ class CreationEvaluator (
             repository.updateTaskAttrValue(tertiaryAttrUid, tertiary, newTeiUid)
             repository.updateTaskAttrValue(secondaryAttrUid, secondary, newTeiUid)
             repository.updateTaskAttrValue(primaryAttrUid, primary, newTeiUid)
-
-            val checkOne = d2.trackedEntityModule().trackedEntityAttributes().uid(taskSourceProgramUid).blockingExists()
-
-            Timber.d("value of source : $checkOne ")
-
-
             repository.updateTaskAttrValue(taskSourceProgramUid, targetProgramUid, newTeiUid)
             repository.updateTaskAttrValue(taskSourceEnrollmentUid, sourceTieProgramEnrollment, newTeiUid)
 
 
-            // 4) Enroll it (also safe-guarded)
             try {
                 val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
                     EnrollmentCreateProjection.builder()
@@ -148,8 +135,6 @@ class CreationEvaluator (
             } catch (e: D2Error) {
                 Timber.tag("CreationEvaluator")
                     .e("Enrollment failed: code=${e.errorCode()} desc=${e.errorDescription()}")
-                // Optional: clean up TEI if you want to avoid orphans
-                // d2.trackedEntityModule().trackedEntityInstances().uid(newTeiUid).blockingDelete()
                 return@forEach
             }
 
@@ -171,8 +156,9 @@ class CreationEvaluator (
             )
         }
 
+        val msg = repository.getAllTasks(orgUnitUid = sourceTieOrgUnitUid.toString(), targetProgramUid)
 
-        Timber.tag("FETCHED_TASKS").d(repository.getAllTasks(sourceTieOrgUnitUid).toString())
+        Timber.tag("FETCHED_TASKS").d(msg.toString())
         Timber.tag("CREATED_TASKS").d(created.toString())
         return created.toList()
     }

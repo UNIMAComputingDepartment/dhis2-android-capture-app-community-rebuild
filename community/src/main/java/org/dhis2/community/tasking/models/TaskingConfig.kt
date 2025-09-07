@@ -37,7 +37,7 @@ data class TaskingConfig(
         data class Trigger(
             val programName: String,
             val programUid: String,
-            val condition: Condition
+            val condition: List<Condition>
         )
 
         data class Condition(

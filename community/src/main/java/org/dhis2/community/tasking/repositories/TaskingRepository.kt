@@ -18,28 +18,22 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Singleton
 
 @Singleton
-class TaskingRepository (
+class TaskingRepository(
     private val d2: D2,
 ) {
 
     private val dataElementChangedSubject = PublishSubject.create<String>()
-    fun observeDataElementChanges(): io.reactivex.Observable<String> = dataElementChangedSubject.hide()
+    fun observeDataElementChanges(): io.reactivex.Observable<String> =
+        dataElementChangedSubject.hide()
 
-    private fun notifyDataElementChanged(dataElement: String){
+    private fun notifyDataElementChanged(dataElement: String) {
         dataElementChangedSubject.onNext(dataElement)
     }
 
     private var cachedConfig: TaskingConfig? = null
 
-    val taskStatusAttributeUid = getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?: ""
-    /*: String? by lazy {
-        getTaskingConfig().taskConfigs
-            .firstOrNull()?.completion?.condition?.args
-            ?.flatMap { it.filter }
-            ?.firstOrNull { it.lhs.ref == "teiAttribute" && it.lhs.fn == "status" }?.lhs?.uid
-            ?: ""
-    }*/
-
+    val taskStatusAttributeUid =
+        getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?: ""
 
     fun getCachedConfig() = cachedConfig
     fun getTaskingConfig(): TaskingConfig {
@@ -78,13 +72,13 @@ class TaskingRepository (
     }
 
     fun getLatestEnrollment(teiUid: String, programUid: String): Enrollment? {
-         val v = d2.enrollmentModule().enrollments()
+        val v = d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
             .byStatus().eq(EnrollmentStatus.ACTIVE)
             .one()
             .blockingGet()
-            //.maxByOrNull { it.enrollmentDate()?.time ?: 0 }
+        //.maxByOrNull { it.enrollmentDate()?.time ?: 0 }
 
         return v
     }
@@ -95,7 +89,7 @@ class TaskingRepository (
             .blockingGet()?.displayName() ?: ""
     }
 
-   fun getTieByType(
+    fun getTieByType(
         trackedEntityTypeUid: String,
         orgUnitUid: String,
         programUid: String
@@ -116,29 +110,30 @@ class TaskingRepository (
         val taskTeiUid = cachedConfig?.taskProgramConfig?.firstOrNull()?.teiTypeUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
 
-        return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType().eq(taskTeiUid)
+        return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
+            .eq(taskTeiUid)
             .blockingGet()
     }
 
     fun getAllTasks(
 //        tieTypeUid: String,
         orgUnitUid: String,
-//        programUid: String,
+        thisProgramUid: String,
     ): List<Task> {
         val teis = getTaskTei(orgUnitUid)
 
         // Find the config for this program
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.taskConfigs?.firstOrNull()
-            //taskingConfig.taskConfigs
-            //.firstOrNull { it.programUid == programUid }
+        val taskConfig = getCachedConfig()?.taskConfigs?.firstOrNull() {it.programUid == thisProgramUid}
+        //taskingConfig.taskConfigs
+        //.firstOrNull { it.programUid == programUid }
 
         return teis.map { tei ->
             Task(
                 name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
-                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"",
-                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)?:"",
+                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
                 teiUid = tei.uid(),
                 teiPrimary = tei.getAttributeValue(taskConfig?.teiView?.teiPrimaryAttribute) ?: "",
@@ -151,52 +146,36 @@ class TaskingRepository (
         }
     }
 
-    // Same helper as before
     fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
         if (attributeUid.isNullOrEmpty()) return null
         return attribute(attributeUid)
             ?.value()
-
-        /**
-         * trackedEntityAttributeValues()
-            ?.firstOrNull { it.trackedEntityAttribute() == attributeUid }
-            ?.value()
-        **/
     }
 
-    /*fun updateTaskStatus(taskTieUid: String, newStatus: String) {
-        if (taskStatusAttributeUid == null) return
-        d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(taskStatusAttributeUid!!, taskTieUid)
-            .blockingSet(newStatus)
-    }*/
 
-
-
-    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String){
-        if(taskAttrUid != null)
+    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String) {
+        if (taskAttrUid != null)
             d2.trackedEntityModule().trackedEntityAttributeValues()
                 .value(taskAttrUid, taskTieUid)
                 .blockingSet(newTaskAttrValue)
     }
 
-
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(
         OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-        .blockingGet().map { it.uid()
-        }
+        .blockingGet().map { it.uid() }
 
-
-    fun getAllTrackedEntityInstances(programUid: String, sourceTieUid: String?, sourceTieOrgUnit: String) : List<TrackedEntityInstance>{
+    fun getAllTrackedEntityInstances(
+        programUid: String,
+        sourceTieUid: String?,
+        sourceTieOrgUnit: String
+    ): List<TrackedEntityInstance> {
         val enrollments = d2.enrollmentModule().enrollments()
-                .byOrganisationUnit().eq(sourceTieOrgUnit)
-                .byProgram().eq(programUid)
-                .byTrackedEntityInstance().eq(sourceTieUid)
-                .blockingGet()
-                //.map {it.trackedEntityInstance()}
+            .byOrganisationUnit().eq(sourceTieOrgUnit)
+            .byProgram().eq(programUid)
+            .byTrackedEntityInstance().eq(sourceTieUid)
+            .blockingGet()
 
-
-       return enrollments.mapNotNull { uid ->
+        return enrollments.mapNotNull { uid ->
             d2.trackedEntityModule().trackedEntityInstances()
                 .uid(uid.trackedEntityInstance())
                 .blockingGet()
