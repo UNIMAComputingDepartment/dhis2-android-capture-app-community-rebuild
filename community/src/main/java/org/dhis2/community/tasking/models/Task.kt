@@ -1,7 +1,7 @@
 package org.dhis2.community.tasking.models
 
 data class EvaluationResult(
-    val taskingConfig: TaskingConfig.TaskConfig,
+    val taskingConfig: TaskingConfig.ProgramTasks.TaskConfig,
     val teiUid: String, //source tei
     val programUid: String,
     val isTriggered: Boolean,
@@ -16,7 +16,7 @@ data class Task(
     val sourceProgramUid: String,
     val sourceEnrollmentUid: String,
     val sourceProgramName: String,
-    val teiUid: String,
+    val teiUid: String, //source teiUid
     val teiPrimary: String,
     val teiSecondary: String,
     val teiTertiary: String,

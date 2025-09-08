@@ -233,20 +233,6 @@ class EventCapturePresenterImpl(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun saveAndExit(eventStatus: EventStatus?) {
-
-        if (eventCaptureRepository.getEnrollmentUid() != null){
-            creationEvaluator.createTasks(
-                taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-                taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-                sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-
-            )
-
-        }
-
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {
             view.saveAndFinish()
         } else {

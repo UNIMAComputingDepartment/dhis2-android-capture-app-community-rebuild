@@ -109,9 +109,9 @@ class CreationEvaluator (
             val taskSourceProgramUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceProgramUid?: ""
             val taskSourceEnrollmentUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceEnrollmentUid?: ""
 
-            repository.updateTaskAttrValue(statusAttrUid, "OPEN", newTeiUid)
+            repository.updateTaskAttrValue(statusAttrUid, "open", newTeiUid)
             repository.updateTaskAttrValue(nameAttrUid, result.taskingConfig.name, newTeiUid)
-            repository.updateTaskAttrValue(priorityAttrUid, "HIGH", newTeiUid)
+            repository.updateTaskAttrValue(priorityAttrUid, "high", newTeiUid)
             repository.updateTaskAttrValue(dueDateAttrUid, dueDate, newTeiUid)
             repository.updateTaskAttrValue(tertiaryAttrUid, tertiary, newTeiUid)
             repository.updateTaskAttrValue(secondaryAttrUid, secondary, newTeiUid)
@@ -164,3 +164,4 @@ class CreationEvaluator (
     }
 
 }
+

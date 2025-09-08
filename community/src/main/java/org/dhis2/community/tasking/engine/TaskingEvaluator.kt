@@ -23,22 +23,22 @@ open class TaskingEvaluator(
         if (sourceTieUid == null) return emptyList()
 
         val config = repository.getTaskingConfig()
-        require(config.taskConfigs.isNotEmpty()) { "Tasking Config is Empty" }
+        require(config.programTasks.isNotEmpty()) { "Tasking Config is Empty" }
 
-        val configsForProgram = config.taskConfigs.filter { it.trigger.programUid == programUid }
-        if (configsForProgram.isEmpty()) return emptyList()
+        val configsForProgram = config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
+       // if (configsForProgram ) return emptyList()
 
         val results = mutableListOf<EvaluationResult>()
 
         val ties = repository.getAllTrackedEntityInstances(programUid, sourceTieUid, sourceTieOrgUnit)
         ties.forEach { tei ->
-            configsForProgram.forEach { taskConfig ->
+            configsForProgram.taskConfigs.forEach { taskConfig ->
                 // Evaluate all conditions and return a list of results
-                val evalResults = evaluateConditions(taskConfig, tei.uid(), programUid)
+                val evalResults = evaluateConditions(taskConfig = taskConfig, tei.uid(), programUid)
                 evalResults.filter { it.isTriggered }.forEach { result ->
                     val dueDate = repository.calculateDueDate(taskConfig, tei.uid(), programUid)
                         ?: return@forEach
-                    val tieAttrs = getTieAttributes(tei.uid(), taskConfig.teiView)
+                    val tieAttrs = getTieAttributes(tei.uid(), configsForProgram.teiView)
                     val taskTieOrgUnit = d2.enrollmentModule().enrollments()
                         .byTrackedEntityInstance().eq(tei.uid())
                         .blockingGet()
@@ -58,7 +58,7 @@ open class TaskingEvaluator(
     }
 
     private fun evaluateConditions(
-        taskConfig: TaskingConfig.TaskConfig,
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
         programUid: String
     ): List<EvaluationResult> {
@@ -88,7 +88,7 @@ open class TaskingEvaluator(
     }
 
     private fun resolvedReference(
-        trigger: TaskingConfig.TaskConfig.Trigger,
+        trigger: TaskingConfig.ProgramTasks.TaskConfig.Trigger,
         teiUid: String,
         attrOrDataElementUid: String,
         programUid: String
@@ -123,7 +123,7 @@ open class TaskingEvaluator(
 
     private fun getTieAttributes(
         tieUid: String,
-        tieView: TaskingConfig.TaskConfig.TeiView
+        tieView: TaskingConfig.ProgramTasks.TeiView
     ): Triple<String, String, String> {
         fun getAttr(uid: String) =
             d2.trackedEntityModule().trackedEntityAttributeValues()

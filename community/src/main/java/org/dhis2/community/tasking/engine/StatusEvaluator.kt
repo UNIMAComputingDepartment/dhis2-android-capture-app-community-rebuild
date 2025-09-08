@@ -19,7 +19,7 @@ class StatusEvaluator(
     @RequiresApi(Build.VERSION_CODES.O)
     fun updateTaskStatusIfNeeded(
         teiUid: String,
-        taskConfig: TaskingConfig.TaskConfig,
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         programUid: String
     ) {
         try {
