@@ -1,4 +1,6 @@
 [versions]
+hiltAndroid = "2.48"
+hiltAndroidCompiler = "2.48"
 mobileUi = "1.0.0"
 sdk = "35"
 minSdk = "21"
@@ -88,6 +90,8 @@ material3AdaptiveAndroid = "1.0.0"
 agp = "8.7.2"
 [libraries]
 gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
+hilt-android-compiler-v248 = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
+hilt-android-v248 = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 kotlinPlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinSerialization = { group = "org.jetbrains.kotlin", name = "kotlin-serialization", version.ref = "kotlin" }
 hiltPlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }

@@ -71,6 +71,15 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     }
 
     @Override
+    public Flowable<String> getProgramUid() {
+        return d2.programModule().programStages()
+                .uid(getCurrentEvent().programStage())
+                .get()
+                .map(programStage -> programStage.program().uid())
+                .toFlowable();
+    }
+
+    @Override
     public Flowable<OrganisationUnit> orgUnit() {
         return Flowable.just(
                 Objects.requireNonNull(
