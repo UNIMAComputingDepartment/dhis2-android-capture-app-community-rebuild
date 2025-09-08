@@ -1,60 +1,200 @@
 {
-  "taskProgramConfigs": [
+  "programTasks": [
     {
-      "programUid": "TASK_PROGRAM_UID",
-      "programName": "Task Program",
-      "statusUid": "STATUS_ATTR_UID",
-      "teiTypeUid": "TEI_TYPE_UID"
-    }
-  ],
-
-  "taskConfigs": [
-    {
-      "name": "Danger Sign Follow-up",
-      "description": "Trigger a follow-up task if danger sign is YES",
-      "priority": "HIGH",
-      "trigger": {
-        "program": "PROGRAM_UID_WOMAN",
-        "condition": {
-          "lhs": {
-            "ref": "eventData",
-            "uid": "REFERRAL_DE_UID"
+      "taskConfigs": [
+        {
+          "completion": {
+            "condition": {
+              "args": [
+                {
+                  "lhs": {
+                    "fn": "status",
+                    "ref": "teiAttribute",
+                    "uid": "STATUS_ATTR_UID"
+                  },
+                  "op": "EQUALS",
+                  "rhs": {
+                    "value": "COMPLETED"
+                  }
+                },
+                {}
+              ]
+            }
           },
-          "op": "EQUALS",
-          "rhs": {
-            "value": "YES"
+          "description": "Trigger a follow-up task if danger sign is YES",
+          "name": "Danger Sign Follow-up",
+          "period": {
+            "dueInDays": 2
+          },
+          "priority": "HIGH",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "RhCWzvhIE6i"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "She has danger signs"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": {
+              "args": [
+                {
+                  "lhs": {
+                    "fn": "status",
+                    "ref": "teiAttribute",
+                    "uid": "STATUS_ATTR_UID"
+                  },
+                  "op": "EQUALS",
+                  "rhs": {
+                    "value": "COMPLETED"
+                  }
+                }
+              ]
+            }
+          },
+          "description": "Trigger a follow-up task if danger sign is YES",
+          "name": "Danger Sign Follow-up",
+          "period": {
+            "dueInDays": 2
+          },
+          "priority": "HIGH",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "RhCWzvhIE6i"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "She has danger signs"
+                }
+              }
+            ]
           }
         }
-      },
+      ],
       "teiView": {
-        "teiPrimaryAttribute": "PRIMARY_ATTR_UID",
-        "teiSecondaryAttribute": "SECONDARY_ATTR_UID",
-        "teiTertiaryAttribute": "TERTIARY_ATTR_UID"
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiSecondaryAttribute": "p79QNVjFu45",
+        "teiTertiaryAttribute": "HYlWwg511tF"
       },
-      "period": {
-        "dueIn": {
-          "days": 2
-        }
-      },
-      "completion": {
-        "condition": {
-          "args": [
-            {
-              "lhs": {
-                "ref": "teiAttribute",
-                "fn": "status",
-                "uid": "STATUS_ATTR_UID"
-              },
-              "op": "EQUALS",
-              "rhs": {
-                "value": "COMPLETED"
-              }
+      "programName": "CBMNC - Woman Program",
+      "programUid": "cJEpYzKPHqg"
+    },
+    {
+      "taskConfigs": [
+        {
+          "completion": {
+            "condition": {
+              "args": [
+                {
+                  "lhs": {
+                    "fn": "status",
+                    "ref": "teiAttribute",
+                    "uid": "STATUS_ATTR_UID"
+                  },
+                  "op": "EQUALS",
+                  "rhs": {
+                    "value": "COMPLETED"
+                  }
+                },
+                {}
+              ]
             }
-          ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization follow up",
+          "period": {
+            "dueInDays": 2
+          },
+          "priority": "HIGH",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "LVOCoQq2vhn"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Immunized at birth"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": {
+              "args": [
+                {
+                  "lhs": {
+                    "fn": "status",
+                    "ref": "teiAttribute",
+                    "uid": "STATUS_ATTR_UID"
+                  },
+                  "op": "EQUALS",
+                  "rhs": {
+                    "value": "COMPLETED"
+                  }
+                }
+              ]
+            }
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization follow up",
+          "period": {
+            "dueInDays": 2
+          },
+          "priority": "HIGH",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "BNidQ6DxZpz"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Date BCG was given"
+                }
+              }
+            ]
+          }
         }
-      }
+      ],
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiSecondaryAttribute": "p79QNVjFu45",
+        "teiTertiaryAttribute": "HYlWwg511tF"
+      },
+      "programName": "EPI - Expanded Programme on Immunization",
+      "programUid": "Ur5UakrSEYj"
+    }
+  ],
+  "taskProgramConfig": [
+    {
+      "dueDateUid": "X1bSv1j75Oo",
+      "priorityUid": "bp4FX8ajXWS",
+      "programName": "Tasking Program",
+      "programUid": "mIn6hesS2yR",
+      "statusUid": "UxERjzcCQgm",
+      "taskNameUid": "t3k6ATKay0k",
+      "taskPrimaryAttrUid": "ZNNgWoMBvZc",
+      "taskSecondaryAttrUid": "IZOHOGZeBCD",
+      "taskSourceEnrollmentUid": "nH0vQ5e744Q",
+      "taskSourceProgramUid": "ugRQf1GWFOj",
+      "taskTertiaryAttrUid": "dnP7Qk7EaJL",
+      "teiTypeUid": "fgyP4MJja3C"
     }
   ]
 }
-
-

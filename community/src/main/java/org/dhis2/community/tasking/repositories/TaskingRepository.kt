@@ -46,7 +46,7 @@ class TaskingRepository(
         val config = entries.firstOrNull { it.key() == "tasking" }
             ?.let { Gson().fromJson(it.value(), TaskingConfig::class.java) }
             ?: TaskingConfig(
-                taskConfigs = emptyList(),
+                programTasks = emptyList(),
                 taskProgramConfig = emptyList()
             )
 
@@ -56,7 +56,7 @@ class TaskingRepository(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun calculateDueDate(
-        taskConfig: TaskingConfig.TaskConfig,
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
         programUid: String
     ): String? {
@@ -64,7 +64,7 @@ class TaskingRepository(
 
         val anchorDate = enrollment.incidentDate() ?: enrollment.enrollmentDate() ?: return null
         val localDate = anchorDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val dueDate = localDate.plusDays(taskConfig.period.dueIn.days.toLong())
+        val dueDate = localDate.plusDays(taskConfig.period.dueInDays.toLong())
 
         Timber.d("DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
 
@@ -124,7 +124,7 @@ class TaskingRepository(
 
         // Find the config for this program
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.taskConfigs?.firstOrNull() {it.programUid == thisProgramUid}
+        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() {it.programUid == thisProgramUid}
         //taskingConfig.taskConfigs
         //.firstOrNull { it.programUid == programUid }
 
