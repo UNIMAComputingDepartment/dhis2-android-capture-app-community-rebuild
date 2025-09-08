@@ -13,6 +13,7 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.components.CollapsibleRelationshipSection
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
@@ -48,14 +49,14 @@ fun TeiDetailDashboard(
                     .padding(start = 8.dp, end = 8.dp)
                     .testTag(SYNC_INFO_BAR_TEST_TAG),
                 infoBarData =
-                InfoBarData(
-                    text = syncData.text,
-                    icon = syncData.icon,
-                    color = syncData.textColor,
-                    backgroundColor = syncData.backgroundColor,
-                    actionText = syncData.actionText,
-                    onClick = syncData.onActionClick,
-                ),
+                    InfoBarData(
+                        text = syncData.text,
+                        icon = syncData.icon,
+                        color = syncData.textColor,
+                        backgroundColor = syncData.backgroundColor,
+                        actionText = syncData.actionText,
+                        onClick = syncData.onActionClick,
+                    ),
             )
             if (followUpData?.showInfoBar == true || enrollmentData?.showInfoBar == true) {
                 Spacer(modifier = Modifier.padding(top = 8.dp))

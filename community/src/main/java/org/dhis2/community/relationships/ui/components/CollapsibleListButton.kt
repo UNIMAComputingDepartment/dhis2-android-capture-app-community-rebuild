@@ -185,8 +185,8 @@ fun CollapsibleListButton(
                                 modifier = Modifier
                                     .padding(top = 6.dp)
                                     .align(Alignment.Top)
-                                    //.weight(1f),
-                                )
+                                //.weight(1f),
+                            )
                         }
 
                         Spacer(modifier = Modifier.weight(1f))

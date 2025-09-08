@@ -232,5 +232,11 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
         Enrollment enrollment = d2.enrollmentModule().enrollments().uid(getEnrollmentUid()).blockingGet();
         return enrollment != null ? enrollment.trackedEntityInstance() : null;
     }
+    @Override
+    public String getProgramUid() {
+        Event event = getCurrentEvent();
+        return event != null ? event.program() : null;
+    }
 }
+
 

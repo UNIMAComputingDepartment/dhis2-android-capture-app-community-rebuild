@@ -5,14 +5,20 @@ data class TaskingConfig(
     val taskProgramConfig: List<TaskProgramConfig>
 ) {
     data class TaskProgramConfig(
-        val name: String,
+        val taskNameUid: String,
         val description: String,
         val programUid: String,
         val programName: String,
-        val teiUid: String,
-        val dueDate: String,
-        val priority: String,
-        val status: String = "OPEN"
+        val teiTypeUid: String,
+        val dueDateUid: String,
+        val priorityUid: String,
+        val statusUid: String,
+        val taskPrimaryAttrUid: String,
+        val taskSecondaryAttrUid: String,
+        val taskTertiaryAttrUid: String,
+        val taskSourceProgramUid: String,
+        val taskSourceEnrollmentUid: String
+
     )
 
     data class TaskConfig(
@@ -29,8 +35,9 @@ data class TaskingConfig(
         val anchorDate: String
     ) {
         data class Trigger(
-            val program: String,
-            val condition: Condition
+            val programName: String,
+            val programUid: String,
+            val condition: List<Condition>
         )
 
         data class Condition(
@@ -62,7 +69,7 @@ data class TaskingConfig(
 
         data class CompletionCondition(
             val op: String,
-            val args: CompletionArgs
+            val args: List<CompletionArgs>
         )
 
         data class CompletionArgs(

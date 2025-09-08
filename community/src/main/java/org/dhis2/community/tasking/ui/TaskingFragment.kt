@@ -1,21 +1,42 @@
 package org.dhis2.community.tasking.ui
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import org.dhis2.community.tasking.engine.TaskingPresenter
+import androidx.fragment.app.viewModels
+import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
+import javax.inject.Inject
 
-class TaskingFragment : Fragment(), TaskingView {
+@AndroidEntryPoint
+class TaskingFragment : Fragment() {
+    @Inject
+    lateinit var factory: TaskingViewModelFactory
 
-    private lateinit var presenter: TaskingPresenter
+    private val viewModel: TaskingViewModel by viewModels { factory }
+
+    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            isEnabled = false
+            requireActivity().onBackPressedDispatcher.onBackPressed()
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        presenter = TaskingPresenter(this)
+        requireActivity().onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
     }
 
     override fun onCreateView(
@@ -26,16 +47,29 @@ class TaskingFragment : Fragment(), TaskingView {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskingUi(tasks = presenter.tasks)
+                val tasks = viewModel.filteredTasks.collectAsState()
+                TaskingUi(
+                    tasks = tasks.value,
+                    onTaskClick = { task ->
+                        // Log navigation details for debugging
+                        Timber.d("Navigating to TEI Dashboard - TEI: ${task.teiUid}, Program: ${task.sourceProgramUid}, Name: ${task.sourceProgramName}")
+
+                        // Navigate to TEI Dashboard with the source program context
+                        startActivity(Intent(requireContext(), Class.forName("org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity")).apply {
+                            putExtra("TEI_UID", task.teiUid)
+                            putExtra("PROGRAM_UID", task.sourceProgramUid)
+                            // Ensure we don't use analytics mode since we're viewing a specific TEI
+                            putExtra("FROM_ANALYTICS", false)
+                        })
+                    },
+                    viewModel = viewModel,
+                    filterState = viewModel.filterState
+                )
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        presenter.onResume()
-    }
-
-    override fun showSyncDialog() {
+    override fun onDestroyView() {
+        super.onDestroyView()
     }
 }

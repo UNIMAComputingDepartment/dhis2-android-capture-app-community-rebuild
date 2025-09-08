@@ -200,7 +200,7 @@ class MainNavigator(
 
     private fun shouldShowFilter(screen: MainScreen): Boolean {
         return when (screen) {
-            MainScreen.PROGRAMS, MainScreen.TASKS -> true
+            MainScreen.PROGRAMS -> true
             else -> false
         }
     }
