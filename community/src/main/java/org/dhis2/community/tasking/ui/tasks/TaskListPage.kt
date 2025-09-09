@@ -43,6 +43,7 @@ fun TaskListPage(
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun TaskListPreview() {
@@ -95,4 +96,4 @@ fun TaskListPreview() {
         // For preview, just print the clicked task name
         println("Clicked task: ${clickedTask.name}")
     }
-}
+}*/

@@ -3,6 +3,7 @@ package org.dhis2.community.tasking.repositories
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
+import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
@@ -23,7 +24,7 @@ class TaskingRepository(
 ) {
 
     private val dataElementChangedSubject = PublishSubject.create<String>()
-    fun observeDataElementChanges(): io.reactivex.Observable<String> =
+    fun observeDataElementChanges(): Observable<String> =
         dataElementChangedSubject.hide()
 
     private fun notifyDataElementChanged(dataElement: String) {
@@ -89,6 +90,13 @@ class TaskingRepository(
             .blockingGet()?.displayName() ?: ""
     }
 
+    fun getSourceProgramIcon(sourceProgramUid: String) : String?{
+        val program = d2.programModule().programs()
+            .uid(sourceProgramUid).blockingGet()
+
+        return program?.style()?.icon()
+    }
+
     fun getTieByType(
         trackedEntityTypeUid: String,
         orgUnitUid: String,
@@ -142,7 +150,8 @@ class TaskingRepository(
                 teiTertiary = tei.getAttributeValue(taskConfig?.teiView?.teiTertiaryAttribute) ?: "",
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
+                iconNane = getSourceProgramIcon(sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")
             )
         }
     }
@@ -165,7 +174,8 @@ class TaskingRepository(
                 name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
                 sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
-                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
+                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
+                    ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
                 teiUid = tei.uid(),
                 teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
@@ -173,7 +183,9 @@ class TaskingRepository(
                 teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
+                iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
+
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
             )
         }
 
