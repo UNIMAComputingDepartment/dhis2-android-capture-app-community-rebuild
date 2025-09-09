@@ -44,11 +44,14 @@ class TaskingFragment : Fragment(), TaskingView {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val tasks = getDummyTasks()
+        // Set dummy tasks in the viewModel's filteredTasks StateFlow
+        (viewModel.filteredTasks as kotlinx.coroutines.flow.MutableStateFlow<List<TaskingUiModel>>).value = tasks
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 TaskingUi(
-                    tasks = presenter.tasks,
+                    tasks = tasks, // Pass dummy tasks directly
                     onTaskClick = { /* handle click */ },
                     viewModel = viewModel,
                     filterState = filterState

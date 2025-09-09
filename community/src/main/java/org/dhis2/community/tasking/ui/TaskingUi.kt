@@ -296,10 +296,8 @@ fun TaskingUi(
 
 private enum class FilterSheetType { PROGRAM, ORG_UNIT, PRIORITY, STATUS, DUE_DATE }
 
-@Preview(showBackground = true)
-@Composable
-fun TaskingUiPreview() {
-    val fakeTasks = listOf(
+fun getDummyTasks() : List<TaskingUiModel> {
+    return listOf(
         TaskingUiModel(
             task = Task(
                 name = "BCG Immunization Due",
@@ -314,7 +312,8 @@ fun TaskingUiPreview() {
                 dueDate = "2025-09-06",
                 priority = "Low",
                 status = "OPEN"
-            )
+            ),
+            orgUnit = ""
         ),
         TaskingUiModel(
             task = Task(
@@ -330,7 +329,8 @@ fun TaskingUiPreview() {
                 dueDate = "2025-09-10",
                 priority = "Medium",
                 status = "DUE_SOON"
-            )
+            ),
+            orgUnit = ""
         ),
         TaskingUiModel(
             task = Task(
@@ -346,7 +346,8 @@ fun TaskingUiPreview() {
                 dueDate = "2025-09-01",
                 priority = "High",
                 status = "OVERDUE"
-            )
+            ),
+            orgUnit = ""
         ),
         TaskingUiModel(
             task = Task(
@@ -362,11 +363,12 @@ fun TaskingUiPreview() {
                 dueDate = "2025-09-20",
                 priority = "High",
                 status = "COMPLETED"
-            )
+            ),
+            orgUnit = ""
         )
     )
 
-    val filterState = remember { TaskFilterState() }
+    /*val filterState = remember { TaskFilterState() }
 
     val filteredPreviewTasks = fakeTasks.filter {
         it.status != TaskingStatus.COMPLETED
@@ -387,5 +389,5 @@ fun TaskingUiPreview() {
         onTaskClick = {},
         viewModel = previewViewModel,
         filterState = filterState
-    )
+    )*/
 }

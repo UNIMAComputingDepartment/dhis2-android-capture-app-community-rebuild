@@ -30,7 +30,7 @@ fun TaskFilterBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp), // overall padding
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
     ) {
         // Static filter icon on the left
@@ -40,11 +40,11 @@ fun TaskFilterBar(
             modifier = Modifier.padding(top = 12.dp)
         )
 
-        // Scrollable row for chips & clear button
+        // Scrollable row for chips only
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .weight(1f), // take remaining space
+                .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
         ) {
             FilterChip(
@@ -77,16 +77,15 @@ fun TaskFilterBar(
                 onSelected = { onDueDateFilterClick() },
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
-
-            Button(
-                enabled = true,
-                style = ButtonStyle.TEXT,
-                colorStyle = ColorStyle.DEFAULT,
-                text = "Clear",
-                modifier = Modifier.padding(end = 4.dp),
-                onClick = onClearAllFilters
-            )
         }
+        // Static clear button on the right
+        Button(
+            enabled = true,
+            style = ButtonStyle.TEXT,
+            colorStyle = ColorStyle.DEFAULT,
+            text = "Clear",
+            onClick = onClearAllFilters
+        )
     }
 }
 
