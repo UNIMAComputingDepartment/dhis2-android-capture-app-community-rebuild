@@ -11,32 +11,32 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.AndroidEntryPoint
 import org.dhis2.community.tasking.engine.CreationEvaluator
-import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.filters.TaskFilterRepository
+import org.dhis2.commons.filters.FilterManager
 import javax.inject.Inject
 
 
 class TaskingFragment : Fragment(), TaskingView {
-
     private lateinit var presenter: TaskingPresenter
-
-
-    /*@Inject
-    lateinit var repository: TaskingRepository
-    @Inject
-    lateinit var creationEvaluator: CreationEvaluator*/
+    private var tasks: List<TaskingUiModel> = emptyList()
+    private val filterRepository = TaskFilterRepository()
+    private val filterManager = FilterManager.getInstance()
+    // Stubbed TaskingViewModel (replace with real repository/D2 if available)
+    private val viewModel = object : TaskingViewModelContract {
+        override val filteredTasks = kotlinx.coroutines.flow.MutableStateFlow<List<TaskingUiModel>>(emptyList())
+        override val programs = emptyList<org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData>()
+        override val priorities = emptyList<org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData>()
+        override val statuses = emptyList<org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData>()
+        override val orgUnits = emptyList<org.hisp.dhis.mobile.ui.designsystem.component.OrgTreeItem>()
+        override val allTasksForProgress = emptyList<TaskingUiModel>()
+        override fun onFilterChanged() {}
+    }
+    private val filterState = org.dhis2.community.tasking.filters.TaskFilterState()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        presenter = TaskingPresenter()
-
-
-
-        /*creationEvaluator.createTasks(
-            repository.getTaskingConfig().taskProgramConfig.first().programUid,
-            repository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-            repository.getTaskingConfig().taskConfigs.first().programUid
-            )*/
+        presenter = TaskingPresenter(filterRepository, filterManager)
     }
 
     override fun onCreateView(
@@ -47,7 +47,12 @@ class TaskingFragment : Fragment(), TaskingView {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskingUi(tasks = presenter.tasks)
+                TaskingUi(
+                    tasks = presenter.tasks,
+                    onTaskClick = { /* handle click */ },
+                    viewModel = viewModel,
+                    filterState = filterState
+                )
             }
         }
     }
@@ -57,6 +62,11 @@ class TaskingFragment : Fragment(), TaskingView {
         presenter.onResume()
     }
 
-    override fun showSyncDialog() {
+    override fun showTasks(tasks: List<TaskingUiModel>) {
+        this.tasks = tasks
+    }
+
+    override fun clearFilters() {
+        filterRepository.clearFilters()
     }
 }

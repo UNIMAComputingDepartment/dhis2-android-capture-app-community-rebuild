@@ -10,7 +10,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData
 
 class TaskFilterState {
     var uiState by mutableStateOf(FilterUiState())
-    // Default status filter: exclude COMPLETED
+    // Default status filter
     var currentFilter by mutableStateOf(
         TaskFilterModel(
             statusFilters = setOf(

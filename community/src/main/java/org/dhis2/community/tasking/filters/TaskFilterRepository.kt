@@ -24,8 +24,8 @@ class TaskFilterRepository @Inject constructor() {
             val task = uiModel.task
             // Program filter
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            // OrgUnit filter
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
+            // OrgUnit filter (use correct orgUnit field)
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(uiModel.orgUnit)) &&
             // Priority filter
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
             // Status filter

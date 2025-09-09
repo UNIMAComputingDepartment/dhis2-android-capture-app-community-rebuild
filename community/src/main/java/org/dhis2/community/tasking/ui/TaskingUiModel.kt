@@ -10,6 +10,7 @@ import java.util.*
 
 data class TaskingUiModel(
     val task: Task,
+    val orgUnit: String?
 ) {
     // Delegate properties from Task
     val taskName: String get() = task.name

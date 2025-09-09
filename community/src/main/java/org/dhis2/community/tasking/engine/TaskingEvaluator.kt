@@ -26,7 +26,7 @@ open class TaskingEvaluator(
         require(config.programTasks.isNotEmpty()) { "Tasking Config is Empty" }
 
         val configsForProgram = config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
-       // if (configsForProgram ) return emptyList()
+        // if (configsForProgram ) return emptyList()
 
         val results = mutableListOf<EvaluationResult>()
 

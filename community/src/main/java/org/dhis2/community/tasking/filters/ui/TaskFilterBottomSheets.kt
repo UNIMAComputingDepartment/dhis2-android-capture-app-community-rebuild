@@ -1,7 +1,5 @@
 package org.dhis2.community.tasking.filters.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,48 +8,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import org.dhis2.community.tasking.filters.models.DateRangeFilter
 import org.hisp.dhis.mobile.ui.designsystem.component.*
+import org.hisp.dhis.mobile.ui.designsystem.component.state.BottomSheetShellUIState
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.ui.tooling.preview.Preview
+import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 
 val Spacing0 = 0.dp
 val Spacing24 = 24.dp
 
 object InternalSizeValues {
     val Size386 = 386.dp
-}
-
-data class BottomSheetShellUIState(
-    val title: String? = null,
-    val subtitle: String? = null,
-    val description: String? = null,
-    val searchQuery: String? = null,
-    val showTopSectionDivider: Boolean = true,
-    val showBottomSectionDivider: Boolean = true,
-    val bottomPadding: androidx.compose.ui.unit.Dp = Spacing0,
-    val headerTextAlignment: TextAlign = TextAlign.Center,
-    val scrollableContainerMinHeight: androidx.compose.ui.unit.Dp = Spacing0,
-    val scrollableContainerMaxHeight: androidx.compose.ui.unit.Dp = InternalSizeValues.Size386,
-    val animateHeaderOnKeyboardAppearance: Boolean = true,
-    val contentPadding: PaddingValues = PaddingValues(horizontal = Spacing24)
-)
-
-@Composable
-fun BottomSheetShell(
-    uiState: BottomSheetShellUIState,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-    buttonBlock: (@Composable () -> Unit)? = null,
-    onDismiss: () -> Unit
-) {
-    Column(modifier = modifier) {
-        content()
-        buttonBlock?.invoke()
-    }
 }
 
 @Composable
@@ -177,22 +150,29 @@ fun DueDateFilterBottomSheet(
             showBottomSectionDivider = true,
             contentPadding = PaddingValues(horizontal = Spacing.Spacing24, vertical = 0.dp)
         ),
-        onDismiss = onDismiss,
         content = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.Top
+            Surface(
+                color = SurfaceColor.ContainerLowest,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                RadioButtonBlock(
-                    orientation = Orientation.VERTICAL,
-                    content = radioButtonItems,
-                    itemSelected = radioButtonItems.find { it.selected },
-                    onItemChange = { item ->
-                        selected = if (selected?.name == item.uid) null
-                        else DateRangeFilter.valueOf(item.uid)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (radioButtonItems.isEmpty()) {
+                    Text(
+                        text = "No due date options available",
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    RadioButtonBlock(
+                        orientation = Orientation.VERTICAL,
+                        content = radioButtonItems,
+                        itemSelected = radioButtonItems.find { it.selected },
+                        modifier = Modifier.fillMaxWidth(),
+                        onItemChange = { item ->
+                            selected = if (selected?.name == item.uid) null
+                            else DateRangeFilter.valueOf(item.uid)
+                        }
+                    )
+                }
             }
         },
         buttonBlock = {
@@ -213,6 +193,7 @@ fun DueDateFilterBottomSheet(
                 },
                 secondaryButton = null
             )
-        }
+        },
+        onDismiss = onDismiss
     )
 }

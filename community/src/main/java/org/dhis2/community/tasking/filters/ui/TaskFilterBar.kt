@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Tune
 import org.dhis2.community.tasking.filters.models.FilterUiState
 import org.hisp.dhis.mobile.ui.designsystem.component.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
@@ -35,7 +35,7 @@ fun TaskFilterBar(
     ) {
         // Static filter icon on the left
         Icon(
-            imageVector = Icons.Filled.FilterList,
+            imageVector = Icons.Filled.Tune,
             contentDescription = "Filter Icon",
             modifier = Modifier.padding(top = 12.dp)
         )

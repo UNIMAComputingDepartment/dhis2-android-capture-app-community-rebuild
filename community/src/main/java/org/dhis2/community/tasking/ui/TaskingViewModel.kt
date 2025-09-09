@@ -66,7 +66,7 @@ class TaskingViewModel @Inject constructor(
                     )
 
                     allTasks = evaluationResults.mapNotNull { result ->
-                        evaluationResultToTask(result)?.let { TaskingUiModel(it) }
+                        evaluationResultToTask(result)?.let { TaskingUiModel(it, result.orgUnit) }
                     }
 
                     updateFilterOptions()
@@ -141,8 +141,8 @@ class TaskingViewModel @Inject constructor(
         // Update organization unit filters
         orgUnits = allTasks
             .mapNotNull { task ->
-                task.teiSecondary.takeIf { it.isNotEmpty() }?.let { 
-                    OrgTreeItem(uid = it, label = it)
+                task.orgUnit?.takeIf { it.isNotEmpty() }?.let { orgUnitUid ->
+                    OrgTreeItem(uid = orgUnitUid, label = orgUnitUid)
                 }
             }
             .distinctBy { it.uid }
@@ -152,7 +152,7 @@ class TaskingViewModel @Inject constructor(
         val filter = filterState.currentFilter
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
             (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
             matchesDateFilter(task, filter.dueDateRange)
