@@ -112,19 +112,20 @@ class TaskingRepository(
 
         return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
             .eq(taskTeiUid)
+            .withTrackedEntityAttributeValues()
             .blockingGet()
     }
 
-    fun getAllTasks(
+    fun getTasksPerOrgUnit(
 //        tieTypeUid: String,
-        orgUnitUid: String,
-        thisProgramUid: String,
+        orgUnitUid: String = currentOrgUnits.first(),
+        //thisProgramUid: String,
     ): List<Task> {
         val teis = getTaskTei(orgUnitUid)
 
         // Find the config for this program
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() {it.programUid == thisProgramUid}
+        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
         //taskingConfig.taskConfigs
         //.firstOrNull { it.programUid == programUid }
 
@@ -146,9 +147,42 @@ class TaskingRepository(
         }
     }
 
+    fun getAllTasks() : List<Task>{
+        val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
+        if (taskTeiUid.isNullOrEmpty()) return emptyList()
+
+        val allTies = d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
+            .eq(taskTeiUid)
+            .withTrackedEntityAttributeValues()
+            .blockingGet()
+
+        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
+        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
+
+
+        return allTies.map { tei ->
+            Task(
+                name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
+                description = tei.getAttributeValue(programConfig?.description) ?: "",
+                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
+                sourceProgramName = programConfig?.programName ?: "",
+                teiUid = tei.uid(),
+                teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
+                teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
+                teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
+                dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
+                priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
+            )
+        }
+
+    }
+
     fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
         if (attributeUid.isNullOrEmpty()) return null
-        return attribute(attributeUid)
+        return this.trackedEntityAttributeValues()
+            ?.firstOrNull {it.trackedEntityAttribute() == attributeUid}
             ?.value()
     }
 

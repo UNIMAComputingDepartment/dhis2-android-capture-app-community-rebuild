@@ -1,4 +1,4 @@
-package org.dhis2.community.tasking.ui
+package org.dhis2.community.tasking.ui.tasks
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement

@@ -1,4 +1,4 @@
-package org.dhis2.community.tasking.ui
+package org.dhis2.community.tasking.ui.tasks
 
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.animation.animateContentSize

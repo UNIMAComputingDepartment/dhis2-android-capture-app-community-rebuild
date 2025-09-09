@@ -3,9 +3,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     kotlin("android")
+    kotlin("kapt")
     alias(libs.plugins.kotlin.compose.compiler)
-    id("kotlin-kapt")
-    id("dagger.hilt.android.plugin")
+    //id("kotlin-kapt")
+    //id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -40,8 +41,9 @@ kotlin {
     }
 }
 dependencies {
-    implementation(libs.hilt.android.v248)
-    kapt(libs.hilt.android.compiler.v248)
+    //implementation(project(":app"))
+    implementation(libs.dagger.v2571)
+    kapt(libs.dagger.compiler.v2571)
     implementation(project(":commons"))
     implementation(libs.androidx.coreKtx)
     implementation(libs.androidx.appcompat)

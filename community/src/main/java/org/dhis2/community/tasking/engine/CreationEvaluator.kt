@@ -156,12 +156,11 @@ class CreationEvaluator (
             )
         }
 
-        val msg = repository.getAllTasks(orgUnitUid = sourceTieOrgUnitUid.toString(), targetProgramUid)
+        val msg = repository.getAllTasks()
 
         Timber.tag("FETCHED_TASKS").d(msg.toString())
         Timber.tag("CREATED_TASKS").d(created.toString())
         return created.toList()
     }
-
 }
 
