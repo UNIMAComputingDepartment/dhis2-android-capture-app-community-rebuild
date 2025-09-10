@@ -97,6 +97,12 @@ class TaskingRepository(
         return program?.style()?.icon()
     }
 
+    fun getSourceProgramColor(sourceProgramUid: String): String? {
+        val program = d2.programModule().programs()
+            .uid(sourceProgramUid).blockingGet()
+        return program?.style()?.color()
+    }
+
     fun getTieByType(
         trackedEntityTypeUid: String,
         orgUnitUid: String,
@@ -138,10 +144,11 @@ class TaskingRepository(
         //.firstOrNull { it.programUid == programUid }
 
         return teis.map { tei ->
+            val sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: ""
             Task(
                 name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
-                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+                sourceProgramUid = sourceProgramUid,
                 sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
                 teiUid = tei.uid(),
@@ -151,7 +158,8 @@ class TaskingRepository(
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
-                iconNane = getSourceProgramIcon(sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")
+                iconNane = getSourceProgramIcon(sourceProgramUid = sourceProgramUid),
+                iconColor = getSourceProgramColor(sourceProgramUid = sourceProgramUid)
             )
         }
     }
@@ -168,12 +176,12 @@ class TaskingRepository(
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
         val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
 
-
         return allTies.map { tei ->
+            val sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: ""
             Task(
                 name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
                 description = tei.getAttributeValue(programConfig?.description) ?: "",
-                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+                sourceProgramUid = sourceProgramUid,
                 sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
                     ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
@@ -183,8 +191,8 @@ class TaskingRepository(
                 teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
-
+                iconNane = getSourceProgramIcon(sourceProgramUid = sourceProgramUid),
+                iconColor = getSourceProgramColor(sourceProgramUid = sourceProgramUid),
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
             )
         }

@@ -212,7 +212,7 @@ fun TaskingUi(
                     val statusColor = task.status.color
                     val additionalInfoList = listOf(
                         AdditionalInfoItem(
-                            key = "Client",
+                            key = "Name",
                             value = task.teiPrimary,
                             color = TextColor.OnSurface,
                             truncate = false,
@@ -226,7 +226,7 @@ fun TaskingUi(
                             isConstantItem = true
                         ),
                         AdditionalInfoItem(
-                            key = "Details",
+                            key = "Date of Birth",
                             value = task.teiTertiary,
                             color = TextColor.OnSurface,
                             truncate = false,

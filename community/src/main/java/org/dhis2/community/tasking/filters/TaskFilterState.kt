@@ -15,7 +15,7 @@ class TaskFilterState {
     var currentFilter by mutableStateOf(
         TaskFilterModel(
             statusFilters = setOf(
-                org.dhis2.community.tasking.ui.TaskingStatus.UPCOMING,
+                org.dhis2.community.tasking.ui.TaskingStatus.OPEN,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
                 org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE,

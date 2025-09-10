@@ -23,5 +23,6 @@ data class Task(
     val dueDate: String,
     val priority: String,
     val status: String = "OPEN",
-    val iconNane : String?
+    val iconNane : String?,
+    val iconColor: String? = null
 )
