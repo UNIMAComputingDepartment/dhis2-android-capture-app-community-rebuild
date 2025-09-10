@@ -1,5 +1,6 @@
 {
-  "programTasks": [
+  "programTasks":
+  [
     {
       "taskConfigs": [
         {
@@ -91,7 +92,8 @@
       "programUid": "cJEpYzKPHqg"
     },
     {
-      "taskConfigs": [
+      "taskConfigs":
+      [
         {
           "completion": {
             "condition": {
@@ -112,7 +114,7 @@
             }
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "Immunization follow up",
+          "name": "At Birth to Two Weeks",
           "period": {
             "dueInDays": 2
           },
@@ -126,7 +128,17 @@
                 },
                 "op": "NULL",
                 "rhs": {
-                  "value": "Immunized at birth"
+                  "value": "Date OPV 0 Given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "BNidQ6DxZpz"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Date BCG was given"
                 }
               }
             ]
@@ -146,18 +158,30 @@
                   "rhs": {
                     "value": "COMPLETED"
                   }
-                }
+                },
+                {}
               ]
             }
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "Immunization follow up",
+          "name": "Six Weeks",
           "period": {
             "dueInDays": 2
           },
           "priority": "HIGH",
           "trigger": {
-            "condition": [
+            "condition":
+            [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "LVOCoQq2vhn"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Date OPV 0 Given"
+                }
+              },
               {
                 "lhs": {
                   "ref": "eventData",
