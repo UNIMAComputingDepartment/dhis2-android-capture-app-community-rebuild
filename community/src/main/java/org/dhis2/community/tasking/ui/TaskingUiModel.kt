@@ -7,6 +7,7 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import java.text.SimpleDateFormat
 import java.util.*
+import timber.log.Timber
 
 data class TaskingUiModel(
     val task: Task,
@@ -41,11 +42,13 @@ data class TaskingUiModel(
             if (dueDate.isNullOrBlank()) null
             else SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dueDate)
         } catch (e: Exception) {
+            Timber.e(e, "Error parsing dueDate: $dueDate")
             null
         }
     }
 
     private fun calculateStatus(apiStatus: String, dueDate: Date?): TaskingStatus {
+        Timber.d("calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
         return when (apiStatus) {
             "COMPLETED" -> TaskingStatus.COMPLETED
             "DEFAULTED" -> TaskingStatus.DEFAULTED

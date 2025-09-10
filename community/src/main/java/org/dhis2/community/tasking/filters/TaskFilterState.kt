@@ -7,6 +7,7 @@ import org.dhis2.community.tasking.filters.models.DateRangeFilter
 import org.dhis2.community.tasking.filters.models.FilterUiState
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
 import org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData
+import timber.log.Timber
 
 class TaskFilterState {
     var uiState by mutableStateOf(FilterUiState())
@@ -26,11 +27,13 @@ class TaskFilterState {
 
     fun updateProgramFilters(selectedPrograms: List<CheckBoxData>) {
         val selectedProgramIds = selectedPrograms.filter { it.checked }.map { it.uid }.toSet()
+        Timber.d("updateProgramFilters called with: $selectedProgramIds")
         currentFilter = currentFilter.copy(programFilters = selectedProgramIds)
         updateUiState()
     }
 
     fun updateOrgUnitFilters(selectedOrgUnits: Set<String>) {
+        Timber.d("updateOrgUnitFilters called with: $selectedOrgUnits")
         currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits)
         updateUiState()
     }
@@ -39,6 +42,7 @@ class TaskFilterState {
         val selectedPriorityEnums = selectedPriorities.filter { it.checked }
             .mapNotNull { org.dhis2.community.tasking.ui.TaskingPriority.entries.find { p -> p.label == it.uid } }
             .toSet()
+        Timber.d("updatePriorityFilters called with: $selectedPriorityEnums")
         currentFilter = currentFilter.copy(priorityFilters = selectedPriorityEnums)
         updateUiState()
     }
@@ -47,21 +51,25 @@ class TaskFilterState {
         val selectedStatusEnums = selectedStatuses.filter { it.checked }
             .mapNotNull { org.dhis2.community.tasking.ui.TaskingStatus.entries.find { s -> s.label == it.uid } }
             .toSet()
+        Timber.d("updateStatusFilters called with: $selectedStatusEnums")
         currentFilter = currentFilter.copy(statusFilters = selectedStatusEnums)
         updateUiState()
     }
 
     fun updateDueDateFilter(dateRange: DateRangeFilter) {
+        Timber.d("updateDueDateFilter called with: $dateRange")
         currentFilter = currentFilter.copy(dueDateRange = dateRange, customDateRange = null)
         updateUiState()
     }
 
     fun clearAllFilters() {
+        Timber.d("clearAllFilters called")
         currentFilter = TaskFilterModel(dueDateRange = null, customDateRange = null)
         updateUiState()
     }
 
     private fun updateUiState() {
+        Timber.d("updateUiState called. Current filter: $currentFilter")
         uiState = FilterUiState(
             isProgramFilterActive = currentFilter.programFilters.isNotEmpty(),
             programFilterCount = currentFilter.programFilters.size,

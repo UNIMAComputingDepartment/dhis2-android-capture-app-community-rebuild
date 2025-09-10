@@ -16,6 +16,7 @@ import org.dhis2.community.tasking.filters.models.FilterUiState
 import org.hisp.dhis.mobile.ui.designsystem.component.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
 import androidx.compose.ui.tooling.preview.Preview
+import timber.log.Timber
 
 @Composable
 fun TaskFilterBar(
@@ -27,6 +28,7 @@ fun TaskFilterBar(
     onDueDateFilterClick: () -> Unit,
     onClearAllFilters: () -> Unit
 ) {
+    Timber.d("TaskFilterBar composable rendered with state: $filterState")
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -50,31 +52,31 @@ fun TaskFilterBar(
             FilterChip(
                 label = "Program",
                 selected = filterState.isProgramFilterActive,
-                onSelected = { onProgramFilterClick() },
+                onSelected = { Timber.d("Program filter chip clicked"); onProgramFilterClick() },
                 badge = if (filterState.programFilterCount > 0) filterState.programFilterCount.toString() else null
             )
             FilterChip(
                 label = "Org Unit",
                 selected = filterState.isOrgUnitFilterActive,
-                onSelected = { onOrgUnitFilterClick() },
+                onSelected = { Timber.d("Org Unit filter chip clicked"); onOrgUnitFilterClick() },
                 badge = if (filterState.orgUnitFilterCount > 0) filterState.orgUnitFilterCount.toString() else null
             )
             FilterChip(
                 label = "Priority",
                 selected = filterState.isPriorityFilterActive,
-                onSelected = { onPriorityFilterClick() },
+                onSelected = { Timber.d("Priority filter chip clicked"); onPriorityFilterClick() },
                 badge = if (filterState.priorityFilterCount > 0) filterState.priorityFilterCount.toString() else null
             )
             FilterChip(
                 label = "Status",
                 selected = filterState.isStatusFilterActive,
-                onSelected = { onStatusFilterClick() },
+                onSelected = { Timber.d("Status filter chip clicked"); onStatusFilterClick() },
                 badge = if (filterState.statusFilterCount > 0) filterState.statusFilterCount.toString() else null
             )
             FilterChip(
                 label = "Due Date",
                 selected = filterState.selectedDateRange != null,
-                onSelected = { onDueDateFilterClick() },
+                onSelected = { Timber.d("Due Date filter chip clicked"); onDueDateFilterClick() },
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
         }

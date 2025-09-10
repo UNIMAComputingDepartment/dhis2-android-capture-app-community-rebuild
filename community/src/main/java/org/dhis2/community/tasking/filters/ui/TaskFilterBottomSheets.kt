@@ -19,6 +19,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.tooling.preview.Preview
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
+import timber.log.Timber
 
 val Spacing0 = 0.dp
 val Spacing24 = 24.dp
@@ -33,14 +34,21 @@ fun ProgramFilterBottomSheet(
     onDismiss: () -> Unit,
     onApplyFilters: (List<CheckBoxData>) -> Unit
 ) {
+    Timber.d("ProgramFilterBottomSheet rendered with ${programs.size} programs")
     MultiSelectBottomSheet(
         items = programs,
         title = "Filter by Program",
         noResultsFoundString = "No programs found",
         searchToFindMoreString = "Search to find more programs",
         doneButtonText = "Done",
-        onItemsSelected = onApplyFilters,
-        onDismiss = onDismiss
+        onItemsSelected = { selected ->
+            Timber.d("ProgramFilterBottomSheet applied filters: $selected")
+            onApplyFilters(selected)
+        },
+        onDismiss = {
+            Timber.d("ProgramFilterBottomSheet dismissed")
+            onDismiss()
+        }
     )
 }
 
@@ -53,19 +61,27 @@ fun OrgUnitFilterBottomSheet(
     onItemSelected: (String, Boolean) -> Unit = { _, _ -> },
     onApplyFilters: () -> Unit
 ) {
+    Timber.d("OrgUnitFilterBottomSheet rendered with ${orgUnits.size} orgUnits")
     OrgBottomSheet(
         orgTreeItems = orgUnits,
         title = "Filter by Organisation Unit",
         headerTextAlignment = TextAlign.Start,
         onSearch = onSearch,
-        onDismiss = onDismiss,
+        onDismiss = {
+            Timber.d("OrgUnitFilterBottomSheet dismissed")
+            onDismiss()
+        },
         onItemClick = { uid ->
             val checked = !selectedOrgUnits.contains(uid)
+            Timber.d("OrgUnitFilterBottomSheet item selected: $uid, checked: $checked")
             onItemSelected(uid, checked)
         },
         onItemSelected = onItemSelected,
         onClearAll = {},
-        onDone = onApplyFilters
+        onDone = {
+            Timber.d("OrgUnitFilterBottomSheet applied filters")
+            onApplyFilters()
+        }
     )
 }
 
@@ -75,14 +91,21 @@ fun PriorityFilterBottomSheet(
     onDismiss: () -> Unit,
     onApplyFilters: (List<CheckBoxData>) -> Unit
 ) {
+    Timber.d("PriorityFilterBottomSheet rendered with ${priorities.size} priorities")
     MultiSelectBottomSheet(
         items = priorities,
         title = "Filter by Priority",
         noResultsFoundString = "No priorities found",
         searchToFindMoreString = "Search to find more priorities",
         doneButtonText = "Done",
-        onItemsSelected = onApplyFilters,
-        onDismiss = onDismiss
+        onItemsSelected = { selected ->
+            Timber.d("PriorityFilterBottomSheet applied filters: $selected")
+            onApplyFilters(selected)
+        },
+        onDismiss = {
+            Timber.d("PriorityFilterBottomSheet dismissed")
+            onDismiss()
+        }
     )
 }
 
@@ -92,14 +115,21 @@ fun StatusFilterBottomSheet(
     onDismiss: () -> Unit,
     onApplyFilters: (List<CheckBoxData>) -> Unit
 ) {
+    Timber.d("StatusFilterBottomSheet rendered with ${statuses.size} statuses")
     MultiSelectBottomSheet(
         items = statuses,
         title = "Filter by Status",
         noResultsFoundString = "No statuses found",
         searchToFindMoreString = "Search to find more statuses",
         doneButtonText = "Done",
-        onItemsSelected = onApplyFilters,
-        onDismiss = onDismiss
+        onItemsSelected = { selected ->
+            Timber.d("StatusFilterBottomSheet applied filters: $selected")
+            onApplyFilters(selected)
+        },
+        onDismiss = {
+            Timber.d("StatusFilterBottomSheet dismissed")
+            onDismiss()
+        }
     )
 }
 
@@ -119,6 +149,7 @@ fun DueDateFilterBottomSheet(
     onDismiss: () -> Unit,
     onApplyFilters: (DateRangeFilter?) -> Unit
 ) {
+    Timber.d("DueDateFilterBottomSheet rendered with selectedRange: $selectedRange")
     val dateRangeLabels = mapOf(
         DateRangeFilter.Today to "Today",
         DateRangeFilter.Yesterday to "Yesterday",

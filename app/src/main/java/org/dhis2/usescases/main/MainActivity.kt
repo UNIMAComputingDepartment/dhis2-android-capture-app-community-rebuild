@@ -62,7 +62,6 @@ import org.dhis2.utils.session.PinDialog
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
 import java.io.File
 import javax.inject.Inject
-
 private const val FRAGMENT = "Fragment"
 private const val SINGLE_PROGRAM_NAVIGATION = "SINGLE_PROGRAM_NAVIGATION"
 private const val INIT_DATA_SYNC = "INIT_DATA_SYNC"
@@ -71,7 +70,6 @@ private const val RESTART = "Restart"
 const val AVOID_SYNC = "AvoidSync"
 
 class MainActivity :
-    ActivityGlobalAbstract(),
     MainView,
     DrawerLayout.DrawerListener {
 

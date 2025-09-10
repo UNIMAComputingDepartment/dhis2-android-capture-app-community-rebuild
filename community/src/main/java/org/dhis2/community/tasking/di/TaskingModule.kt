@@ -14,11 +14,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object TaskingModule {
 
-   /* @Provides
-    @Singleton
-    fun provideTaskingRepository(
-        taskingRepository: TaskingRepository
-    ): TaskingRepository = taskingRepository*/
+    /* @Provides
+     @Singleton
+     fun provideTaskingRepository(
+         taskingRepository: TaskingRepository
+     ): TaskingRepository = taskingRepository*/
 
     @Provides
     @Singleton

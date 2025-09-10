@@ -8,6 +8,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import javax.inject.Inject
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
+import timber.log.Timber
 
 class TaskingPresenter @Inject constructor(
     private val filterRepository: TaskFilterRepository,
@@ -17,12 +18,18 @@ class TaskingPresenter @Inject constructor(
     val tasks: List<TaskingUiModel> get() = _tasks
     private val disposable = CompositeDisposable()
 
+    init {
+        Timber.d("TaskingPresenter initialized")
+    }
+
     fun observeFilters(tasksFromRepo: List<TaskingUiModel>) {
+        Timber.d("observeFilters called with ${tasksFromRepo.size} tasks")
         disposable.add(
             filterManager.asFlowable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
+                    Timber.d("FilterManager emitted new filter state")
                     val taskFilter = filterRepository.selectedFilters.value
                     val filterModel = TaskFilterModel(
                         programFilters = taskFilter.programFilters,
@@ -36,21 +43,26 @@ class TaskingPresenter @Inject constructor(
                         dueDateRange = taskFilter.dueDateRange,
                         customDateRange = taskFilter.customDateRange
                     )
+                    Timber.d("Applying filters: $filterModel")
                     val filtered = applyTaskFilters(tasksFromRepo, filterModel)
+                    Timber.d("Filtered tasks count: ${filtered.size}")
                     updateFilteredTasks(filtered)
                 }
         )
     }
 
     fun initialize(tasksFromRepo: List<TaskingUiModel>) {
+        Timber.d("initialize called with ${tasksFromRepo.size} tasks")
         updateFilteredTasks(tasksFromRepo)
     }
 
     fun onResume() {
+        Timber.d("TaskingPresenter onResume called")
         // Add any logic needed for resuming presenter
     }
 
     private fun applyTaskFilters(tasks: List<TaskingUiModel>, filter: TaskFilterModel): List<TaskingUiModel> {
+        Timber.d("applyTaskFilters called with ${tasks.size} tasks and filter: $filter")
         return tasks.filter { task ->
             val dueDate = task.dueDate
             // Program filter
@@ -71,6 +83,7 @@ class TaskingPresenter @Inject constructor(
         dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?,
         customRange: org.dhis2.community.tasking.filters.models.CustomDateRange?
     ): Boolean {
+        Timber.d("matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange, customRange: $customRange")
         if (dueDate == null) return false
         val today = java.util.Calendar.getInstance()
         val calDue = java.util.Calendar.getInstance().apply { time = dueDate }

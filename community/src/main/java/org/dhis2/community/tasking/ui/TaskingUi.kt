@@ -25,6 +25,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.state.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
+import timber.log.Timber
 
 const val TASKING_ITEMS = "TASKING_ITEMS"
 
@@ -35,10 +36,12 @@ fun TaskingUi(
     viewModel: TaskingViewModelContract,
     filterState: TaskFilterState
 ) {
+    Timber.d("TaskingUi composable rendered with ${tasks.size} tasks")
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
 
     // Collect tasks from viewModel's StateFlow
     val filteredTasks by viewModel.filteredTasks.collectAsState()
+    Timber.d("TaskingUi filteredTasks count: ${filteredTasks.size}")
 
     // Calculate progress variables at the top scope
     val allTasksForProgress = viewModel.allTasksForProgress.ifEmpty { tasks }
@@ -47,7 +50,7 @@ fun TaskingUi(
     val completionPercentage = if (totalTaskCount > 0) {
         (completedTaskCount * 100) / totalTaskCount
     } else 0
-
+    Timber.d("TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,12 +60,28 @@ fun TaskingUi(
         // Filter Bar
         TaskFilterBar(
             filterState = filterState.uiState,
-            onProgramFilterClick = { activeFilterSheet = FilterSheetType.PROGRAM },
-            onOrgUnitFilterClick = { activeFilterSheet = FilterSheetType.ORG_UNIT },
-            onPriorityFilterClick = { activeFilterSheet = FilterSheetType.PRIORITY },
-            onStatusFilterClick = { activeFilterSheet = FilterSheetType.STATUS },
-            onDueDateFilterClick = { activeFilterSheet = FilterSheetType.DUE_DATE },
+            onProgramFilterClick = {
+                Timber.d("Program filter clicked")
+                activeFilterSheet = FilterSheetType.PROGRAM
+            },
+            onOrgUnitFilterClick = {
+                Timber.d("OrgUnit filter clicked")
+                activeFilterSheet = FilterSheetType.ORG_UNIT
+            },
+            onPriorityFilterClick = {
+                Timber.d("Priority filter clicked")
+                activeFilterSheet = FilterSheetType.PRIORITY
+            },
+            onStatusFilterClick = {
+                Timber.d("Status filter clicked")
+                activeFilterSheet = FilterSheetType.STATUS
+            },
+            onDueDateFilterClick = {
+                Timber.d("DueDate filter clicked")
+                activeFilterSheet = FilterSheetType.DUE_DATE
+            },
             onClearAllFilters = {
+                Timber.d("Clear all filters clicked")
                 filterState.clearAllFilters()
                 viewModel.onFilterChanged()
             }
@@ -286,7 +305,9 @@ fun TaskingUi(
                                 )
                             )
                         },
-                        onCardClick = { onTaskClick(task) }
+                        onCardClick = {
+                            onTaskClick(task)
+                        }
                     )
                 }
             }

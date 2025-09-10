@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.dhis2.community.tasking.engine.TaskingEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.models.DateRangeFilter
 import org.dhis2.community.tasking.models.EvaluationResult
@@ -51,29 +50,42 @@ class TaskingViewModel @Inject constructor(
         get() = allTasks
 
     init {
+        Timber.d("TaskingViewModel initialized")
         loadInitialData()
     }
 
     private fun loadInitialData() {
+        Timber.d("loadInitialData() called in TaskingViewModel")
         viewModelScope.launch {
+            Timber.d("Coroutine launched in loadInitialData()")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
-                    val evaluator = TaskingEvaluator(d2, repository)
-                    val evaluationResults = evaluator.evaluateForTie(
-                        sourceTieUid = null,
-                        programUid = "",
-                        sourceTieOrgUnit = ""
-                    )
-
-                    allTasks = evaluationResults.mapNotNull { result ->
-                        evaluationResultToTask(result)?.let { TaskingUiModel(it, result.orgUnit) }
+                    Timber.d("About to fetch orgUnits from repository.currentOrgUnits")
+                    val orgUnits = repository.currentOrgUnits
+                    Timber.d("Fetched orgUnits: $orgUnits")
+                    val programUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.programUid
+                    Timber.d("Using programUid: $programUid")
+                    val teiTypeUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.teiTypeUid
+                    Timber.d("Using teiTypeUid: $teiTypeUid")
+                    val taskConfig = repository.getCachedConfig()?.programTasks?.firstOrNull { it.programUid == programUid }
+                    Timber.d("Using taskConfig: $taskConfig")
+                    allTasks = orgUnits.flatMap { orgUnitUid ->
+                        Timber.d("Fetching tasks for orgUnit $orgUnitUid and programUid $programUid")
+                        val teis = repository.getTaskTei(orgUnitUid)
+                        Timber.d("TEIs fetched for orgUnit $orgUnitUid: ${teis.size}")
+                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
+                        Timber.d("Tasks built for orgUnit $orgUnitUid: ${tasks.size}")
+                        tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
                     }
-
+                    Timber.d("Total tasks loaded: ${allTasks.size}")
+                    _filteredTasks.value = allTasks
                     updateFilterOptions()
                     applyFilters()
                 } catch (e: Exception) {
-                    Timber.e(e, "Error loading tasks")
+                    Timber.e(e, "Error loading tasks in loadInitialData()")
                 }
+            } else {
+                Timber.w("Android version too low for loadInitialData() logic")
             }
         }
     }
@@ -105,6 +117,7 @@ class TaskingViewModel @Inject constructor(
     }
 
     private fun updateFilterOptions() {
+        Timber.d("updateFilterOptions called")
         // Update program filters
         programs = allTasks
             .map { it.sourceProgramUid to it.sourceProgramName }
@@ -149,6 +162,7 @@ class TaskingViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
+        Timber.d("applyFilters called")
         val filter = filterState.currentFilter
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
@@ -203,6 +217,7 @@ class TaskingViewModel @Inject constructor(
     }
 
     override fun onFilterChanged() {
+        Timber.d("onFilterChanged called")
         applyFilters()
     }
 

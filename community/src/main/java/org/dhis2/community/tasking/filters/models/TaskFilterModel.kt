@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.filters.models
 
 import java.util.Date
+import timber.log.Timber
 
 data class TaskFilterModel(
     val programFilters: Set<String> = emptySet(),
@@ -9,7 +10,11 @@ data class TaskFilterModel(
     val statusFilters: Set<org.dhis2.community.tasking.ui.TaskingStatus> = emptySet(),
     val dueDateRange: DateRangeFilter? = null, // Make nullable
     val customDateRange: CustomDateRange? = null
-)
+) {
+    init {
+        Timber.d("TaskFilterModel created: $this")
+    }
+}
 
 enum class DateRangeFilter {
     Today,

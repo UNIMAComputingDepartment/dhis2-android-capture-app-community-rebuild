@@ -4,23 +4,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import timber.log.Timber
 
 @Singleton
 class TaskFilterRepository @Inject constructor() {
+    init {
+        Timber.d("TaskFilterRepository initialized")
+    }
+
     private val _selectedFilters = MutableStateFlow(TaskFilter())
     val selectedFilters: StateFlow<TaskFilter> = _selectedFilters
 
     fun updateFilter(filter: TaskFilter) {
+        Timber.d("updateFilter called with: $filter")
         _selectedFilters.value = filter
     }
 
     fun clearFilters() {
+        Timber.d("clearFilters called, resetting filters to default")
         _selectedFilters.value = TaskFilter()
     }
 
     fun filterTasks(tasks: List<org.dhis2.community.tasking.ui.TaskingUiModel>): List<org.dhis2.community.tasking.ui.TaskingUiModel> {
         val filter = _selectedFilters.value
-        return tasks.filter { uiModel ->
+        Timber.d("filterTasks called with ${tasks.size} tasks and filter: $filter")
+        val filtered = tasks.filter { uiModel ->
             val task = uiModel.task
             // Program filter
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
@@ -33,6 +41,8 @@ class TaskFilterRepository @Inject constructor() {
             // Due date filter
             (filter.dueDateRange == null || matchesDueDateFilter(uiModel, filter.dueDateRange, filter.customDateRange))
         }
+        Timber.d("filterTasks result: ${filtered.size} tasks after filtering")
+        return filtered
     }
 
     private fun matchesDueDateFilter(
