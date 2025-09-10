@@ -10,36 +10,37 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
-import timber.log.Timber
 import javax.inject.Inject
 
 
-@AndroidEntryPoint
 class TaskingFragment : Fragment(), TaskingView {
-    @Inject lateinit var repository: TaskingRepository
-    @Inject lateinit var d2: D2
-
+    private lateinit var repository: TaskingRepository
+    private lateinit var d2: D2
     private lateinit var presenter: TaskingPresenter
+    private lateinit var filterRepository: TaskFilterRepository
+    private lateinit var filterManager: FilterManager
+
     private var tasks: List<TaskingUiModel> = emptyList()
-    private val filterRepository = TaskFilterRepository()
-    private val filterManager = FilterManager.getInstance()
-    private val viewModel: TaskingViewModel by viewModels {
-        TaskingViewModelFactory(repository, d2)
-    }
+    private lateinit var viewModel: TaskingViewModel
     private val filterState = org.dhis2.community.tasking.filters.TaskFilterState()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Timber.d("TaskingFragment onCreate called")
+        // Manually obtain D2 instance (replace with your actual method)
+        d2 = org.hisp.dhis.android.core.D2Manager.getD2() // or your actual D2 provider
+        repository = TaskingRepository(d2)
+        filterRepository = TaskFilterRepository()
+        filterManager = FilterManager.getInstance()
         presenter = TaskingPresenter(filterRepository, filterManager)
+        viewModel = TaskingViewModel(repository, d2)
         Timber.d("TaskingPresenter initialized in Fragment")
     }
 

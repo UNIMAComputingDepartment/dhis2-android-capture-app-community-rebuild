@@ -60,6 +60,8 @@ class TaskingViewModel @Inject constructor(
             Timber.d("Coroutine launched in loadInitialData()")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
+                    // Ensure config is loaded before accessing cachedConfig
+                    repository.getTaskingConfig()
                     Timber.d("About to fetch orgUnits from repository.currentOrgUnits")
                     val orgUnits = repository.currentOrgUnits
                     Timber.d("Fetched orgUnits: $orgUnits")

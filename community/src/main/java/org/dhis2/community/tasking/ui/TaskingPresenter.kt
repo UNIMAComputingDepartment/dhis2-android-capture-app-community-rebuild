@@ -6,8 +6,8 @@ import org.dhis2.commons.filters.FilterManager
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import javax.inject.Inject
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
+import javax.inject.Inject
 import timber.log.Timber
 
 class TaskingPresenter @Inject constructor(
@@ -21,7 +21,6 @@ class TaskingPresenter @Inject constructor(
     init {
         Timber.d("TaskingPresenter initialized")
     }
-
     fun observeFilters(tasksFromRepo: List<TaskingUiModel>) {
         Timber.d("observeFilters called with ${tasksFromRepo.size} tasks")
         disposable.add(
@@ -55,6 +54,7 @@ class TaskingPresenter @Inject constructor(
         Timber.d("initialize called with ${tasksFromRepo.size} tasks")
         updateFilteredTasks(tasksFromRepo)
     }
+
 
     fun onResume() {
         Timber.d("TaskingPresenter onResume called")
