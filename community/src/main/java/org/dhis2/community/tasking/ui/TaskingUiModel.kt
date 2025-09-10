@@ -38,16 +38,27 @@ data class TaskingUiModel(
         )
 
     private fun parseDueDate(dueDate: String?): Date? {
-        if (dueDate.isNullOrBlank()) return null
-        // Defensive: Only parse if it looks like a date
-        val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
-        if (!dateRegex.matches(dueDate)) {
-            Timber.e("DueDate value is not a valid date: $dueDate")
+        Timber.d("parseDueDate called with: '$dueDate'")
+
+        if (dueDate.isNullOrBlank()) {
+            Timber.d("Due date is null or blank")
             return null
         }
+
+        // Check if this looks like an attribute ID (starts with letter)
+        if (dueDate.matches(Regex("[a-zA-Z].*"))) {
+            Timber.e("ERROR: This looks like an attribute ID, not a date: $dueDate")
+            return null
+        }
+
+        val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
+        if (!dateRegex.matches(dueDate)) {
+            Timber.e("DueDate value is not a valid date format: $dueDate")
+            return null
+        }
+
         return try {
-            // Correct format for API: yyyy-MM-dd
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dueDate)
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dueDate)
         } catch (e: Exception) {
             Timber.e(e, "Error parsing dueDate: $dueDate")
             null
