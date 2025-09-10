@@ -143,7 +143,7 @@ class CreationEvaluator (
             created += Task(
                 name = result.taskingConfig.name,
                 description = result.taskingConfig.description,
-                sourceProgramUid = taskSourceProgramUid,
+                sourceProgramUid = targetProgramUid,
                 sourceProgramName = repository.getProgramName(result.programUid),
                 teiUid = newTeiUid,
                 teiPrimary = primary,
@@ -152,15 +152,16 @@ class CreationEvaluator (
                 dueDate = dueDate,
                 priority = result.taskingConfig.priority,
                 status = "OPEN",
-                sourceEnrollmentUid = sourceTieProgramEnrollment
+                sourceEnrollmentUid = sourceTieProgramEnrollment,
+                iconNane = repository.getSourceProgramIcon(targetProgramUid)
             )
         }
 
-        val msg = repository.getAllTasks(orgUnitUid = sourceTieOrgUnitUid.toString(), targetProgramUid)
+        val msg = repository.getAllTasks()
 
         Timber.tag("FETCHED_TASKS").d(msg.toString())
         Timber.tag("CREATED_TASKS").d(created.toString())
         return created.toList()
     }
-
 }
+

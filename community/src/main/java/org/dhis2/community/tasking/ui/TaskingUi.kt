@@ -332,7 +332,8 @@ fun getDummyTasks() : List<TaskingUiModel> {
                 teiTertiary = "Male",
                 dueDate = "2025-09-06",
                 priority = "Low",
-                status = "OPEN"
+                status = "OPEN",
+                iconNane = ""
             ),
             orgUnit = ""
         ),
@@ -349,7 +350,8 @@ fun getDummyTasks() : List<TaskingUiModel> {
                 teiTertiary = "MAT456",
                 dueDate = "2025-09-10",
                 priority = "Medium",
-                status = "DUE_SOON"
+                status = "DUE_SOON",
+                iconNane = ""
             ),
             orgUnit = ""
         ),
@@ -366,7 +368,8 @@ fun getDummyTasks() : List<TaskingUiModel> {
                 teiTertiary = "MAT789",
                 dueDate = "2025-09-01",
                 priority = "High",
-                status = "OVERDUE"
+                status = "OVERDUE",
+                iconNane = ""
             ),
             orgUnit = ""
         ),
@@ -383,7 +386,8 @@ fun getDummyTasks() : List<TaskingUiModel> {
                 teiTertiary = "Female",
                 dueDate = "2025-09-20",
                 priority = "High",
-                status = "COMPLETED"
+                status = "COMPLETED",
+                iconNane = ""
             ),
             orgUnit = ""
         )

@@ -3,6 +3,7 @@ package org.dhis2.community.tasking.repositories
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
+import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
@@ -23,7 +24,7 @@ class TaskingRepository(
 ) {
 
     private val dataElementChangedSubject = PublishSubject.create<String>()
-    fun observeDataElementChanges(): io.reactivex.Observable<String> =
+    fun observeDataElementChanges(): Observable<String> =
         dataElementChangedSubject.hide()
 
     private fun notifyDataElementChanged(dataElement: String) {
@@ -89,6 +90,13 @@ class TaskingRepository(
             .blockingGet()?.displayName() ?: ""
     }
 
+    fun getSourceProgramIcon(sourceProgramUid: String) : String?{
+        val program = d2.programModule().programs()
+            .uid(sourceProgramUid).blockingGet()
+
+        return program?.style()?.icon()
+    }
+
     fun getTieByType(
         trackedEntityTypeUid: String,
         orgUnitUid: String,
@@ -112,19 +120,20 @@ class TaskingRepository(
 
         return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
             .eq(taskTeiUid)
+            .withTrackedEntityAttributeValues()
             .blockingGet()
     }
 
-    fun getAllTasks(
+    fun getTasksPerOrgUnit(
 //        tieTypeUid: String,
-        orgUnitUid: String,
-        thisProgramUid: String,
+        orgUnitUid: String = currentOrgUnits.first(),
+        //thisProgramUid: String,
     ): List<Task> {
         val teis = getTaskTei(orgUnitUid)
 
         // Find the config for this program
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() {it.programUid == thisProgramUid}
+        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
         //taskingConfig.taskConfigs
         //.firstOrNull { it.programUid == programUid }
 
@@ -141,14 +150,51 @@ class TaskingRepository(
                 teiTertiary = tei.getAttributeValue(taskConfig?.teiView?.teiTertiaryAttribute) ?: "",
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN"
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
+                iconNane = getSourceProgramIcon(sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")
             )
         }
     }
 
+    fun getAllTasks() : List<Task>{
+        val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
+        if (taskTeiUid.isNullOrEmpty()) return emptyList()
+
+        val allTies = d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
+            .eq(taskTeiUid)
+            .withTrackedEntityAttributeValues()
+            .blockingGet()
+
+        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
+        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
+
+
+        return allTies.map { tei ->
+            Task(
+                name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
+                description = tei.getAttributeValue(programConfig?.description) ?: "",
+                sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
+                    ?: "",
+                sourceProgramName = programConfig?.programName ?: "",
+                teiUid = tei.uid(),
+                teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
+                teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
+                teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
+                dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
+                priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
+                iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
+
+                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
+            )
+        }
+
+    }
+
     fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
         if (attributeUid.isNullOrEmpty()) return null
-        return attribute(attributeUid)
+        return this.trackedEntityAttributeValues()
+            ?.firstOrNull {it.trackedEntityAttribute() == attributeUid}
             ?.value()
     }
 

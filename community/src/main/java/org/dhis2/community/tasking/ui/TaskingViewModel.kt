@@ -75,7 +75,10 @@ class TaskingViewModel @Inject constructor(
                         Timber.d("Fetching tasks for orgUnit $orgUnitUid and programUid $programUid")
                         val teis = repository.getTaskTei(orgUnitUid)
                         Timber.d("TEIs fetched for orgUnit $orgUnitUid: ${teis.size}")
-                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
+//                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
+                        val tasks = repository.getAllTasks()
+                        val tasksDebug = repository.getTasksPerOrgUnit(orgUnitUid)
+                        Timber.d("Tasks fetched for orgUnit $orgUnitUid: ${tasksDebug.size}")
                         Timber.d("Tasks built for orgUnit $orgUnitUid: ${tasks.size}")
                         tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
                     }
@@ -108,7 +111,8 @@ class TaskingViewModel @Inject constructor(
                         teiTertiary = attrs.third,
                         dueDate = dueDate,
                         priority = result.taskingConfig.priority,
-                        status = "OPEN"
+                        status = "OPEN",
+                        iconNane = repository.getSourceProgramIcon(result.programUid)
                     )
                 }
             }

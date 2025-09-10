@@ -67,9 +67,9 @@ data class TaskingConfig(
                 val dueInDays: Int
             )
 
-            data class Completion(
-                val condition: CompletionCondition
-            )
+        data class Completion(
+            val condition: List<Condition>
+        )
 
             data class CompletionCondition(
                 val op: String,
