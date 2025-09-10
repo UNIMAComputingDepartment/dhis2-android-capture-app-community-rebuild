@@ -68,7 +68,7 @@ data class TaskingConfig(
             )
 
         data class Completion(
-            val condition: CompletionCondition
+            val condition: List<Condition>
         )
 
             data class CompletionCondition(
