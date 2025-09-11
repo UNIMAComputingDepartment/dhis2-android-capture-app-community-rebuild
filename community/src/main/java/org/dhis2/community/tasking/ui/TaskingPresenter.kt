@@ -21,8 +21,10 @@ class TaskingPresenter @Inject constructor(
     init {
         Timber.d("TaskingPresenter initialized")
     }
+
     fun observeFilters(tasksFromRepo: List<TaskingUiModel>) {
         Timber.d("observeFilters called with ${tasksFromRepo.size} tasks")
+        disposable.clear() // Ensure no duplicate subscriptions
         disposable.add(
             filterManager.asFlowable()
                 .subscribeOn(Schedulers.io())
@@ -54,7 +56,6 @@ class TaskingPresenter @Inject constructor(
         updateFilteredTasks(tasksFromRepo)
     }
 
-
     fun onResume() {
         Timber.d("TaskingPresenter onResume called")
         // Add any logic needed for resuming presenter
@@ -64,16 +65,11 @@ class TaskingPresenter @Inject constructor(
         Timber.d("applyTaskFilters called with ${tasks.size} tasks and filter: $filter")
         return tasks.filter { task ->
             val dueDate = task.dueDate
-            // Program filter
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-                    // OrgUnit filter
-                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
-                    // Priority filter
-                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-                    // Status filter
-                    (filter.statusFilters.isEmpty() || filter.statusFilters.any { it.label == task.status.label }) &&
-                    // Due date filter
-                    (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange))
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+            (filter.statusFilters.isEmpty() || filter.statusFilters.any { it.label == task.status.label }) &&
+            (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange))
         }
     }
 
@@ -88,18 +84,18 @@ class TaskingPresenter @Inject constructor(
         return when (dateRange) {
             org.dhis2.community.tasking.filters.models.DateRangeFilter.Today -> calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && calDue.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
             org.dhis2.community.tasking.filters.models.DateRangeFilter.Yesterday -> {
-                today.add(java.util.Calendar.DAY_OF_YEAR, -1)
-                calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && calDue.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
+                val yesterday = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+                calDue.get(java.util.Calendar.YEAR) == yesterday.get(java.util.Calendar.YEAR) && calDue.get(java.util.Calendar.DAY_OF_YEAR) == yesterday.get(java.util.Calendar.DAY_OF_YEAR)
             }
             org.dhis2.community.tasking.filters.models.DateRangeFilter.ThisWeek -> calDue.get(java.util.Calendar.WEEK_OF_YEAR) == today.get(java.util.Calendar.WEEK_OF_YEAR) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
             org.dhis2.community.tasking.filters.models.DateRangeFilter.LastWeek -> {
-                today.add(java.util.Calendar.WEEK_OF_YEAR, -1)
-                calDue.get(java.util.Calendar.WEEK_OF_YEAR) == today.get(java.util.Calendar.WEEK_OF_YEAR) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
+                val lastWeek = java.util.Calendar.getInstance().apply { add(java.util.Calendar.WEEK_OF_YEAR, -1) }
+                calDue.get(java.util.Calendar.WEEK_OF_YEAR) == lastWeek.get(java.util.Calendar.WEEK_OF_YEAR) && calDue.get(java.util.Calendar.YEAR) == lastWeek.get(java.util.Calendar.YEAR)
             }
             org.dhis2.community.tasking.filters.models.DateRangeFilter.ThisMonth -> calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
             org.dhis2.community.tasking.filters.models.DateRangeFilter.LastMonth -> {
-                today.add(java.util.Calendar.MONTH, -1)
-                calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
+                val lastMonth = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MONTH, -1) }
+                calDue.get(java.util.Calendar.MONTH) == lastMonth.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == lastMonth.get(java.util.Calendar.YEAR)
             }
             else -> true
         }

@@ -46,7 +46,8 @@ fun TaskFilterBar(
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .weight(1f),
+                .weight(1f)
+                .padding(start = 8.dp, end = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
         ) {
             FilterChip(
@@ -80,7 +81,6 @@ fun TaskFilterBar(
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
         }
-        // Static clear button on the right
         Button(
             enabled = true,
             style = ButtonStyle.TEXT,

@@ -83,7 +83,8 @@ class TaskingViewModel @Inject constructor(
                         tasks.map { task -> TaskingUiModel(task, orgUnitUid, repository) }
                     }
                     Timber.d("Total tasks loaded: ${allTasks.size}")
-//                    filterState.updateUiState()
+                    filterState.updateUiState()
+                    updateFilterOptions()
                     applyFilters()
                 } catch (e: Exception) {
                     Timber.e(e, "Error loading tasks in loadInitialData()")

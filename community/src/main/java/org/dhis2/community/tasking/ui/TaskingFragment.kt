@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.ui
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -11,15 +12,13 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import timber.log.Timber
-import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
-import javax.inject.Inject
 
 
-class TaskingFragment : Fragment(), TaskingView {
+class TaskingFragment(private val onTaskClick: (Context, String, String, String) -> Unit) : Fragment(), TaskingView {
     private lateinit var repository: TaskingRepository
     private lateinit var d2: D2
     private lateinit var presenter: TaskingPresenter
@@ -50,17 +49,22 @@ class TaskingFragment : Fragment(), TaskingView {
         savedInstanceState: Bundle?
     ): View {
         Timber.d("TaskingFragment onCreateView called")
-        // Set dummy tasks in the viewModel's filteredTasks StateFlow
-        (viewModel.filteredTasks as kotlinx.coroutines.flow.MutableStateFlow<List<TaskingUiModel>>).value = tasks
-        Timber.d("TaskingFragment ComposeView set with ${tasks.size} tasks")
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 TaskingUi(
                     tasks = viewModel.filteredTasks.collectAsState().value,
-                    onTaskClick = { Timber.d("Task clicked: $it") },
+                    onTaskClick = {
+                        onTaskClick(
+                            requireContext(),
+                            it.teiUid,
+                            it.sourceProgramUid,
+                            it.sourceEnrollmentUid
+                            )
+                        Timber.d("Task clicked: $it")
+                                  },
                     viewModel = viewModel,
-                    filterState = filterState
+                    filterState = viewModel.filterState
                 )
             }
         }

@@ -18,12 +18,15 @@ class TaskFilterState {
                 org.dhis2.community.tasking.ui.TaskingStatus.OPEN,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
-                org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE,
-                org.dhis2.community.tasking.ui.TaskingStatus.DEFAULTED
+                org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE
             )
         )
     )
         private set
+
+    init {
+        updateUiState()
+    }
 
     fun updateProgramFilters(selectedPrograms: List<CheckBoxData>) {
         val selectedProgramIds = selectedPrograms.filter { it.checked }.map { it.uid }.toSet()
@@ -48,6 +51,7 @@ class TaskFilterState {
     }
 
     fun updateStatusFilters(selectedStatuses: List<CheckBoxData>) {
+        // If all are unselected, set to empty set
         val selectedStatusEnums = selectedStatuses.filter { it.checked }
             .mapNotNull { org.dhis2.community.tasking.ui.TaskingStatus.entries.find { s -> s.label == it.uid } }
             .toSet()
@@ -68,7 +72,7 @@ class TaskFilterState {
         updateUiState()
     }
 
-    private fun updateUiState() {
+    internal fun updateUiState() {
         Timber.d("updateUiState called. Current filter: $currentFilter")
         uiState = FilterUiState(
             isProgramFilterActive = currentFilter.programFilters.isNotEmpty(),

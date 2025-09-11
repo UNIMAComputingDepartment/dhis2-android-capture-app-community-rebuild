@@ -44,9 +44,8 @@ fun TaskingUi(
     Timber.d("TaskingUi filteredTasks count: ${filteredTasks.size}")
 
     // Calculate progress variables at the top scope
-    val allTasksForProgress = viewModel.allTasksForProgress.ifEmpty { tasks }
-    val completedTaskCount = allTasksForProgress.count { it.status == TaskingStatus.COMPLETED }
-    val totalTaskCount = allTasksForProgress.size
+    val completedTaskCount = filteredTasks.count { it.status == TaskingStatus.COMPLETED }
+    val totalTaskCount = filteredTasks.size
     val completionPercentage = if (totalTaskCount > 0) {
         (completedTaskCount * 100) / totalTaskCount
     } else 0
@@ -131,7 +130,7 @@ fun TaskingUi(
         when (activeFilterSheet) {
             FilterSheetType.PROGRAM -> {
                 ProgramFilterBottomSheet(
-                    programs = viewModel.programs,
+                    programs = viewModel.programs.map { it.copy(checked = filterState.currentFilter.programFilters.contains(it.uid)) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updateProgramFilters(selected)
@@ -157,7 +156,7 @@ fun TaskingUi(
             }
             FilterSheetType.PRIORITY -> {
                 PriorityFilterBottomSheet(
-                    priorities = viewModel.priorities,
+                    priorities = viewModel.priorities.map { it.copy(checked = filterState.currentFilter.priorityFilters.any { p -> p.label == it.uid }) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updatePriorityFilters(selected)
@@ -168,7 +167,7 @@ fun TaskingUi(
             }
             FilterSheetType.STATUS -> {
                 StatusFilterBottomSheet(
-                    statuses = viewModel.statuses,
+                    statuses = viewModel.statuses.map { it.copy(checked = filterState.currentFilter.statusFilters.any { s -> s.label == it.uid }) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updateStatusFilters(selected)
@@ -294,7 +293,7 @@ fun TaskingUi(
                     )
 
                     ListCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.padding(8.dp),
                         listCardState = listCardState,
                         listAvatar = {
                             Avatar(

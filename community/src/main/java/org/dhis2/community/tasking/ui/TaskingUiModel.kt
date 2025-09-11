@@ -19,6 +19,7 @@ data class TaskingUiModel(
     val taskDescription: String get() = task.description
     val sourceProgramUid: String get() = task.sourceProgramUid
     val sourceProgramName: String get() = task.sourceProgramName
+    val sourceEnrollmentUid: String get() = task.sourceEnrollmentUid
     val teiUid: String get() = task.teiUid
     val teiPrimary: String get() = task.teiPrimary
     val teiSecondary: String get() = task.teiSecondary
