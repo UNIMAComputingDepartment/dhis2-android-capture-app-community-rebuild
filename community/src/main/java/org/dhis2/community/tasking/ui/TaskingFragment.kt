@@ -1,6 +1,6 @@
 
 package org.dhis2.community.tasking.ui
-/*
+
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -97,4 +97,3 @@ class TaskingFragment : Fragment(), TaskingView {
         filterRepository.clearFilters()
     }
 }
-*/
