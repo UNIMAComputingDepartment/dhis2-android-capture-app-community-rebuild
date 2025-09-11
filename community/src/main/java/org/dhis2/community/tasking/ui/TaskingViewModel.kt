@@ -80,7 +80,7 @@ class TaskingViewModel @Inject constructor(
                         val tasksDebug = repository.getTasksPerOrgUnit(orgUnitUid)
                         Timber.d("Tasks fetched for orgUnit $orgUnitUid: ${tasksDebug.size}")
                         Timber.d("Tasks built for orgUnit $orgUnitUid: ${tasks.size}")
-                        tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
+                        tasks.map { task -> TaskingUiModel(task, orgUnitUid, repository) }
                     }
                     Timber.d("Total tasks loaded: ${allTasks.size}")
 //                    filterState.updateUiState()

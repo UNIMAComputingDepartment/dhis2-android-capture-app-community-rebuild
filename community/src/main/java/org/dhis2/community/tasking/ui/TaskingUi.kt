@@ -317,102 +317,102 @@ fun TaskingUi(
 
 private enum class FilterSheetType { PROGRAM, ORG_UNIT, PRIORITY, STATUS, DUE_DATE }
 
-fun getDummyTasks() : List<TaskingUiModel> {
-    return listOf(
-        TaskingUiModel(
-            task = Task(
-                name = "BCG Immunization Due",
-                description = "BCG Immunization for newborn",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll1",
-                sourceProgramName = "Expanded Programme on Immunization - EPI",
-                teiUid = "tei1",
-                teiPrimary = "James Phiri",
-                teiSecondary = "2025-08-15",
-                teiTertiary = "Male",
-                dueDate = "2025-09-06",
-                priority = "Low",
-                status = "OPEN",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "ANC Follow-up Visit",
-                description = "Scheduled antenatal care follow-up",
-                sourceProgramUid = "WSGAb5XwJ3Y",
-                sourceEnrollmentUid = "enroll2",
-                sourceProgramName = "CBMNC - Woman Program",
-                teiUid = "tei2",
-                teiPrimary = "Mary Banda",
-                teiSecondary = "W123",
-                teiTertiary = "MAT456",
-                dueDate = "2025-09-10",
-                priority = "Medium",
-                status = "DUE_SOON",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "Post-delivery Follow-up",
-                description = "Neonatal check-up required",
-                sourceProgramUid = "uy2gU8kT1jF",
-                sourceEnrollmentUid = "enroll3",
-                sourceProgramName = "CBMNC - Neonatal Program",
-                teiUid = "tei3",
-                teiPrimary = "Baby Tembo",
-                teiSecondary = "2025-09-01",
-                teiTertiary = "MAT789",
-                dueDate = "2025-09-01",
-                priority = "High",
-                status = "OVERDUE",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "OPV-1 Vaccination",
-                description = "First dose of Oral Polio Vaccine",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll4",
-                sourceProgramName = "EPI",
-                teiUid = "tei4",
-                teiPrimary = "Sarah Mwanza",
-                teiSecondary = "2025-09-20",
-                teiTertiary = "Female",
-                dueDate = "2025-09-20",
-                priority = "High",
-                status = "COMPLETED",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        )
-    )
-
-    /*val filterState = remember { TaskFilterState() }
-
-    val filteredPreviewTasks = fakeTasks.filter {
-        it.status != TaskingStatus.COMPLETED
-    }
-
-    val previewViewModel = object : TaskingViewModelContract {
-        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
-        override val programs = emptyList<CheckBoxData>()
-        override val orgUnits = emptyList<OrgTreeItem>()
-        override val priorities = emptyList<CheckBoxData>()
-        override val statuses = emptyList<CheckBoxData>()
-        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
-        override fun onFilterChanged() {}
-    }
-
-    TaskingUi(
-        tasks = fakeTasks,
-        onTaskClick = {},
-        viewModel = previewViewModel,
-        filterState = filterState
-    )*/
-}
+//fun getDummyTasks() : List<TaskingUiModel> {
+//    return listOf(
+//        TaskingUiModel(
+//            task = Task(
+//                name = "BCG Immunization Due",
+//                description = "BCG Immunization for newborn",
+//                sourceProgramUid = "IpHINAT79UW",
+//                sourceEnrollmentUid = "enroll1",
+//                sourceProgramName = "Expanded Programme on Immunization - EPI",
+//                teiUid = "tei1",
+//                teiPrimary = "James Phiri",et
+//                teiSecondary = "2025-08-15",
+//                teiTertiary = "Male",
+//                dueDate = "2025-09-06",
+//                priority = "Low",
+//                status = "OPEN",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "ANC Follow-up Visit",
+//                description = "Scheduled antenatal care follow-up",
+//                sourceProgramUid = "WSGAb5XwJ3Y",
+//                sourceEnrollmentUid = "enroll2",
+//                sourceProgramName = "CBMNC - Woman Program",
+//                teiUid = "tei2",
+//                teiPrimary = "Mary Banda",
+//                teiSecondary = "W123",
+//                teiTertiary = "MAT456",
+//                dueDate = "2025-09-10",
+//                priority = "Medium",
+//                status = "DUE_SOON",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "Post-delivery Follow-up",
+//                description = "Neonatal check-up required",
+//                sourceProgramUid = "uy2gU8kT1jF",
+//                sourceEnrollmentUid = "enroll3",
+//                sourceProgramName = "CBMNC - Neonatal Program",
+//                teiUid = "tei3",
+//                teiPrimary = "Baby Tembo",
+//                teiSecondary = "2025-09-01",
+//                teiTertiary = "MAT789",
+//                dueDate = "2025-09-01",
+//                priority = "High",
+//                status = "OVERDUE",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "OPV-1 Vaccination",
+//                description = "First dose of Oral Polio Vaccine",
+//                sourceProgramUid = "IpHINAT79UW",
+//                sourceEnrollmentUid = "enroll4",
+//                sourceProgramName = "EPI",
+//                teiUid = "tei4",
+//                teiPrimary = "Sarah Mwanza",
+//                teiSecondary = "2025-09-20",
+//                teiTertiary = "Female",
+//                dueDate = "2025-09-20",
+//                priority = "High",
+//                status = "COMPLETED",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        )
+//    )
+//
+//    /*val filterState = remember { TaskFilterState() }
+//
+//    val filteredPreviewTasks = fakeTasks.filter {
+//        it.status != TaskingStatus.COMPLETED
+//    }
+//
+//    val previewViewModel = object : TaskingViewModelContract {
+//        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
+//        override val programs = emptyList<CheckBoxData>()
+//        override val orgUnits = emptyList<OrgTreeItem>()
+//        override val priorities = emptyList<CheckBoxData>()
+//        override val statuses = emptyList<CheckBoxData>()
+//        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
+//        override fun onFilterChanged() {}
+//    }
+//
+//    TaskingUi(
+//        tasks = fakeTasks,
+//        onTaskClick = {},
+//        viewModel = previewViewModel,
+//        filterState = filterState
+//    )*/
+//}

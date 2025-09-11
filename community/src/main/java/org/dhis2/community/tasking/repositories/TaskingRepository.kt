@@ -97,6 +97,13 @@ class TaskingRepository(
         return program?.style()?.icon()
     }
 
+    fun getSourceProgramColor(sourceProgramUid: String) : String?{
+        val program = d2.programModule().programs()
+            .uid(sourceProgramUid).blockingGet()
+
+        return program?.style()?.color()
+    }
+
     fun getTieByType(
         trackedEntityTypeUid: String,
         orgUnitUid: String,
@@ -184,7 +191,6 @@ class TaskingRepository(
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
-
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
             )
         }

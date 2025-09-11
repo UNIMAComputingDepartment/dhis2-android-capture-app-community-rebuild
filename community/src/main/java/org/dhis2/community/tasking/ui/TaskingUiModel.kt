@@ -11,7 +11,8 @@ import timber.log.Timber
 
 data class TaskingUiModel(
     val task: Task,
-    val orgUnit: String?
+    val orgUnit: String?,
+    val repository: org.dhis2.community.tasking.repositories.TaskingRepository
 ) {
     // Delegate properties from Task
     val taskName: String get() = task.name
@@ -29,21 +30,22 @@ data class TaskingUiModel(
         get() {
             val iconName = task.iconNane?.takeIf { it.isNotBlank() }
             val iconRes = iconName?.let { "dhis2_" + it } ?: "dhis2_default"
-//            val color = task.iconColor?.takeIf { it.isNotBlank() }?.let {
-//                try {
-//                    Color(android.graphics.Color.parseColor(it))
-//                } catch (e: Exception) {
-//                    SurfaceColor.Primary
-//                }
-//            } ?: SurfaceColor.Primary
+            val colorString = repository.getSourceProgramColor(task.sourceProgramUid)
+            val color = colorString?.takeIf { it.isNotBlank() }?.let {
+                try {
+                    Color(android.graphics.Color.parseColor(it))
+                } catch (e: Exception) {
+                    SurfaceColor.Primary
+                }
+            } ?: SurfaceColor.Primary
             return MetadataIconData(
                 imageCardData = ImageCardData.IconCardData(
                     uid = teiUid,
                     label = taskName,
                     iconRes = iconRes,
-                    iconTint = SurfaceColor.Primary
+                    iconTint = color
                 ),
-                color = SurfaceColor.Primary
+                color = color
             )
         }
 
