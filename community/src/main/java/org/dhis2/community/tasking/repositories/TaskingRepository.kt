@@ -34,7 +34,7 @@ class TaskingRepository(
     private var cachedConfig: TaskingConfig? = null
 
     val taskStatusAttributeUid =
-        getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?: ""
+        getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid ?: ""
 
     fun getCachedConfig() = cachedConfig
     fun getTaskingConfig(): TaskingConfig {
@@ -53,6 +53,13 @@ class TaskingRepository(
 
         cachedConfig = config
         return config
+    }
+
+    fun getOrgUnit(taskTeiUid: String):String?{
+        val tei = d2.trackedEntityModule().trackedEntityInstances()
+            .uid(taskTeiUid)
+            .blockingGet()
+        return tei?.organisationUnit()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

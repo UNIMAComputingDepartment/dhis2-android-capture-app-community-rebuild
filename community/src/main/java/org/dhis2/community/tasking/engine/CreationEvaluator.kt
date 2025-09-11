@@ -20,7 +20,7 @@ class CreationEvaluator (
     //private val primaryAttributeUid: String,
     //private val secondaryAttributeUid: String,
     //private val tertiaryAttributeUid: String*/
-) : TaskingEvaluator(d2, repository) {
+) : TaskingEvaluator(d2, repository){
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -32,6 +32,13 @@ class CreationEvaluator (
         sourceTieOrgUnitUid: String,
         sourceTieProgramEnrollment: String
     ): List<Task> {
+
+        taskCompletion(
+            tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
+            sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
+            sourceProgramUid = targetProgramUid,
+            sourceTeiUid = sourceTieUid
+        )
 
         val results = evaluateForTie(sourceTieUid, targetProgramUid, sourceTieOrgUnitUid)
         if (results.isEmpty()) return emptyList()

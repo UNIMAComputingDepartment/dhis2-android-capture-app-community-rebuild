@@ -68,6 +68,7 @@ fun TaskCardContents(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -97,7 +98,7 @@ fun TaskCardContents(
 
                     ) {
                         Text(
-                            text = task.sourceProgramName,
+                            text = task.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             // maxLines = Int.MAX_VALUE
@@ -118,7 +119,7 @@ fun TaskCardContents(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            "Location: ${task.teiSecondary}",
+                            "Location: ${task.teiTertiary}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
