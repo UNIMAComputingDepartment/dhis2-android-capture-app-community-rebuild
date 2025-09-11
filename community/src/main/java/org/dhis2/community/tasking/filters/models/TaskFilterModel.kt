@@ -8,8 +8,7 @@ data class TaskFilterModel(
     val orgUnitFilters: Set<String> = emptySet(),
     val priorityFilters: Set<org.dhis2.community.tasking.ui.TaskingPriority> = emptySet(),
     val statusFilters: Set<org.dhis2.community.tasking.ui.TaskingStatus> = emptySet(),
-    val dueDateRange: DateRangeFilter? = null, // Make nullable
-    val customDateRange: CustomDateRange? = null
+    val dueDateRange: DateRangeFilter? = null
 ) {
     init {
         Timber.d("TaskFilterModel created: $this")
@@ -22,14 +21,8 @@ enum class DateRangeFilter {
     ThisWeek,
     LastWeek,
     ThisMonth,
-    LastMonth,
-    Custom
+    LastMonth
 }
-
-data class CustomDateRange(
-    val from: Date? = null,
-    val to: Date? = null
-)
 
 data class FilterUiState(
     val isProgramFilterActive: Boolean = false,
@@ -42,6 +35,5 @@ data class FilterUiState(
     val statusFilterCount: Int = 0,
     val isDueDateFilterActive: Boolean = false,
     val dueDateFilterCount: Int = 0,
-    val selectedDateRange: DateRangeFilter? = null,
-    val customDateRange: CustomDateRange? = null
+    val selectedDateRange: DateRangeFilter? = null
 )

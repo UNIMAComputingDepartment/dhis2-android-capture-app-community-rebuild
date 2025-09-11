@@ -83,8 +83,7 @@ class TaskingViewModel @Inject constructor(
                         tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
                     }
                     Timber.d("Total tasks loaded: ${allTasks.size}")
-                    _filteredTasks.value = allTasks
-                    updateFilterOptions()
+//                    filterState.updateUiState()
                     applyFilters()
                 } catch (e: Exception) {
                     Timber.e(e, "Error loading tasks in loadInitialData()")
@@ -174,7 +173,7 @@ class TaskingViewModel @Inject constructor(
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
                     (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
                     (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-                    (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+                    (filter.statusFilters.isEmpty() || filter.statusFilters.any { status -> status.label == task.status.label }) &&
                     matchesDateFilter(task, filter.dueDateRange)
         }
     }

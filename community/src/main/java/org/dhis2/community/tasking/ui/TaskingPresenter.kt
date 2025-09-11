@@ -40,7 +40,6 @@ class TaskingPresenter @Inject constructor(
                             TaskingStatus.entries.find { it.label == label }
                         }.toSet(),
                         dueDateRange = taskFilter.dueDateRange,
-                        customDateRange = taskFilter.customDateRange
                     )
                     Timber.d("Applying filters: $filterModel")
                     val filtered = applyTaskFilters(tasksFromRepo, filterModel)
@@ -72,18 +71,17 @@ class TaskingPresenter @Inject constructor(
                     // Priority filter
                     (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
                     // Status filter
-                    (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+                    (filter.statusFilters.isEmpty() || filter.statusFilters.any { it.label == task.status.label }) &&
                     // Due date filter
-                    (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange, filter.customDateRange))
+                    (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange))
         }
     }
 
     private fun matchesDueDateFilter(
         dueDate: java.util.Date?,
         dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?,
-        customRange: org.dhis2.community.tasking.filters.models.CustomDateRange?
     ): Boolean {
-        Timber.d("matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange, customRange: $customRange")
+        Timber.d("matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange")
         if (dueDate == null) return false
         val today = java.util.Calendar.getInstance()
         val calDue = java.util.Calendar.getInstance().apply { time = dueDate }
@@ -102,11 +100,6 @@ class TaskingPresenter @Inject constructor(
             org.dhis2.community.tasking.filters.models.DateRangeFilter.LastMonth -> {
                 today.add(java.util.Calendar.MONTH, -1)
                 calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            }
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.Custom -> {
-                val from = customRange?.from
-                val to = customRange?.to
-                (from == null || !dueDate.before(from)) && (to == null || !dueDate.after(to))
             }
             else -> true
         }

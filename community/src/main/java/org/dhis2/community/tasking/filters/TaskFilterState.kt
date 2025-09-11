@@ -58,13 +58,13 @@ class TaskFilterState {
 
     fun updateDueDateFilter(dateRange: DateRangeFilter) {
         Timber.d("updateDueDateFilter called with: $dateRange")
-        currentFilter = currentFilter.copy(dueDateRange = dateRange, customDateRange = null)
+        currentFilter = currentFilter.copy(dueDateRange = dateRange)
         updateUiState()
     }
 
     fun clearAllFilters() {
         Timber.d("clearAllFilters called")
-        currentFilter = TaskFilterModel(dueDateRange = null, customDateRange = null)
+        currentFilter = TaskFilterModel(dueDateRange = null)
         updateUiState()
     }
 
@@ -81,7 +81,7 @@ class TaskFilterState {
             statusFilterCount = currentFilter.statusFilters.size,
             isDueDateFilterActive = currentFilter.dueDateRange != null,
             dueDateFilterCount = if (currentFilter.dueDateRange != null) 1 else 0,
-            selectedDateRange = currentFilter.dueDateRange,
+            selectedDateRange = currentFilter.dueDateRange
         )
     }
 }

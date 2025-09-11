@@ -32,14 +32,14 @@ class TaskFilterRepository @Inject constructor() {
             val task = uiModel.task
             // Program filter
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            // OrgUnit filter (use correct orgUnit field)
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(uiModel.orgUnit)) &&
-            // Priority filter
-            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            // Status filter
-            (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
-            // Due date filter
-            (filter.dueDateRange == null || matchesDueDateFilter(uiModel, filter.dueDateRange, filter.customDateRange))
+                    // OrgUnit filter (use correct orgUnit field)
+                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(uiModel.orgUnit)) &&
+                    // Priority filter
+                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+                    // Status filter
+                    (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+                    // Due date filter
+                    (filter.dueDateRange == null || matchesDueDateFilter(uiModel, filter.dueDateRange))
         }
         Timber.d("filterTasks result: ${filtered.size} tasks after filtering")
         return filtered
@@ -47,8 +47,7 @@ class TaskFilterRepository @Inject constructor() {
 
     private fun matchesDueDateFilter(
         uiModel: org.dhis2.community.tasking.ui.TaskingUiModel,
-        dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?,
-        customRange: org.dhis2.community.tasking.filters.models.CustomDateRange?
+        dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?
     ): Boolean {
         val dueDate = uiModel.dueDate ?: return false
         val today = java.util.Calendar.getInstance()
@@ -68,11 +67,6 @@ class TaskFilterRepository @Inject constructor() {
             org.dhis2.community.tasking.filters.models.DateRangeFilter.LastMonth -> {
                 today.add(java.util.Calendar.MONTH, -1)
                 calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            }
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.Custom -> {
-                val from = customRange?.from
-                val to = customRange?.to
-                (from == null || !dueDate.before(from)) && (to == null || !dueDate.after(to))
             }
             else -> true
         }
