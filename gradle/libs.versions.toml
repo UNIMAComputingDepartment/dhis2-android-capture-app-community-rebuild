@@ -1,4 +1,8 @@
 [versions]
+dagger = "2.57.1"
+daggerCompiler = "2.57.1"
+hiltAndroid = "2.48"
+hiltAndroidCompiler = "2.48"
 mobileUi = "1.0.0"
 sdk = "35"
 minSdk = "21"
@@ -87,7 +91,11 @@ material3WindowSize = "1.2.0"
 material3AdaptiveAndroid = "1.0.0"
 agp = "8.7.2"
 [libraries]
+dagger-compiler-v2571 = { module = "com.google.dagger:dagger-compiler", version.ref = "daggerCompiler" }
+dagger-v2571 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
+hilt-android-compiler-v248 = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
+hilt-android-v248 = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 kotlinPlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinSerialization = { group = "org.jetbrains.kotlin", name = "kotlin-serialization", version.ref = "kotlin" }
 hiltPlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }
@@ -205,6 +213,7 @@ dispatcher-dispatchBOM = { group = "com.rickbusarow.dispatch", name = "dispatch-
 dispatcher-dispatchCore = { group = "com.rickbusarow.dispatch", name = "dispatch-core" }
 dispatcher-dispatchEspresso = { group = "com.rickbusarow.dispatch", name = "dispatch-android-espresso", version = "1.0.0-beta10" }
 deprecated-autoValueParcel = { group = "com.ryanharter.auto.value", name = "auto-value-parcel", version.ref = "autovalueparcel" }
+x-x7-x = { module = "com.google.dagger-compiler:2.57.1" }
 [plugins]
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }

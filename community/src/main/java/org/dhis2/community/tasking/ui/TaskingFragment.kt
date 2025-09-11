@@ -1,21 +1,29 @@
-package org.dhis2.community.tasking.ui
 
+package org.dhis2.community.tasking.ui
+/*
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import org.dhis2.community.tasking.engine.TaskingPresenter
 
-class TaskingFragment : Fragment(), TaskingView {
 
-    private lateinit var presenter: TaskingPresenter
+class TasksFragment : Fragment(), TaskView {
 
+    private lateinit var presenter: TasksPresenter
+
+
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        presenter = TaskingPresenter(this)
+        presenter = TasksPresenter()
+
     }
 
     override fun onCreateView(
@@ -26,7 +34,7 @@ class TaskingFragment : Fragment(), TaskingView {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskingUi(tasks = presenter.tasks)
+                TaskScreen()
             }
         }
     }
@@ -39,3 +47,4 @@ class TaskingFragment : Fragment(), TaskingView {
     override fun showSyncDialog() {
     }
 }
+*/

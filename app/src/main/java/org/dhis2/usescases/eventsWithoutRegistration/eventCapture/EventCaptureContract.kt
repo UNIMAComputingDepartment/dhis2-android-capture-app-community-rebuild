@@ -75,6 +75,7 @@ class EventCaptureContract {
         val isEnrollmentCancelled: Boolean
         fun isEventEditable(eventUid: String): Boolean
         fun canReOpenEvent(): Single<Boolean>
+        fun getProgramUid(): Flowable<String>
         fun isCompletedEventExpired(eventUid: String): Observable<Boolean>
         val noteCount: Single<Int>
         fun showCompletionPercentage(): Boolean

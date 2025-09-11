@@ -13,6 +13,7 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.components.CollapsibleRelationshipSection
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel

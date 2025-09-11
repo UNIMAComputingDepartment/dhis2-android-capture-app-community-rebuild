@@ -19,7 +19,7 @@ class StatusEvaluator(
     @RequiresApi(Build.VERSION_CODES.O)
     fun updateTaskStatusIfNeeded(
         teiUid: String,
-        taskConfig: TaskingConfig.TaskConfig,
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         programUid: String
     ) {
         try {
@@ -55,7 +55,8 @@ class StatusEvaluator(
                 .blockingGet()?.value()
 
             if (currentStatus != newStatus) {
-                repository.updateTaskStatus(teiUid, newStatus)
+                //repository.updateTaskStatus(teiUid, newStatus)
+                repository.updateTaskAttrValue(repository.taskStatusAttributeUid, newStatus, teiUid)
             }
         } catch (e: Exception) {
             Timber.tag("StatusEvaluator").e(e, "Failed to update status for TEI $teiUid")
