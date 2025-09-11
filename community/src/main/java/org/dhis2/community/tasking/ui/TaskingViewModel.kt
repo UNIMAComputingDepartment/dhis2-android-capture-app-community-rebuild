@@ -129,11 +129,12 @@ class TaskingViewModel @Inject constructor(
             .map { it.sourceProgramUid to it.sourceProgramName }
             .distinctBy { it.first }
             .map { (uid, name) ->
+                val displayName = repository.getProgramDisplayName(uid) ?: name
                 CheckBoxData(
                     uid = uid,
                     checked = filterState.currentFilter.programFilters.contains(uid),
                     enabled = true,
-                    textInput = AnnotatedString(name)
+                    textInput = AnnotatedString(displayName)
                 )
             }
 

@@ -14,6 +14,10 @@ data class TaskingUiModel(
     val orgUnit: String?,
     val repository: org.dhis2.community.tasking.repositories.TaskingRepository
 ) {
+    init {
+        Timber.d("TaskingUiModel created: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
+    }
+
     // Delegate properties from Task
     val taskName: String get() = task.name
     val taskDescription: String get() = task.description
@@ -49,6 +53,9 @@ data class TaskingUiModel(
                 color = color
             )
         }
+
+    val displayProgramName: String get() = repository.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
+    val isNavigable: Boolean get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
 
     private fun parseDueDate(dueDate: String?): Date? {
         Timber.d("parseDueDate called with: '$dueDate'")

@@ -218,7 +218,7 @@ fun TaskingUi(
                             isConstantItem = true
                         ),
                         AdditionalInfoItem(
-                            key = "Details",
+                            key = "Physical Address",
                             value = task.teiSecondary,
                             color = TextColor.OnSurface,
                             truncate = false,
@@ -278,7 +278,7 @@ fun TaskingUi(
                             color = SurfaceColor.Primary
                         ),
                         description = ListCardDescriptionModel(
-                            text = task.sourceProgramName,
+                            text = task.displayProgramName,
                             color = TextColor.OnSurface
                         ),
                         lastUpdated = task.dueDate?.let {
@@ -305,7 +305,12 @@ fun TaskingUi(
                             )
                         },
                         onCardClick = {
-                            onTaskClick(task)
+                            Timber.d("Task card clicked: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
+                            if (task.isNavigable) {
+                                onTaskClick(task)
+                            } else {
+                                Timber.w("Navigation blocked: TEI ${task.teiUid} is not enrolled in program ${task.sourceProgramUid} with enrollment ${task.sourceEnrollmentUid}")
+                            }
                         }
                     )
                 }

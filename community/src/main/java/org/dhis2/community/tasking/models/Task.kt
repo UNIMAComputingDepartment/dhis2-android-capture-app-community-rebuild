@@ -24,4 +24,9 @@ data class Task(
     val priority: String,
     val status: String = "OPEN",
     val iconNane : String?
-)
+) {
+    init {
+        // Log all fields for debugging
+        timber.log.Timber.d("Task created: name=$name, description=$description, sourceProgramUid=$sourceProgramUid, sourceEnrollmentUid=$sourceEnrollmentUid, sourceProgramName=$sourceProgramName, teiUid=$teiUid, teiPrimary=$teiPrimary, teiSecondary=$teiSecondary, teiTertiary=$teiTertiary, dueDate=$dueDate, priority=$priority, status=$status, iconNane=$iconNane")
+    }
+}

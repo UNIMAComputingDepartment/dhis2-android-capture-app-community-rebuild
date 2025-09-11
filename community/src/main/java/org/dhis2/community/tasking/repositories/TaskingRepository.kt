@@ -233,4 +233,24 @@ class TaskingRepository(
                 .blockingGet()
         }
     }
+
+    fun getProgramDisplayName(programUid: String): String? {
+        return try {
+            d2.programModule().programs()
+                .byUid().eq(programUid).one()
+                .blockingGet()?.displayName()
+        } catch (e: Exception) {
+            Timber.e(e, "Error fetching program display name for UID: $programUid")
+            null
+        }
+    }
+
+    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): Boolean {
+        val enrollments = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .byStatus().eq(org.hisp.dhis.android.core.enrollment.EnrollmentStatus.ACTIVE)
+            .blockingGet()
+        return enrollments.any { it.uid() == enrollmentUid }
+    }
 }
