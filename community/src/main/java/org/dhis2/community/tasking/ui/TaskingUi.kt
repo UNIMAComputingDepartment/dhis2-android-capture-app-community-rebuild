@@ -10,13 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.ui.*
 import org.dhis2.community.tasking.models.Task
@@ -34,7 +31,8 @@ fun TaskingUi(
     tasks: List<TaskingUiModel>,
     onTaskClick: (TaskingUiModel) -> Unit,
     viewModel: TaskingViewModelContract,
-    filterState: TaskFilterState
+    filterState: TaskFilterState,
+    onOrgUnitFilterSelected: () -> Unit
 ) {
     Timber.d("TaskingUi composable rendered with ${tasks.size} tasks")
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
@@ -66,7 +64,8 @@ fun TaskingUi(
             },
             onOrgUnitFilterClick = {
                 Timber.d("OrgUnit filter clicked")
-                activeFilterSheet = FilterSheetType.ORG_UNIT
+                //activeFilterSheet = FilterSheetType.ORG_UNIT
+                onOrgUnitFilterSelected()
             },
             onPriorityFilterClick = {
                 Timber.d("Priority filter clicked")

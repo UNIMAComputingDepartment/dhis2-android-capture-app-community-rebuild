@@ -7,6 +7,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import javax.inject.Inject
 import timber.log.Timber
 
@@ -119,5 +120,9 @@ class TaskingPresenter @Inject constructor(
 
     fun clear() {
         disposable.clear()
+    }
+
+    fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
+        // TODO("Not yet implemented")
     }
 }

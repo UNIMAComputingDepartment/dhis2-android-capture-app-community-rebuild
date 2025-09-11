@@ -11,12 +11,11 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import timber.log.Timber
-import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
+import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
-import javax.inject.Inject
 
 
 class TaskingFragment : Fragment(), TaskingView {
@@ -60,7 +59,10 @@ class TaskingFragment : Fragment(), TaskingView {
                     tasks = viewModel.filteredTasks.collectAsState().value,
                     onTaskClick = { Timber.d("Task clicked: $it") },
                     viewModel = viewModel,
-                    filterState = filterState
+                    filterState = filterState,
+                    onOrgUnitFilterSelected = {
+                        openOrgUnitTreeSelector()
+                    }
                 )
             }
         }
@@ -75,6 +77,18 @@ class TaskingFragment : Fragment(), TaskingView {
     override fun showTasks(tasks: List<TaskingUiModel>) {
         Timber.d("TaskingFragment showTasks called with ${tasks.size} tasks")
         this.tasks = tasks
+    }
+
+    override fun openOrgUnitTreeSelector() {
+        OUTreeFragment.Builder()
+            .withPreselectedOrgUnits(
+                FilterManager.getInstance().orgUnitFilters.map { it.uid() }.toMutableList(),
+            )
+            .onSelection { selectedOrgUnits ->
+                presenter.setOrgUnitFilters(selectedOrgUnits)
+            }
+            .build()
+            .show(parentFragmentManager, "OUTreeFragment")
     }
 
     override fun clearFilters() {
