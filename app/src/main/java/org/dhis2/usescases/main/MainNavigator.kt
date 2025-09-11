@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.R
 import org.dhis2.community.tasking.ui.TaskingFragment
+// import org.dhis2.TaskingFragment
 import org.dhis2.usescases.about.AboutFragment
 import org.dhis2.usescases.main.program.ProgramFragment
 import org.dhis2.usescases.qrReader.QrReaderFragment
@@ -200,7 +201,7 @@ class MainNavigator(
 
     private fun shouldShowFilter(screen: MainScreen): Boolean {
         return when (screen) {
-            MainScreen.PROGRAMS -> true
+            MainScreen.PROGRAMS, MainScreen.TASKS -> true
             else -> false
         }
     }
