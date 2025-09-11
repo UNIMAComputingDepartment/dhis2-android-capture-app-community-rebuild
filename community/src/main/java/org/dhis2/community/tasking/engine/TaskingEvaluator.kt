@@ -1,5 +1,3 @@
-
-
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
@@ -25,12 +23,14 @@ open class TaskingEvaluator(
         val config = repository.getTaskingConfig()
         require(config.programTasks.isNotEmpty()) { "Tasking Config is Empty" }
 
-        val configsForProgram = config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
-       // if (configsForProgram ) return emptyList()
+        val configsForProgram =
+            config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
+        // if (configsForProgram ) return emptyList()
 
         val results = mutableListOf<EvaluationResult>()
 
-        val ties = repository.getAllTrackedEntityInstances(programUid, sourceTieUid, sourceTieOrgUnit)
+        val ties =
+            repository.getAllTrackedEntityInstances(programUid, sourceTieUid, sourceTieOrgUnit)
         ties.forEach { tei ->
             configsForProgram.taskConfigs.forEach { taskConfig ->
                 // Evaluate all conditions and return a list of results
@@ -62,29 +62,37 @@ open class TaskingEvaluator(
         teiUid: String,
         programUid: String
     ): List<EvaluationResult> {
-        return taskConfig.trigger.condition.map { cond ->
+        val result = taskConfig.trigger.condition.map { cond ->
             val lhsValue =
                 resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
             val rhsValue = cond.rhs.value
 
-            val isTriggered = when (cond.op) {
+            when (cond.op) {
                 "EQUALS" -> lhsValue == rhsValue
                 "NOT_EQUALS" -> lhsValue != rhsValue
                 "NOT_NULL" -> !lhsValue.isNullOrEmpty()
                 "NULL" -> lhsValue.isNullOrEmpty()
                 else -> false
             }
-
-            EvaluationResult(
-                taskingConfig = taskConfig,
-                teiUid = teiUid,
-                programUid = programUid,
-                isTriggered = isTriggered,
-                dueDate = null, // to be filled later
-                tieAttrs = Triple("", "", ""),
-                orgUnit = null
-            )
         }
+
+        val isTriggered = result.any { it }
+
+        val results =  if (isTriggered) {
+            listOf(
+                EvaluationResult(
+                    taskingConfig = taskConfig,
+                    teiUid = teiUid,
+                    programUid = programUid,
+                    isTriggered = true,
+                    dueDate = null, // to be filled later
+                    tieAttrs = Triple("", "", ""),
+                    orgUnit = null
+                )
+            )
+        } else emptyList()
+
+        return  results
     }
 
     private fun resolvedReference(

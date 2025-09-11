@@ -1,6 +1,7 @@
-package org.dhis2.community.tasking.ui
+package org.dhis2.community.tasking.ui.tasks
 
 //noinspection UsingMaterialAndMaterial3Libraries
+import android.content.Context
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,12 +32,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.dhis2.commons.resources.ColorUtils
+import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.community.R
 import org.dhis2.community.relationships.ui.Dhis2CmtTheme
 import org.dhis2.community.tasking.models.Task
+import org.hisp.dhis.lib.expression.syntax.ExpressionGrammar.item
 
 
 @OptIn(ExperimentalStdlibApi::class)
@@ -57,6 +63,7 @@ fun TaskCard(
 @Composable
 fun TaskCardContents(
     task: Task,
+    //repo: TaskingRepository = TaskingRepository,
     onTaskClick: (Task) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -81,7 +88,7 @@ fun TaskCardContents(
 
                 Row() {
                     // Program Icon placeholder (replace with actual program icons)
-                    TaskIconBox()
+                    TaskIconBox(item = task)
 
                     Spacer(modifier = Modifier.width(12.dp))
 
@@ -195,14 +202,21 @@ fun PriorityChip(priority: String = "High") {
     }
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun TaskIconBox(
-    icon: ImageVector = Icons.Default.Assignment, // default icon
-    contentDescription: String = "Task"
+    icon: String? = Icons.Default.Assignment.toString(), // default icon
+    contentDescription: String = "Task",
+    context : Context = LocalContext.current,
+    colorUtils: ColorUtils = ColorUtils(),
+    res: ResourceManager = ResourceManager(context,colorUtils),
+    item: Task
 ) {
+    val tieTypeIcon = res.getObjectStyleDrawableResource(item.iconNane, R.drawable.ic_alert_outline)
+
     Box(
-        modifier = Modifier
+
+    modifier = Modifier
             .size(40.dp)
             .background(
                 MaterialTheme.colorScheme.primary,
@@ -212,7 +226,7 @@ fun TaskIconBox(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = icon,
+            painter = painterResource(tieTypeIcon),
             contentDescription = contentDescription,
             tint = Color.White
         )

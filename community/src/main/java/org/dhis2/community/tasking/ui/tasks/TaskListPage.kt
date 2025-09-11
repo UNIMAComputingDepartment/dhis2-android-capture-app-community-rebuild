@@ -1,4 +1,4 @@
-package org.dhis2.community.tasking.ui
+package org.dhis2.community.tasking.ui.tasks
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +43,7 @@ fun TaskListPage(
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun TaskListPreview() {
@@ -95,4 +96,4 @@ fun TaskListPreview() {
         // For preview, just print the clicked task name
         println("Clicked task: ${clickedTask.name}")
     }
-}
+}*/
