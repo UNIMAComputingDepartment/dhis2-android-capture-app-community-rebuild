@@ -75,7 +75,10 @@ class TaskingViewModel @Inject constructor(
                         Timber.d("Fetching tasks for orgUnit $orgUnitUid and programUid $programUid")
                         val teis = repository.getTaskTei(orgUnitUid)
                         Timber.d("TEIs fetched for orgUnit $orgUnitUid: ${teis.size}")
-                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
+//                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
+                        val tasks = repository.getAllTasks()
+                        val tasksDebug = repository.getTasksPerOrgUnit(orgUnitUid)
+                        Timber.d("Tasks fetched for orgUnit $orgUnitUid: ${tasksDebug.size}")
                         Timber.d("Tasks built for orgUnit $orgUnitUid: ${tasks.size}")
                         tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
                     }
@@ -108,7 +111,8 @@ class TaskingViewModel @Inject constructor(
                         teiTertiary = attrs.third,
                         dueDate = dueDate,
                         priority = result.taskingConfig.priority,
-                        status = "OPEN"
+                        status = "OPEN",
+                        iconNane = repository.getSourceProgramIcon(result.programUid)
                     )
                 }
             }
@@ -168,10 +172,10 @@ class TaskingViewModel @Inject constructor(
         val filter = filterState.currentFilter
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
-            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
-            matchesDateFilter(task, filter.dueDateRange)
+                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+                    (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+                    matchesDateFilter(task, filter.dueDateRange)
         }
     }
 
@@ -183,36 +187,36 @@ class TaskingViewModel @Inject constructor(
         return when (dateRange) {
             DateRangeFilter.Today -> {
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                        taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
             }
             DateRangeFilter.Yesterday -> {
                 val yesterday = Calendar.getInstance().apply {
                     add(Calendar.DAY_OF_YEAR, -1)
                 }
                 taskCal.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
+                        taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
             }
             DateRangeFilter.ThisWeek -> {
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
+                        taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
             }
             DateRangeFilter.LastWeek -> {
                 val lastWeek = Calendar.getInstance().apply {
                     add(Calendar.WEEK_OF_YEAR, -1)
                 }
                 taskCal.get(Calendar.YEAR) == lastWeek.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
+                        taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
             }
             DateRangeFilter.ThisMonth -> {
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
+                        taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
             }
             DateRangeFilter.LastMonth -> {
                 val lastMonth = Calendar.getInstance().apply {
                     add(Calendar.MONTH, -1)
                 }
                 taskCal.get(Calendar.YEAR) == lastMonth.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
+                        taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
             }
             else -> false
         }

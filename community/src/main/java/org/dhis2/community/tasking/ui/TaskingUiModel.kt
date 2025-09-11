@@ -25,17 +25,27 @@ data class TaskingUiModel(
     val dueDate: Date? get() = parseDueDate(task.dueDate)
     val priority: TaskingPriority get() = TaskingPriority.fromLabel(task.priority)
     val status: TaskingStatus get() = calculateStatus(task.status, dueDate)
-    val programType: ProgramType get() = ProgramType.fromUid(task.sourceProgramUid)
     val metadataIconData: MetadataIconData
-        get() = MetadataIconData(
-            imageCardData = ImageCardData.IconCardData(
-                uid = teiUid,
-                label = taskName,
-                iconRes = programType.getMetadataIcon(),
-                iconTint = programType.getMetadataColor()
-            ),
-            color = programType.getMetadataColor()
-        )
+        get() {
+            val iconName = task.iconNane?.takeIf { it.isNotBlank() }
+            val iconRes = iconName?.let { "dhis2_" + it } ?: "dhis2_default"
+//            val color = task.iconColor?.takeIf { it.isNotBlank() }?.let {
+//                try {
+//                    Color(android.graphics.Color.parseColor(it))
+//                } catch (e: Exception) {
+//                    SurfaceColor.Primary
+//                }
+//            } ?: SurfaceColor.Primary
+            return MetadataIconData(
+                imageCardData = ImageCardData.IconCardData(
+                    uid = teiUid,
+                    label = taskName,
+                    iconRes = iconRes,
+                    iconTint = SurfaceColor.Primary
+                ),
+                color = SurfaceColor.Primary
+            )
+        }
 
     private fun parseDueDate(dueDate: String?): Date? {
         Timber.d("parseDueDate called with: '$dueDate'")
@@ -73,10 +83,10 @@ data class TaskingUiModel(
             "OVERDUE" -> TaskingStatus.OVERDUE
             "DUE_TODAY" -> TaskingStatus.DUE_TODAY
             "DUE_SOON" -> TaskingStatus.DUE_SOON
-            "OPEN" -> TaskingStatus.UPCOMING
+            "OPEN" -> TaskingStatus.OPEN
             else -> {
                 // Fallback to date logic if status is unknown
-                if (dueDate == null) return TaskingStatus.UPCOMING
+                if (dueDate == null) return TaskingStatus.OPEN
                 val today = Calendar.getInstance()
                 val due = Calendar.getInstance().apply { time = dueDate }
                 when {
@@ -85,7 +95,7 @@ data class TaskingUiModel(
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 -> TaskingStatus.DUE_SOON
-                    else -> TaskingStatus.UPCOMING
+                    else -> TaskingStatus.OPEN
                 }
             }
         }
@@ -129,8 +139,8 @@ enum class TaskingStatus(
     val label: String,
     val color: Color
 ) {
-    UPCOMING(
-        "Upcoming",
+    OPEN(
+        "Open",
         SurfaceColor.Primary
     ),
     DUE_TODAY(
@@ -153,40 +163,6 @@ enum class TaskingStatus(
         "Defaulted",
         TextColor.OnSurfaceVariant
     )
-}
-
-// ProgramType enum for mapping
-enum class ProgramType(val uid: String, val label: String) {
-    EPI("IpHINAT79UW", "Expanded Programme on Immunization - EPI"),
-    WOMAN("WSGAb5XwJ3Y", "CBMNC - Woman Program"),
-    NEONATAL("uy2gU8kT1jF", "CBMNC - Neonatal Program");
-
-    companion object {
-        fun fromUid(uid: String): ProgramType = when (uid) {
-            EPI.uid -> EPI
-            WOMAN.uid -> WOMAN
-            NEONATAL.uid -> NEONATAL
-            else -> EPI // Default to EPI
-        }
-        fun fromName(name: String): ProgramType = when (name.lowercase()) {
-            "epi" -> EPI
-            "woman" -> WOMAN
-            "neonatal" -> NEONATAL
-            else -> EPI
-        }
-    }
-
-    fun getMetadataIcon(): String = when (this) {
-        EPI -> "dhis2_syringe_outline"
-        WOMAN -> "dhis2_woman_positive"
-        NEONATAL -> "dhis2_baby_male_0609m_positive"
-    }
-
-    fun getMetadataColor(): Color = when (this) {
-        EPI -> SurfaceColor.Primary
-        WOMAN -> Color(0xFFE12F58)
-        NEONATAL -> Color(0xFFEF6C00)
-    }
 }
 
 // MetadataIconData for Avatar

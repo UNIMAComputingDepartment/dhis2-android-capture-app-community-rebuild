@@ -67,14 +67,14 @@ class TaskingPresenter @Inject constructor(
             val dueDate = task.dueDate
             // Program filter
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            // OrgUnit filter
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
-            // Priority filter
-            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            // Status filter
-            (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
-            // Due date filter
-            (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange, filter.customDateRange))
+                    // OrgUnit filter
+                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
+                    // Priority filter
+                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+                    // Status filter
+                    (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+                    // Due date filter
+                    (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange, filter.customDateRange))
         }
     }
 
