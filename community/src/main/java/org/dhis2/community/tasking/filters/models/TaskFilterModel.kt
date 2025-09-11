@@ -1,7 +1,7 @@
 package org.dhis2.community.tasking.filters.models
 
+import android.util.Log
 import java.util.Date
-import timber.log.Timber
 
 data class TaskFilterModel(
     val programFilters: Set<String> = emptySet(),
@@ -11,7 +11,7 @@ data class TaskFilterModel(
     val dueDateRange: DateRangeFilter? = null
 ) {
     init {
-        Timber.d("TaskFilterModel created: $this")
+        Log.d("TaskFilterModel", "TaskFilterModel created: $this")
     }
 }
 

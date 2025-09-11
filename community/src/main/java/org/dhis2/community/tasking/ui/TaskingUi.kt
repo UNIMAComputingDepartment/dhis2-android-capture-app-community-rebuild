@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,7 +26,6 @@ import org.hisp.dhis.mobile.ui.designsystem.component.state.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
-import timber.log.Timber
 
 const val TASKING_ITEMS = "TASKING_ITEMS"
 
@@ -34,14 +34,15 @@ fun TaskingUi(
     tasks: List<TaskingUiModel>,
     onTaskClick: (TaskingUiModel) -> Unit,
     viewModel: TaskingViewModelContract,
-    filterState: TaskFilterState
+    filterState: TaskFilterState,
+    onOrgUnitFilterSelected: () -> Unit
 ) {
-    Timber.d("TaskingUi composable rendered with ${tasks.size} tasks")
+    Log.d("TaskingUi", "TaskingUi composable rendered with ${tasks.size} tasks")
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
 
     // Collect tasks from viewModel's StateFlow
     val filteredTasks by viewModel.filteredTasks.collectAsState()
-    Timber.d("TaskingUi filteredTasks count: ${filteredTasks.size}")
+    Log.d("TaskingUi", "TaskingUi filteredTasks count: ${filteredTasks.size}")
 
     // Calculate progress variables at the top scope
     val completedTaskCount = filteredTasks.count { it.status == TaskingStatus.COMPLETED }
@@ -49,7 +50,7 @@ fun TaskingUi(
     val completionPercentage = if (totalTaskCount > 0) {
         (completedTaskCount * 100) / totalTaskCount
     } else 0
-    Timber.d("TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
+    Log.d("TaskingUi", "TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,27 +61,27 @@ fun TaskingUi(
         TaskFilterBar(
             filterState = filterState.uiState,
             onProgramFilterClick = {
-                Timber.d("Program filter clicked")
+                Log.d("TaskingUi", "Program filter clicked")
                 activeFilterSheet = FilterSheetType.PROGRAM
             },
             onOrgUnitFilterClick = {
-                Timber.d("OrgUnit filter clicked")
-                activeFilterSheet = FilterSheetType.ORG_UNIT
+                Log.d("TaskingUi", "OrgUnit filter clicked")
+                onOrgUnitFilterSelected()
             },
             onPriorityFilterClick = {
-                Timber.d("Priority filter clicked")
+                Log.d("TaskingUi", "Priority filter clicked")
                 activeFilterSheet = FilterSheetType.PRIORITY
             },
             onStatusFilterClick = {
-                Timber.d("Status filter clicked")
+                Log.d("TaskingUi", "Status filter clicked")
                 activeFilterSheet = FilterSheetType.STATUS
             },
             onDueDateFilterClick = {
-                Timber.d("DueDate filter clicked")
+                Log.d("TaskingUi", "DueDate filter clicked")
                 activeFilterSheet = FilterSheetType.DUE_DATE
             },
             onClearAllFilters = {
-                Timber.d("Clear all filters clicked")
+                Log.d("TaskingUi", "Clear all filters clicked")
                 filterState.clearAllFilters()
                 viewModel.onFilterChanged()
             }
@@ -305,11 +306,11 @@ fun TaskingUi(
                             )
                         },
                         onCardClick = {
-                            Timber.d("Task card clicked: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
+                            Log.d("TaskingUi", "Task card clicked: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
                             if (task.isNavigable) {
                                 onTaskClick(task)
                             } else {
-                                Timber.w("Navigation blocked: TEI ${task.teiUid} is not enrolled in program ${task.sourceProgramUid} with enrollment ${task.sourceEnrollmentUid}")
+                                Log.w("TaskingUi", "Navigation blocked: TEI ${task.teiUid} is not enrolled in program ${task.sourceProgramUid} with enrollment ${task.sourceEnrollmentUid}")
                             }
                         }
                     )

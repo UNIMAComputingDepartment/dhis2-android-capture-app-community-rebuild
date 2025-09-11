@@ -6,16 +6,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import timber.log.Timber
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
+import org.dhis2.commons.orgunitselector.OUTreeFragment
 
 
 class TaskingFragment(private val onTaskClick: (Context, String, String, String) -> Unit) : Fragment(), TaskingView {
@@ -32,7 +33,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Timber.d("TaskingFragment onCreate called")
+        Log.d("TaskingFragment", "TaskingFragment onCreate called")
         // Manually obtain D2 instance (replace with your actual method)
         d2 = org.hisp.dhis.android.core.D2Manager.getD2() // or your actual D2 provider
         repository = TaskingRepository(d2)
@@ -40,7 +41,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         filterManager = FilterManager.getInstance()
         presenter = TaskingPresenter(filterRepository, filterManager)
         viewModel = TaskingViewModel(repository, d2)
-        Timber.d("TaskingPresenter initialized in Fragment")
+        Log.d("TaskingFragment", "TaskingPresenter initialized in Fragment")
     }
 
     override fun onCreateView(
@@ -48,7 +49,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        Timber.d("TaskingFragment onCreateView called")
+        Log.d("TaskingFragment", "TaskingFragment onCreateView called")
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -61,10 +62,13 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                             it.sourceProgramUid,
                             it.sourceEnrollmentUid
                             )
-                        Timber.d("Task clicked: $it")
+                        Log.d("TaskingFragment", "Task clicked: $it")
                                   },
                     viewModel = viewModel,
-                    filterState = viewModel.filterState
+                    filterState = viewModel.filterState,
+                    onOrgUnitFilterSelected = {
+                        openOrgUnitTreeSelector()
+                    }
                 )
             }
         }
@@ -72,17 +76,29 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
 
     override fun onResume() {
         super.onResume()
-        Timber.d("TaskingFragment onResume called")
+        Log.d("TaskingFragment", "TaskingFragment onResume called")
         presenter.onResume()
     }
 
     override fun showTasks(tasks: List<TaskingUiModel>) {
-        Timber.d("TaskingFragment showTasks called with ${tasks.size} tasks")
+        Log.d("TaskingFragment", "TaskingFragment showTasks called with ${tasks.size} tasks")
         this.tasks = tasks
     }
 
     override fun clearFilters() {
-        Timber.d("TaskingFragment clearFilters called")
+        Log.d("TaskingFragment", "TaskingFragment clearFilters called")
         filterRepository.clearFilters()
+    }
+
+    override fun openOrgUnitTreeSelector() {
+        OUTreeFragment.Builder()
+            .withPreselectedOrgUnits(
+                FilterManager.getInstance().orgUnitFilters.map { it.uid() }.toMutableList(),
+            )
+            .onSelection { selectedOrgUnits ->
+                presenter.setOrgUnitFilters(selectedOrgUnits)
+            }
+            .build()
+            .show(parentFragmentManager, "OUTreeFragment")
     }
 }

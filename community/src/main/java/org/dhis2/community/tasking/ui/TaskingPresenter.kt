@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.ui
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
@@ -8,7 +9,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
 import javax.inject.Inject
-import timber.log.Timber
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 
 class TaskingPresenter @Inject constructor(
     private val filterRepository: TaskFilterRepository,
@@ -19,18 +20,18 @@ class TaskingPresenter @Inject constructor(
     private val disposable = CompositeDisposable()
 
     init {
-        Timber.d("TaskingPresenter initialized")
+        Log.d("TaskingPresenter", "TaskingPresenter initialized")
     }
 
     fun observeFilters(tasksFromRepo: List<TaskingUiModel>) {
-        Timber.d("observeFilters called with ${tasksFromRepo.size} tasks")
+        Log.d("TaskingPresenter", "observeFilters called with ${tasksFromRepo.size} tasks")
         disposable.clear() // Ensure no duplicate subscriptions
         disposable.add(
             filterManager.asFlowable()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    Timber.d("FilterManager emitted new filter state")
+                    Log.d("TaskingPresenter", "FilterManager emitted new filter state")
                     val taskFilter = filterRepository.selectedFilters.value
                     val filterModel = TaskFilterModel(
                         programFilters = taskFilter.programFilters,
@@ -43,26 +44,26 @@ class TaskingPresenter @Inject constructor(
                         }.toSet(),
                         dueDateRange = taskFilter.dueDateRange,
                     )
-                    Timber.d("Applying filters: $filterModel")
+                    Log.d("TaskingPresenter", "Applying filters: $filterModel")
                     val filtered = applyTaskFilters(tasksFromRepo, filterModel)
-                    Timber.d("Filtered tasks count: ${filtered.size}")
+                    Log.d("TaskingPresenter", "Filtered tasks count: ${filtered.size}")
                     updateFilteredTasks(filtered)
                 }
         )
     }
 
     fun initialize(tasksFromRepo: List<TaskingUiModel>) {
-        Timber.d("initialize called with ${tasksFromRepo.size} tasks")
+        Log.d("TaskingPresenter", "initialize called with ${tasksFromRepo.size} tasks")
         updateFilteredTasks(tasksFromRepo)
     }
 
     fun onResume() {
-        Timber.d("TaskingPresenter onResume called")
+        Log.d("TaskingPresenter", "TaskingPresenter onResume called")
         // Add any logic needed for resuming presenter
     }
 
     private fun applyTaskFilters(tasks: List<TaskingUiModel>, filter: TaskFilterModel): List<TaskingUiModel> {
-        Timber.d("applyTaskFilters called with ${tasks.size} tasks and filter: $filter")
+        Log.d("TaskingPresenter", "applyTaskFilters called with ${tasks.size} tasks and filter: $filter")
         return tasks.filter { task ->
             val dueDate = task.dueDate
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
@@ -77,7 +78,7 @@ class TaskingPresenter @Inject constructor(
         dueDate: java.util.Date?,
         dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?,
     ): Boolean {
-        Timber.d("matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange")
+        Log.d("TaskingPresenter", "matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange")
         if (dueDate == null) return false
         val today = java.util.Calendar.getInstance()
         val calDue = java.util.Calendar.getInstance().apply { time = dueDate }
@@ -108,5 +109,8 @@ class TaskingPresenter @Inject constructor(
 
     fun clear() {
         disposable.clear()
+    }
+    fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
+        // TODO("Not yet implemented")
     }
 }

@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.repositories
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import io.reactivex.Observable
@@ -13,7 +14,6 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
-import timber.log.Timber
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Singleton
@@ -67,7 +67,7 @@ class TaskingRepository(
         val localDate = anchorDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
         val dueDate = localDate.plusDays(taskConfig.period.dueInDays.toLong())
 
-        Timber.d("DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
+        Log.d("TaskingRepository", "DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
 
         return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
@@ -240,7 +240,7 @@ class TaskingRepository(
                 .byUid().eq(programUid).one()
                 .blockingGet()?.displayName()
         } catch (e: Exception) {
-            Timber.e(e, "Error fetching program display name for UID: $programUid")
+            Log.e("TaskingRepository", "Error fetching program display name for UID: $programUid", e)
             null
         }
     }

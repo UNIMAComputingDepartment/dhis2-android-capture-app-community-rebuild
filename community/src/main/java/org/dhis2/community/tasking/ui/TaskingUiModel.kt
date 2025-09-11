@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.ui
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.ImageCardData
@@ -15,7 +16,7 @@ data class TaskingUiModel(
     val repository: org.dhis2.community.tasking.repositories.TaskingRepository
 ) {
     init {
-        Timber.d("TaskingUiModel created: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
+        Log.d("TaskingUiModel", "TaskingUiModel created: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
     }
 
     // Delegate properties from Task
@@ -58,35 +59,35 @@ data class TaskingUiModel(
     val isNavigable: Boolean get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
 
     private fun parseDueDate(dueDate: String?): Date? {
-        Timber.d("parseDueDate called with: '$dueDate'")
+        Log.d("TaskingUiModel", "parseDueDate called with: '$dueDate'")
 
         if (dueDate.isNullOrBlank()) {
-            Timber.d("Due date is null or blank")
+            Log.d("TaskingUiModel", "Due date is null or blank")
             return null
         }
 
         // Check if this looks like an attribute ID (starts with letter)
         if (dueDate.matches(Regex("[a-zA-Z].*"))) {
-            Timber.e("ERROR: This looks like an attribute ID, not a date: $dueDate")
+            Log.e("TaskingUiModel", "ERROR: This looks like an attribute ID, not a date: $dueDate")
             return null
         }
 
         val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
         if (!dateRegex.matches(dueDate)) {
-            Timber.e("DueDate value is not a valid date format: $dueDate")
+            Log.e("TaskingUiModel", "DueDate value is not a valid date format: $dueDate")
             return null
         }
 
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dueDate)
         } catch (e: Exception) {
-            Timber.e(e, "Error parsing dueDate: $dueDate")
+            Log.e("TaskingUiModel", "Error parsing dueDate: $dueDate", e)
             null
         }
     }
 
     private fun calculateStatus(apiStatus: String, dueDate: Date?): TaskingStatus {
-        Timber.d("calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
+        Log.d("TaskingUiModel", "calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
         return when (apiStatus) {
             "COMPLETED" -> TaskingStatus.COMPLETED
             "DEFAULTED" -> TaskingStatus.DEFAULTED

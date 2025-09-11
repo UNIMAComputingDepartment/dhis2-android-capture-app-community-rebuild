@@ -1,5 +1,7 @@
 package org.dhis2.community.tasking.models
 
+import android.util.Log
+
 data class EvaluationResult(
     val taskingConfig: TaskingConfig.ProgramTasks.TaskConfig,
     val teiUid: String, //source tei
@@ -26,7 +28,6 @@ data class Task(
     val iconNane : String?
 ) {
     init {
-        // Log all fields for debugging
-        timber.log.Timber.d("Task created: name=$name, description=$description, sourceProgramUid=$sourceProgramUid, sourceEnrollmentUid=$sourceEnrollmentUid, sourceProgramName=$sourceProgramName, teiUid=$teiUid, teiPrimary=$teiPrimary, teiSecondary=$teiSecondary, teiTertiary=$teiTertiary, dueDate=$dueDate, priority=$priority, status=$status, iconNane=$iconNane")
+        Log.d("Task", "Task created: name=$name, description=$description, sourceProgramUid=$sourceProgramUid, sourceEnrollmentUid=$sourceEnrollmentUid, sourceProgramName=$sourceProgramName, teiUid=$teiUid, teiPrimary=$teiPrimary, teiSecondary=$teiSecondary, teiTertiary=$teiTertiary, dueDate=$dueDate, priority=$priority, status=$status, iconNane=$iconNane")
     }
 }

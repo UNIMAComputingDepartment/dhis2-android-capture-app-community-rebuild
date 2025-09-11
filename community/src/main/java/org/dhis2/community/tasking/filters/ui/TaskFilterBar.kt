@@ -32,7 +32,7 @@ fun TaskFilterBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 2.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
     ) {
         // Static filter icon on the left
@@ -46,8 +46,7 @@ fun TaskFilterBar(
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .weight(1f)
-                .padding(start = 8.dp, end = 8.dp),
+                .weight(1f),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
         ) {
             FilterChip(
@@ -82,8 +81,11 @@ fun TaskFilterBar(
             )
         }
         Button(
+            modifier = Modifier
+                .padding(start = 2.dp)
+                .padding(horizontal = 2.dp),
             enabled = true,
-            style = ButtonStyle.TEXT,
+            style = ButtonStyle.FILLED,
             colorStyle = ColorStyle.DEFAULT,
             text = "Clear",
             onClick = onClearAllFilters

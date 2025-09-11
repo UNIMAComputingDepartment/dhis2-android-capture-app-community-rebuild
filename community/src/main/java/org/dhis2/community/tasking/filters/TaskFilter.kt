@@ -1,6 +1,6 @@
 package org.dhis2.community.tasking.filters
 
-import timber.log.Timber
+import android.util.Log
 
 data class TaskFilter(
     val programFilters: Set<String> = emptySet(),
@@ -10,12 +10,12 @@ data class TaskFilter(
     val dueDateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter? = null
 ) {
     init {
-        Timber.d("TaskFilter created: $this")
+        Log.d("TaskFilter", "TaskFilter created: $this")
     }
     fun isEmpty(): Boolean {
         val empty = programFilters.isEmpty() && orgUnitFilters.isEmpty() &&
                 priorityFilters.isEmpty() && statusFilters.isEmpty() && dueDateRange == null
-        Timber.d("TaskFilter isEmpty called: $empty for $this")
+        Log.d("TaskFilter", "TaskFilter isEmpty called: $empty for $this")
         return empty
     }
 }
