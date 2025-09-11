@@ -33,11 +33,6 @@ import org.dhis2.commons.schedulers.SchedulerModule;
 import org.dhis2.commons.schedulers.SchedulersProviderImpl;
 import org.dhis2.commons.service.SessionManagerModule;
 import org.dhis2.commons.sync.SyncComponentProvider;
-import org.dhis2.community.tasking.ui.tasks.DaggerTaskingComponent;
-import org.dhis2.community.tasking.ui.tasks.TaskingComponent;
-import org.dhis2.community.tasking.ui.tasks.TaskingDataModule;
-import org.dhis2.community.tasking.ui.tasks.TaskingListModule;
-import org.dhis2.community.tasking.ui.tasks.di.D2Module;
 import org.dhis2.data.dispatcher.DispatcherModule;
 import org.dhis2.data.server.SSLContextInitializer;
 import org.dhis2.data.server.ServerComponent;
@@ -108,8 +103,6 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
     private boolean fromBackGround = false;
     private boolean recreated;
 
-    public TaskingComponent taskingComponent;
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -128,18 +121,8 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
         initCrashController();
         setUpRxPlugin();
         initCustomCrashActivity();
-
-        taskingComponent = DaggerTaskingComponent.builder()
-                .taskingListModule(new TaskingListModule())
-                .taskingDataModule(new TaskingDataModule())
-                .d2Module(new D2Module())
-                .build();
-
     }
 
-    public TaskingComponent getTaskingComponent(){
-        return taskingComponent;
-    }
 
     public void initCrashController() {
         if (areTrackingPermissionGranted()) {
