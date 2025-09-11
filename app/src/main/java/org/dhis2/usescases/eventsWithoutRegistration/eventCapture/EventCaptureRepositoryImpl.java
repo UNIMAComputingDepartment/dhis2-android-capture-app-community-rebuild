@@ -170,7 +170,7 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
         return Flowable.just(currentEvent).map(event ->
                 (event.status() == EventStatus.COMPLETED ||
                         event.status() == EventStatus.ACTIVE ||
-                            event.status() == EventStatus.SKIPPED) &&
+                        event.status() == EventStatus.SKIPPED) &&
                         (event.eventDate() == null || !event.eventDate().after(new Date()))
         );
     }
@@ -242,4 +242,3 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
         return enrollment != null ? enrollment.trackedEntityInstance() : null;
     }
 }
-

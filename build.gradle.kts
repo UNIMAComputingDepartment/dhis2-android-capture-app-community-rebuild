@@ -30,7 +30,6 @@ sonarqube {
         val targetBranch = System.getenv("GIT_BRANCH_DEST")
         val pullRequestId = System.getenv("PULL_REQUEST")
 
-
         property("sonar.projectKey", "dhis2_dhis2-android-capture-app")
         property("sonar.organization", "dhis2")
         property("sonar.host.url", "https://sonarcloud.io")
@@ -105,6 +104,3 @@ allprojects {
 tasks.register("clean", Delete::class) {
     delete(rootProject.layout.buildDirectory)
 }
-
-
-

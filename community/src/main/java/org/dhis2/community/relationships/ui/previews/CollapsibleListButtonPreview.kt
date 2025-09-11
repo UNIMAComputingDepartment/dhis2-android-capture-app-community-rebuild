@@ -25,103 +25,103 @@ fun CollapsibleButtonPreview(){
 
 
     val sampleClass = listOf<CmtRelationshipViewModel>()
-        /*CmtRelationshipViewModel(
-            "Jahnics Kotlin Code",
-            "Female",
-            "70 Years",
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Witman Router",
-            "null",
-            "60 Years",
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Russian Network",
-            "Male",
-            null,
-            "null",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Haroon Switch",
-            null,
-            null,
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "James Kotlin",
-            "Mphongo",
-            null,
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Witman Router",
-            "Male",
-            "30 Years",
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Russian Network",
-            "Male",
-            null,
-            "null",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-        CmtRelationshipViewModel(
-            "Haroon Switch",
-            null,
-            null,
-            "12345",
-            relationship.relatedProgram.programUid,
-            d2.enrollmentModule()
-                .enrollments()
-                .byTrackedEntityInstance().eq(tei.uid()!!)
-                .byProgram().eq(relationship.relatedProgram.programUid)
-                .blockingGet().firstOrNull()?.uid() ?: ""
-        ),
-    )*/
+    /*CmtRelationshipViewModel(
+        "Jahnics Kotlin Code",
+        "Female",
+        "70 Years",
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Witman Router",
+        "null",
+        "60 Years",
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Russian Network",
+        "Male",
+        null,
+        "null",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Haroon Switch",
+        null,
+        null,
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "James Kotlin",
+        "Mphongo",
+        null,
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Witman Router",
+        "Male",
+        "30 Years",
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Russian Network",
+        "Male",
+        null,
+        "null",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+    CmtRelationshipViewModel(
+        "Haroon Switch",
+        null,
+        null,
+        "12345",
+        relationship.relatedProgram.programUid,
+        d2.enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance().eq(tei.uid()!!)
+            .byProgram().eq(relationship.relatedProgram.programUid)
+            .blockingGet().firstOrNull()?.uid() ?: ""
+    ),
+)*/
 
     MaterialTheme{
         CollapsibleListButton(
@@ -133,4 +133,3 @@ fun CollapsibleButtonPreview(){
         )
     }
 }
-

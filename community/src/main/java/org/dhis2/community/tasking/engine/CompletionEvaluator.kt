@@ -50,7 +50,7 @@ class CompletionEvaluator(
                 d2.enrollmentModule().enrollments()
                     .uid(enrollment.uid())
                     .setStatus(EnrollmentStatus.COMPLETED)
-                    //.blockingUpdate()
+                //.blockingUpdate()
             }
             return true
         }
