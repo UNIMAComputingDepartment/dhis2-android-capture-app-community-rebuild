@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.engine
 
+import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -10,6 +11,7 @@ class DefaultingEvaluator(
     private val repository: TaskingRepository
 ) : TaskingEvaluator(d2, repository) {
 
+    /*
     fun defaultTaskIfSourceValueChanged(
         taskTeiUid: String,
         sourceProgramUid: String,
@@ -56,4 +58,27 @@ class DefaultingEvaluator(
             }
             return false
         }
+    */
+
+    fun defaultTaskIfTriggerChanged(
+        taskTeiUid: String,
+        programUid: String,
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig
+    ): Boolean {
+        val triggerActive = (TaskingEvaluator(d2, repository)).isTriggerActive(taskConfig, taskTeiUid, programUid)
+        if (!triggerActive) {
+            repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "DEFAULTED", taskTeiUid)
+            val enrollments = d2.enrollmentModule().enrollments()
+                .byTrackedEntityInstance().eq(taskTeiUid)
+                .byProgram().eq(programUid)
+                .blockingGet()
+            enrollments.forEach { enrollment ->
+                d2.enrollmentModule().enrollments()
+                    .uid(enrollment.uid())
+                    .setStatus(EnrollmentStatus.CANCELLED)
+            }
+            return true
+        }
+        return false
     }
+}

@@ -145,4 +145,14 @@ open class TaskingEvaluator(
             getAttr(tieView.teiTertiaryAttribute)
         )
     }
+
+    fun isTriggerActive(
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
+        teiUid: String,
+        programUid: String
+    ): Boolean {
+        val results = evaluateConditions(taskConfig, teiUid, programUid)
+        return results.any { it.isTriggered }
+    }
+
 }
