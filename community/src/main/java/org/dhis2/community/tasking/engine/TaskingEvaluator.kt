@@ -68,7 +68,7 @@ open class TaskingEvaluator(
     ): List<EvaluationResult> {
         val result = taskConfig.trigger.condition.map { cond ->
             val lhsValue =
-                resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
+                repository.resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
             val rhsValue = cond.rhs.value
 
             when (cond.op) {
@@ -99,38 +99,48 @@ open class TaskingEvaluator(
         return  results
     }
 
-    private fun resolvedReference(
-        trigger: TaskingConfig.ProgramTasks.TaskConfig.Trigger,
+
+    private fun evaluateCompletionConditions(
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
-        attrOrDataElementUid: String,
         programUid: String
-    ): String? {
-        return trigger.condition.firstNotNullOfOrNull { cond ->
-            when (cond.lhs.ref) {
-                "teiAttribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .byTrackedEntityInstance().eq(teiUid)
-                    .byTrackedEntityAttribute().eq(attrOrDataElementUid)
-                    .one().blockingGet()?.value()
+    ): List<EvaluationResult> {
+        val result = taskConfig.completion.condition.map { cond ->
+            val lhsValue =
+                repository.resolvedReference(
+                    taskConfig.completion,
+                    teiUid,
+                    cond.lhs.uid.toString(),
+                    programUid
+                )
+            val rhsValue = cond.rhs.value
 
-                "eventData" -> {
-                    val enrollment = repository.getLatestEnrollment(teiUid, programUid)
-                        ?: return@firstNotNullOfOrNull null
-
-                    val events = d2.eventModule().events()
-                        .byEnrollmentUid().eq(enrollment.uid())
-                        .withTrackedEntityDataValues()
-                        .blockingGet()
-
-                    events.asSequence()
-                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
-                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
-                        ?.value()
-                }
-
-                "static" -> cond.lhs.uid
-                else -> null
+            when (cond.op) {
+                "EQUALS" -> lhsValue == rhsValue
+                "NOT_EQUALS" -> lhsValue != rhsValue
+                "NOT_NULL" -> !lhsValue.isNullOrEmpty()
+                "NULL" -> lhsValue.isNullOrEmpty()
+                else -> false
             }
         }
+
+        val isTriggered = result.all { it }
+
+        val results = if (isTriggered) {
+            listOf(
+                EvaluationResult(
+                    taskingConfig = taskConfig,
+                    teiUid = teiUid,
+                    programUid = programUid,
+                    isTriggered = true,
+                    dueDate = null, // to be filled later
+                    tieAttrs = Triple("", "", ""),
+                    orgUnit = null
+                )
+            )
+        } else emptyList()
+
+        return results
     }
 
     private fun getTieAttributes(
@@ -212,50 +222,9 @@ open class TaskingEvaluator(
     }
 
 
-    private fun evaluateCompletionConditions(
-        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
-        teiUid: String,
-        programUid: String
-    ): List<EvaluationResult> {
-        val result = taskConfig.completion.condition.map { cond ->
-            val lhsValue =
-                resolvedReference(
-                    taskConfig.completion,
-                    teiUid,
-                    cond.lhs.uid.toString(),
-                    programUid
-                )
-            val rhsValue = cond.rhs.value
 
-            when (cond.op) {
-                "EQUALS" -> lhsValue == rhsValue
-                "NOT_EQUALS" -> lhsValue != rhsValue
-                "NOT_NULL" -> !lhsValue.isNullOrEmpty()
-                "NULL" -> lhsValue.isNullOrEmpty()
-                else -> false
-            }
-        }
 
-        val isTriggered = result.all { it }
-
-        val results = if (isTriggered) {
-            listOf(
-                EvaluationResult(
-                    taskingConfig = taskConfig,
-                    teiUid = teiUid,
-                    programUid = programUid,
-                    isTriggered = true,
-                    dueDate = null, // to be filled later
-                    tieAttrs = Triple("", "", ""),
-                    orgUnit = null
-                )
-            )
-        } else emptyList()
-
-        return results
-    }
-
-    private fun resolvedReference(
+    /*private fun resolvedReference(
         completion: TaskingConfig.ProgramTasks.TaskConfig.Completion,
         teiUid: String,
         attrOrDataElementUid: String,
@@ -292,5 +261,5 @@ open class TaskingEvaluator(
                 }
             }
         }
-    }
+    }*/
 }

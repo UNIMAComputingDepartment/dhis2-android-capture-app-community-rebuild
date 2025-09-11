@@ -91,6 +91,40 @@ class TaskingRepository(
         return v
     }
 
+    fun resolvedReference(
+        trigger: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
+        teiUid: String,
+        attrOrDataElementUid: String,
+        programUid: String
+    ): String? {
+        return trigger.condition.firstNotNullOfOrNull { cond ->
+            when (cond.lhs.ref) {
+                "teiAttribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .byTrackedEntityInstance().eq(teiUid)
+                    .byTrackedEntityAttribute().eq(attrOrDataElementUid)
+                    .one().blockingGet()?.value()
+
+                "eventData" -> {
+                    val enrollment = getLatestEnrollment(teiUid, programUid)
+                        ?: return@firstNotNullOfOrNull null
+
+                    val events = d2.eventModule().events()
+                        .byEnrollmentUid().eq(enrollment.uid())
+                        .withTrackedEntityDataValues()
+                        .blockingGet()
+
+                    events.asSequence()
+                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
+                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
+                        ?.value()
+                }
+
+                "static" -> cond.lhs.uid
+                else -> null
+            }
+        }
+    }
+
     fun getProgramName(programUid: String): String {
         return d2.programModule().programs()
             .uid(programUid)

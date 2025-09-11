@@ -42,11 +42,14 @@ data class TaskingConfig(
             val singleIncomplete: Boolean,
             val anchorDate: String
         ) {
+            interface HasConditions {
+                val condition: List<Condition>
+            }
             data class Trigger(
                 val programName: String,
                 val programUid: String,
-                val condition: List<Condition>
-            )
+                override val condition: List<Condition>
+            ): HasConditions
 
             data class Condition(
                 val op: String,
@@ -68,8 +71,8 @@ data class TaskingConfig(
             )
 
         data class Completion(
-            val condition: List<Condition>
-        )
+            override val condition: List<Condition>
+        ): HasConditions
 
             data class CompletionCondition(
                 val op: String,
