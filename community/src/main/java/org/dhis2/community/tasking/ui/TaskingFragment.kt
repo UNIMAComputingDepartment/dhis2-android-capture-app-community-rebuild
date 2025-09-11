@@ -1,5 +1,6 @@
-package org.dhis2.community.tasking.ui
 
+package org.dhis2.community.tasking.ui
+/*
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -46,3 +47,4 @@ class TasksFragment : Fragment(), TaskView {
     override fun showSyncDialog() {
     }
 }
+*/
