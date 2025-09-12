@@ -27,6 +27,7 @@ interface TaskingViewModelContract {
     val orgUnits: List<OrgTreeItem>
     val allTasksForProgress: List<TaskingUiModel>
     fun onFilterChanged()
+    fun tasksForProgressBar(): List<TaskingUiModel>
 }
 
 class TaskingViewModel @Inject constructor(
@@ -230,5 +231,15 @@ class TaskingViewModel @Inject constructor(
 
     fun refreshTasks() {
         loadInitialData()
+    }
+
+    override fun tasksForProgressBar(): List<TaskingUiModel> {
+        val filter = filterState.currentFilter
+        return allTasks.filter { task ->
+            (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+            matchesDateFilter(task, filter.dueDateRange)
+        }
     }
 }

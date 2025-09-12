@@ -5,10 +5,8 @@ import androidx.compose.ui.graphics.Color
 import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.ImageCardData
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
-import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import java.text.SimpleDateFormat
 import java.util.*
-import timber.log.Timber
 
 data class TaskingUiModel(
     val task: Task,
@@ -88,27 +86,40 @@ data class TaskingUiModel(
 
     private fun calculateStatus(apiStatus: String, dueDate: Date?): TaskingStatus {
         Log.d("TaskingUiModel", "calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
-        return when (apiStatus) {
-            "COMPLETED" -> TaskingStatus.COMPLETED
-            "DEFAULTED" -> TaskingStatus.DEFAULTED
-            "OVERDUE" -> TaskingStatus.OVERDUE
-            "DUE_TODAY" -> TaskingStatus.DUE_TODAY
-            "DUE_SOON" -> TaskingStatus.DUE_SOON
-            "OPEN" -> TaskingStatus.OPEN
-            else -> {
-                // Fallback to date logic if status is unknown
+        val statusLower = apiStatus.trim().lowercase(Locale.US)
+        return when (statusLower) {
+            "completed" -> TaskingStatus.COMPLETED
+            "defaulted" -> TaskingStatus.DEFAULTED
+            "open" -> {
+                // Only "open" status gets date-based calculation
                 if (dueDate == null) return TaskingStatus.OPEN
-                val today = Calendar.getInstance()
-                val due = Calendar.getInstance().apply { time = dueDate }
-                when {
+                val today = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val due = Calendar.getInstance().apply {
+                    time = dueDate
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val daysPastDue = today.get(Calendar.DAY_OF_YEAR) - due.get(Calendar.DAY_OF_YEAR) +
+                    (today.get(Calendar.YEAR) - due.get(Calendar.YEAR)) * 365
+                return when {
+                    daysPastDue > 7 -> TaskingStatus.DEFAULTED
                     due.before(today) -> TaskingStatus.OVERDUE
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                            due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 -> TaskingStatus.DUE_SOON
+                            due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 &&
+                            due.get(Calendar.DAY_OF_YEAR) > today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_SOON
                     else -> TaskingStatus.OPEN
                 }
             }
+            else -> TaskingStatus.OPEN
         }
     }
 }
@@ -172,7 +183,7 @@ enum class TaskingStatus(
     ),
     DEFAULTED(
         "Defaulted",
-        TextColor.OnSurfaceVariant
+        SurfaceColor.Error
     )
 }
 

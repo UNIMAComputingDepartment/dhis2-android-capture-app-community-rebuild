@@ -44,9 +44,10 @@ fun TaskingUi(
     val filteredTasks by viewModel.filteredTasks.collectAsState()
     Log.d("TaskingUi", "TaskingUi filteredTasks count: ${filteredTasks.size}")
 
-    // Calculate progress variables at the top scope
-    val completedTaskCount = filteredTasks.count { it.status == TaskingStatus.COMPLETED }
-    val totalTaskCount = filteredTasks.size
+    // For progress bar, use tasks filtered by all filters except status
+    val progressTasks = viewModel.tasksForProgressBar()
+    val completedTaskCount = progressTasks.count { it.status == TaskingStatus.COMPLETED }
+    val totalTaskCount = progressTasks.size
     val completionPercentage = if (totalTaskCount > 0) {
         (completedTaskCount * 100) / totalTaskCount
     } else 0

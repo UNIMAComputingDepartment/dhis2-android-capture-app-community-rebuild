@@ -111,6 +111,9 @@ class TaskingPresenter @Inject constructor(
         disposable.clear()
     }
     fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
-        // TODO("Not yet implemented")
+        val orgUnitUids = selectedOrgUnits.map { it.uid() }.toSet()
+        val currentFilter = filterRepository.selectedFilters.value
+        val updatedFilter = currentFilter.copy(orgUnitFilters = orgUnitUids)
+        filterRepository.updateFilter(updatedFilter)
     }
 }
