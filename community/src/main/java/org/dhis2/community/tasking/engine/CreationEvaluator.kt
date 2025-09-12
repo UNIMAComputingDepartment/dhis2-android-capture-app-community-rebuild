@@ -69,6 +69,8 @@ class CreationEvaluator (
 
         val created = mutableListOf<Task>()
 
+        val allAvailableTasks = repository.getAllTasks()
+
         results.forEach { result ->
             // 1) Resolve a safe OU to use for TEI creation
             val ouToUse = when {
@@ -88,6 +90,15 @@ class CreationEvaluator (
             val dueDate = result.dueDate ?: run {
                 Timber.e("CreationEvaluator: dueDate missing"); return@forEach
             }
+
+            val taskAlreadyExist = allAvailableTasks.any { task ->
+                task.sourceProgramUid == targetProgramUid &&
+                        task.status != "completed" &&
+                        task.sourceEnrollmentUid == sourceTieProgramEnrollment &&
+                        task.name == result.taskingConfig.name
+            }
+
+            if(taskAlreadyExist) return@forEach
 
             // 3) Create TEI (CATCH D2Error!)
             val newTeiUid = try {
