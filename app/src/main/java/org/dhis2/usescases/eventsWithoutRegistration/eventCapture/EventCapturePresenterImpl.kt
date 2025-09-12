@@ -235,15 +235,15 @@ class EventCapturePresenterImpl(
     override fun saveAndExit(eventStatus: EventStatus?) {
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
-        creationEvaluator.createTasks(
-            taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-            taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-            targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-            sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-            sourceTieUid = eventCaptureRepository.getTeiUid(),
-            sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+            creationEvaluator.createTasks(
+                taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+                taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+                sourceTieUid = eventCaptureRepository.getTeiUid(),
+                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
 
-        )
+            )
 
         }
 
@@ -253,7 +253,6 @@ class EventCapturePresenterImpl(
             view.finishDataEntry()
         }
     }
-
     override fun isEnrollmentOpen(): Boolean {
         return eventCaptureRepository.isEnrollmentOpen
     }

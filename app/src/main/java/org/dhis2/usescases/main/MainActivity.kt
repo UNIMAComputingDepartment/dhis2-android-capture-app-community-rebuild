@@ -200,8 +200,8 @@ class MainActivity :
                 mainNavigator.restoreScreen(
                     screenToRestoreName = openScreen ?: restoreScreenName!!,
                     languageSelectorOpened = openScreen != null &&
-                        MainNavigator.MainScreen.valueOf(openScreen) ==
-                        MainNavigator.MainScreen.TROUBLESHOOTING,
+                            MainNavigator.MainScreen.valueOf(openScreen) ==
+                            MainNavigator.MainScreen.TROUBLESHOOTING,
                 )
             }
 
@@ -730,7 +730,7 @@ class MainActivity :
 
     private fun hasNoPermissionToInstall(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !packageManager.canRequestPackageInstalls()
+                !packageManager.canRequestPackageInstalls()
 
     private val manageUnknownSources =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {

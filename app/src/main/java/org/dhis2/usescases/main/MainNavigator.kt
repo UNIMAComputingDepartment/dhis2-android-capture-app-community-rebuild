@@ -1,5 +1,6 @@
 package org.dhis2.usescases.main
 
+import android.content.Context
 import android.transition.ChangeBounds
 import android.view.View
 import androidx.annotation.IdRes
@@ -14,12 +15,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.R
-//import org.dhis2.community.tasking.ui.TasksFragment
-import org.dhis2.TaskingFragment
+import org.dhis2.community.tasking.ui.TaskingFragment
 import org.dhis2.usescases.about.AboutFragment
 import org.dhis2.usescases.main.program.ProgramFragment
 import org.dhis2.usescases.qrReader.QrReaderFragment
 import org.dhis2.usescases.settings.SyncManagerFragment
+import org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity
 import org.dhis2.usescases.troubleshooting.TroubleshootingFragment
 
 class MainNavigator(
@@ -136,7 +137,16 @@ class MainNavigator(
 
     fun openTasks() {
         beginTransaction(
-            TaskingFragment(),
+            TaskingFragment { context: Context, teiUid, programUid, enrollmentUid ->
+                context.startActivity(
+                    TeiDashboardMobileActivity.intent(
+                        context,
+                        teiUid,
+                        programUid,
+                        enrollmentUid,
+                    ),
+                )
+            },
             MainScreen.TASKS,
             useFadeInTransition = false
         )
@@ -201,7 +211,7 @@ class MainNavigator(
 
     private fun shouldShowFilter(screen: MainScreen): Boolean {
         return when (screen) {
-            MainScreen.PROGRAMS, MainScreen.TASKS -> true
+            MainScreen.PROGRAMS -> true
             else -> false
         }
     }

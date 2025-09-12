@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.repositories
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import io.reactivex.Observable
@@ -13,7 +14,6 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
-import timber.log.Timber
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Singleton
@@ -74,7 +74,7 @@ class TaskingRepository(
         val localDate = anchorDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
         val dueDate = localDate.plusDays(taskConfig.period.dueInDays.toLong())
 
-        Timber.d("DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
+        Log.d("TaskingRepository", "DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
 
         return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
     }
@@ -136,6 +136,13 @@ class TaskingRepository(
             .uid(sourceProgramUid).blockingGet()
 
         return program?.style()?.icon()
+    }
+
+    fun getSourceProgramColor(sourceProgramUid: String) : String?{
+        val program = d2.programModule().programs()
+            .uid(sourceProgramUid).blockingGet()
+
+        return program?.style()?.color()
     }
 
     fun getTieByType(
@@ -225,7 +232,6 @@ class TaskingRepository(
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
-
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
             )
         }
@@ -267,5 +273,25 @@ class TaskingRepository(
                 .uid(uid.trackedEntityInstance())
                 .blockingGet()
         }
+    }
+
+    fun getProgramDisplayName(programUid: String): String? {
+        return try {
+            d2.programModule().programs()
+                .byUid().eq(programUid).one()
+                .blockingGet()?.displayName()
+        } catch (e: Exception) {
+            Log.e("TaskingRepository", "Error fetching program display name for UID: $programUid", e)
+            null
+        }
+    }
+
+    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): Boolean {
+        val enrollments = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .byStatus().eq(org.hisp.dhis.android.core.enrollment.EnrollmentStatus.ACTIVE)
+            .blockingGet()
+        return enrollments.any { it.uid() == enrollmentUid }
     }
 }

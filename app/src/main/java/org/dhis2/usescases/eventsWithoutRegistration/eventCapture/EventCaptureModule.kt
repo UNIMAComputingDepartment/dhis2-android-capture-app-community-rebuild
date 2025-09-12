@@ -59,7 +59,7 @@ class EventCaptureModule(
             createTaskEvaluator,
             taskingRepository,
 
-        )
+            )
     }
 
     @Provides
