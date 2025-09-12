@@ -35,9 +35,9 @@ class TaskFilterState {
         updateUiState()
     }
 
-    fun updateOrgUnitFilters(selectedOrgUnits: Set<String>) {
+    fun updateOrgUnitFilters(selectedOrgUnits: List<String>) {
         Timber.d("updateOrgUnitFilters called with: $selectedOrgUnits")
-        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits)
+        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits.toSet())
         updateUiState()
     }
 

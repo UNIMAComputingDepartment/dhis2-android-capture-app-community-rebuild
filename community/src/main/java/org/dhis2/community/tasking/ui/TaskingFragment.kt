@@ -58,10 +58,10 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                     onTaskClick = {
                         onTaskClick(
                             requireContext(),
-                            it.teiUid,
+                            it.sourceTeiUid!!,
                             it.sourceProgramUid,
                             it.sourceEnrollmentUid
-                            )
+                        )
                         Log.d("TaskingFragment", "Task clicked: $it")
                                   },
                     viewModel = viewModel,
@@ -93,10 +93,13 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
     override fun openOrgUnitTreeSelector() {
         OUTreeFragment.Builder()
             .withPreselectedOrgUnits(
-                FilterManager.getInstance().orgUnitFilters.map { it.uid() }.toMutableList(),
+                viewModel.filterState.currentFilter.orgUnitFilters.toList(),
             )
             .onSelection { selectedOrgUnits ->
-                presenter.setOrgUnitFilters(selectedOrgUnits)
+                viewModel.filterState.updateOrgUnitFilters(
+                    selectedOrgUnits.map { it.uid() }
+                )
+                // presenter.setOrgUnitFilters(selectedOrgUnits)
             }
             .build()
             .show(parentFragmentManager, "OUTreeFragment")
