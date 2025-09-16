@@ -29,7 +29,7 @@ open class TaskingEvaluator(
 
         val configsForProgram =
             config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
-        // if (configsForProgram ) return emptyList()
+
 
         val results = mutableListOf<EvaluationResult>()
 
@@ -38,7 +38,7 @@ open class TaskingEvaluator(
         ties.forEach { tei ->
             configsForProgram.taskConfigs.forEach { taskConfig ->
                 // Evaluate all conditions and return a list of results
-                val evalResults = evaluateConditions(taskConfig = taskConfig, tei.uid(), programUid)
+                val evalResults = evaluateTriggerConditions(taskConfig = taskConfig, tei.uid(), programUid)
                 evalResults.filter { it.isTriggered }.forEach { result ->
                     val dueDate = repository.calculateDueDate(taskConfig, tei.uid(), programUid)
                         ?: return@forEach
@@ -61,7 +61,7 @@ open class TaskingEvaluator(
         return results
     }
 
-    private fun evaluateConditions(
+    private fun evaluateTriggerConditions(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
         programUid: String
@@ -174,6 +174,8 @@ open class TaskingEvaluator(
         val configForPg = taskConf.programTasks
             .filter { it.programUid == sourceProgramUid }
             .flatMap { it.taskConfigs }
+
+        if (configForPg.isEmpty()) return
 
         val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
 

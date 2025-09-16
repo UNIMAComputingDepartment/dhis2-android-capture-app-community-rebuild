@@ -9,6 +9,7 @@ import io.reactivex.subjects.PublishSubject
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
@@ -16,6 +17,7 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Date
 import javax.inject.Singleton
 
 @Singleton
@@ -113,9 +115,18 @@ class TaskingRepository(
                         .withTrackedEntityDataValues()
                         .blockingGet()
 
-                    events.asSequence()
+                    /*events.asSequence()
                         .flatMap { it.trackedEntityDataValues() ?: emptyList() }
                         .firstOrNull { it.dataElement() == attrOrDataElementUid }
+                        ?.value()*/
+
+                    val latestEvent = events
+                        .maxByOrNull { it.created()?: it.eventDate()?: Date(0) } // choose your ordering
+
+                    // From the latest event, get the value of the desired data element
+                    latestEvent
+                        ?.trackedEntityDataValues()
+                        ?.firstOrNull { it.dataElement() == attrOrDataElementUid }
                         ?.value()
                 }
 
@@ -166,10 +177,26 @@ class TaskingRepository(
         val taskTeiUid = cachedConfig?.taskProgramConfig?.firstOrNull()?.teiTypeUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
 
-        return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
+        val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
+
+        val activeEnrollments = d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        val activeTeiUids : Collection<String>? = activeEnrollments.map { it.trackedEntityInstance() as String }
+
+        if (activeTeiUids.isNullOrEmpty()) return emptyList()
+
+        return  d2.trackedEntityModule().trackedEntityInstances()
+            .byUid().`in`(activeTeiUids)
+            .withTrackedEntityAttributeValues()
+            .orderByLastUpdated(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+
+        /*return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
             .eq(taskTeiUid)
             .withTrackedEntityAttributeValues()
-            .blockingGet()
+            .blockingGet()*/
     }
 
     fun getTasksPerOrgUnit(
@@ -206,12 +233,28 @@ class TaskingRepository(
 
     fun getAllTasks() : List<Task>{
         val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
+        val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
 
-        val allTies = d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
+        val activeEnrollments = d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        val activeTeiUids : Collection<String>? = activeEnrollments.map { it.trackedEntityInstance() as String }
+
+        if (activeTeiUids.isNullOrEmpty()) return emptyList()
+
+        val allTies = d2.trackedEntityModule().trackedEntityInstances()
+            .byUid().`in`(activeTeiUids)
+            .withTrackedEntityAttributeValues()
+            .orderByLastUpdated(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+
+
+            /*d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
             .eq(taskTeiUid)
             .withTrackedEntityAttributeValues()
-            .blockingGet()
+            .blockingGet()*/
 
         val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
         val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
