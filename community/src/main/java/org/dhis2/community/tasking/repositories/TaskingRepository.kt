@@ -100,6 +100,14 @@ class TaskingRepository(
         programUid: String
     ): String? {
         return trigger.condition.firstNotNullOfOrNull { cond ->
+
+            val enrollment = getLatestEnrollment(teiUid, programUid)
+                ?: return@firstNotNullOfOrNull null
+
+            val events = d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollment.uid())
+                .withTrackedEntityDataValues()
+                .blockingGet()
             when (cond.lhs.ref) {
                 "teiAttribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
                     .byTrackedEntityInstance().eq(teiUid)
@@ -107,18 +115,9 @@ class TaskingRepository(
                     .one().blockingGet()?.value()
 
                 "eventData" -> {
-                    val enrollment = getLatestEnrollment(teiUid, programUid)
-                        ?: return@firstNotNullOfOrNull null
 
-                    val events = d2.eventModule().events()
-                        .byEnrollmentUid().eq(enrollment.uid())
-                        .withTrackedEntityDataValues()
-                        .blockingGet()
 
-                    /*events.asSequence()
-                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
-                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
-                        ?.value()*/
+                    /**/
 
                     val latestEvent = events
                         .maxByOrNull { it.created()?: it.eventDate()?: Date(0) } // choose your ordering
@@ -129,6 +128,14 @@ class TaskingRepository(
                         ?.firstOrNull { it.dataElement() == attrOrDataElementUid }
                         ?.value()
                 }
+
+                "allEventsData" -> {
+                    events.asSequence()
+                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
+                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
+                        ?.value()
+                }
+
 
                 "static" -> cond.lhs.uid
                 else -> null
