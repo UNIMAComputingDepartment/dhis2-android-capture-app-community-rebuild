@@ -11,16 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.ui.*
-import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.*
 import org.hisp.dhis.mobile.ui.designsystem.component.state.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
@@ -142,19 +138,19 @@ fun TaskingUi(
                 )
             }
             FilterSheetType.ORG_UNIT -> {
-                OrgUnitFilterBottomSheet(
-                    orgUnits = viewModel.orgUnits,
-                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = {
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
-                    },
-                    onItemSelected = { uid, checked ->
-                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
-                        filterState.updateOrgUnitFilters(updated)
-                    }
-                )
+//                OrgUnitFilterBottomSheet(
+//                    orgUnits = viewModel.orgUnits,
+//                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
+//                    onDismiss = { activeFilterSheet = null },
+//                    onApplyFilters = {
+//                        activeFilterSheet = null
+//                        viewModel.onFilterChanged()
+//                    },
+//                    onItemSelected = { uid, checked ->
+//                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
+//                        filterState.updateOrgUnitFilters(updated)
+//                    }
+//                )
             }
             FilterSheetType.PRIORITY -> {
                 PriorityFilterBottomSheet(
@@ -308,7 +304,7 @@ fun TaskingUi(
                         },
                         onCardClick = {
                             Log.d("TaskingUi", "Task card clicked: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
-                            if (task.isNavigable) {
+                            if (task.sourceTeiUid != null) {
                                 onTaskClick(task)
                             } else {
                                 Log.w("TaskingUi", "Navigation blocked: TEI ${task.teiUid} is not enrolled in program ${task.sourceProgramUid} with enrollment ${task.sourceEnrollmentUid}")

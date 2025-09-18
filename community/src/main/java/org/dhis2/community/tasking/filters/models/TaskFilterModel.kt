@@ -35,5 +35,7 @@ data class FilterUiState(
     val statusFilterCount: Int = 0,
     val isDueDateFilterActive: Boolean = false,
     val dueDateFilterCount: Int = 0,
-    val selectedDateRange: DateRangeFilter? = null
-)
+    val selectedDateRange: DateRangeFilter? = null,
+    val selectedOrgUnits: List<String> = listOf()
+) {
+}

@@ -336,12 +336,13 @@ class TaskingRepository(
         }
     }
 
-    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): Boolean {
+    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): String? {
         val enrollments = d2.enrollmentModule().enrollments()
-            .byTrackedEntityInstance().eq(teiUid)
-            .byProgram().eq(programUid)
-            .byStatus().eq(org.hisp.dhis.android.core.enrollment.EnrollmentStatus.ACTIVE)
-            .blockingGet()
-        return enrollments.any { it.uid() == enrollmentUid }
+            .uid(enrollmentUid).blockingGet()?.trackedEntityInstance()
+//            .byTrackedEntityInstance().eq(teiUid)
+//            .byProgram().eq(programUid)
+//            //.byStatus().eq(EnrollmentStatus.ACTIVE)
+//            .blockingGet()
+        return enrollments
     }
 }

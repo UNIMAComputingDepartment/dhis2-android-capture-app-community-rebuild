@@ -54,7 +54,7 @@ data class TaskingUiModel(
         }
 
     val displayProgramName: String get() = repository.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
-    val isNavigable: Boolean get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
+    val sourceTeiUid: String? get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
 
     private fun parseDueDate(dueDate: String?): Date? {
         Log.d("TaskingUiModel", "parseDueDate called with: '$dueDate'")
