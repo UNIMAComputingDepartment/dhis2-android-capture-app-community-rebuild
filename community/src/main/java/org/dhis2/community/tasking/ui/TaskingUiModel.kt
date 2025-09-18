@@ -54,7 +54,9 @@ data class TaskingUiModel(
         }
 
     val displayProgramName: String get() = repository.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
-    val sourceTeiUid: String? get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
+    val sourceTeiUid: String get() = task.sourceTeiUid
+    //repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
+
 
     private fun parseDueDate(dueDate: String?): Date? {
         Log.d("TaskingUiModel", "parseDueDate called with: '$dueDate'")
@@ -109,7 +111,7 @@ data class TaskingUiModel(
                 val daysPastDue = today.get(Calendar.DAY_OF_YEAR) - due.get(Calendar.DAY_OF_YEAR) +
                     (today.get(Calendar.YEAR) - due.get(Calendar.YEAR)) * 365
                 return when {
-                    daysPastDue > 7 -> TaskingStatus.DEFAULTED
+                    //daysPastDue > 7 -> TaskingStatus.DEFAULTED
                     due.before(today) -> TaskingStatus.OVERDUE
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY

@@ -14,7 +14,6 @@ import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
-import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -82,7 +81,7 @@ class TaskingRepository(
     }
 
     fun getLatestEnrollment(teiUid: String, programUid: String): Enrollment? {
-        val v = d2.enrollmentModule().enrollments()
+        val enrollment = d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
             .byStatus().eq(EnrollmentStatus.ACTIVE)
@@ -90,7 +89,11 @@ class TaskingRepository(
             .blockingGet()
         //.maxByOrNull { it.enrollmentDate()?.time ?: 0 }
 
-        return v
+        return enrollment
+    }
+
+    fun getDateOfBirth(tieUid: String){
+
     }
 
     fun resolvedReference(
@@ -226,6 +229,7 @@ class TaskingRepository(
                 sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
                 sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
+                sourceTeiUid = tei.getAttributeValue(programConfig?.taskSourceTeiUid)?: "",
                 teiUid = tei.uid(),
                 teiPrimary = tei.getAttributeValue(taskConfig?.teiView?.teiPrimaryAttribute) ?: "",
                 teiSecondary = tei.getAttributeValue(taskConfig?.teiView?.teiSecondaryAttribute) ?: "",
@@ -275,6 +279,7 @@ class TaskingRepository(
                 sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
                     ?: "",
                 sourceProgramName = programConfig?.programName ?: "",
+                sourceTeiUid = tei.getAttributeValue(programConfig?.taskSourceTeiUid)?: "",
                 teiUid = tei.uid(),
                 teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
                 teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
@@ -296,11 +301,11 @@ class TaskingRepository(
     }
 
 
-    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String) {
+    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String?, taskTieUid: String) {
         if (taskAttrUid != null)
             d2.trackedEntityModule().trackedEntityAttributeValues()
                 .value(taskAttrUid, taskTieUid)
-                .blockingSet(newTaskAttrValue)
+                .blockingSet(newTaskAttrValue?:"")
     }
 
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(

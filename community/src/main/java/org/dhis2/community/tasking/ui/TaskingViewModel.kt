@@ -105,6 +105,7 @@ class TaskingViewModel @Inject constructor(
                         description = result.taskingConfig.description,
                         sourceProgramUid = result.programUid,
                         sourceEnrollmentUid = "",
+                        sourceTeiUid = " ",
                         sourceProgramName = result.taskingConfig.trigger.programName,
                         teiUid = result.teiUid,
                         teiPrimary = attrs.first,
@@ -113,7 +114,7 @@ class TaskingViewModel @Inject constructor(
                         dueDate = dueDate,
                         priority = result.taskingConfig.priority,
                         status = "OPEN",
-                        iconNane = repository.getSourceProgramIcon(result.programUid)
+                        iconNane = repository.getSourceProgramIcon(result.programUid),
                     )
                 }
             }

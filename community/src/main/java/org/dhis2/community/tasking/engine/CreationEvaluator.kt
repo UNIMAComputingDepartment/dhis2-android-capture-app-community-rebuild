@@ -126,6 +126,7 @@ class CreationEvaluator (
             val dueDateAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:""
             val taskSourceProgramUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceProgramUid?: ""
             val taskSourceEnrollmentUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceEnrollmentUid?: ""
+            val taskSourceTeiUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceTeiUid?:""
 
             repository.updateTaskAttrValue(statusAttrUid, "open", newTeiUid)
             repository.updateTaskAttrValue(nameAttrUid, result.taskingConfig.name, newTeiUid)
@@ -136,7 +137,7 @@ class CreationEvaluator (
             repository.updateTaskAttrValue(primaryAttrUid, primary, newTeiUid)
             repository.updateTaskAttrValue(taskSourceProgramUid, targetProgramUid, newTeiUid)
             repository.updateTaskAttrValue(taskSourceEnrollmentUid, sourceTieProgramEnrollment, newTeiUid)
-
+            repository.updateTaskAttrValue(taskSourceTeiUid, sourceTieUid, newTeiUid)
 
             try {
                 val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
@@ -171,6 +172,7 @@ class CreationEvaluator (
                 priority = result.taskingConfig.priority,
                 status = "OPEN",
                 sourceEnrollmentUid = sourceTieProgramEnrollment,
+                sourceTeiUid = sourceTieUid ?: "",
                 iconNane = repository.getSourceProgramIcon(targetProgramUid)
             )
         }

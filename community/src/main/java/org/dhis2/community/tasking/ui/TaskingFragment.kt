@@ -58,7 +58,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                     onTaskClick = {
                         onTaskClick(
                             requireContext(),
-                            it.sourceTeiUid!!,
+                            it.sourceTeiUid,
                             it.sourceProgramUid,
                             it.sourceEnrollmentUid
                         )
