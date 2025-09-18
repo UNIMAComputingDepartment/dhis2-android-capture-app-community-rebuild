@@ -34,14 +34,14 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d("TaskingFragment", "TaskingFragment onCreate called")
-        // Manually obtain D2 instance (replace with your actual method)
-        d2 = org.hisp.dhis.android.core.D2Manager.getD2() // or your actual D2 provider
+        d2 = org.hisp.dhis.android.core.D2Manager.getD2()
         repository = TaskingRepository(d2)
         filterRepository = TaskFilterRepository()
         filterManager = FilterManager.getInstance()
-        presenter = TaskingPresenter(filterRepository, filterManager)
+        presenter = TaskingPresenter(filterRepository, filterManager, repository)
         viewModel = TaskingViewModel(repository, d2)
-        Log.d("TaskingFragment", "TaskingPresenter initialized in Fragment")
+        presenter.init(this) // Initialize presenter with this fragment as view
+        Log.d("TaskingFragment", "TaskingPresenter initialized")
     }
 
     override fun onCreateView(
@@ -63,7 +63,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                             it.sourceEnrollmentUid
                         )
                         Log.d("TaskingFragment", "Task clicked: $it")
-                                  },
+                    },
                     viewModel = viewModel,
                     filterState = viewModel.filterState,
                     onOrgUnitFilterSelected = {
@@ -78,33 +78,33 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         super.onResume()
         Log.d("TaskingFragment", "TaskingFragment onResume called")
         presenter.onResume()
+    }
 
-        // Refresh task data when returning to the fragment
-        viewModel.refreshData().also {
-            Log.d("TaskingFragment", "Triggered task data refresh")
-        }
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.clear()
     }
 
     override fun showTasks(tasks: List<TaskingUiModel>) {
-        Log.d("TaskingFragment", "TaskingFragment showTasks called with ${tasks.size} tasks")
-        this.tasks = tasks
+        Log.d("TaskingFragment", "Showing ${tasks.size} tasks")
+        viewModel.updateTasks(tasks)
     }
 
     override fun clearFilters() {
-        Log.d("TaskingFragment", "TaskingFragment clearFilters called")
+        Log.d("TaskingFragment", "Clearing filters")
         filterRepository.clearFilters()
     }
 
     override fun openOrgUnitTreeSelector() {
         OUTreeFragment.Builder()
             .withPreselectedOrgUnits(
-                viewModel.filterState.currentFilter.orgUnitFilters.toList(),
+                viewModel.filterState.currentFilter.orgUnitFilters.toList()
             )
             .onSelection { selectedOrgUnits ->
                 viewModel.filterState.updateOrgUnitFilters(
                     selectedOrgUnits.map { it.uid() }
                 )
-                // presenter.setOrgUnitFilters(selectedOrgUnits)
+                presenter.setOrgUnitFilters(selectedOrgUnits)
             }
             .build()
             .show(parentFragmentManager, "OUTreeFragment")

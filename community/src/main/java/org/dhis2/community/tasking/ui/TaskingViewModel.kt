@@ -28,6 +28,7 @@ interface TaskingViewModelContract {
     val allTasksForProgress: List<TaskingUiModel>
     fun onFilterChanged()
     fun tasksForProgressBar(): List<TaskingUiModel>
+    fun updateTasks(tasks: List<TaskingUiModel>) // Added method to handle updates from presenter
 }
 
 class TaskingViewModel @Inject constructor(
@@ -266,5 +267,12 @@ class TaskingViewModel @Inject constructor(
                 Log.e("TaskingViewModel", "Error refreshing tasks", e)
             }
         }
+    }
+
+    override fun updateTasks(tasks: List<TaskingUiModel>) {
+        Log.d("TaskingViewModel", "Updating tasks from presenter with ${tasks.size} tasks")
+        allTasks = tasks
+        updateFilterOptions()
+        applyFilters()
     }
 }
