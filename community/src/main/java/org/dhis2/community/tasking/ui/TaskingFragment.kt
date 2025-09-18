@@ -78,6 +78,11 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         super.onResume()
         Log.d("TaskingFragment", "TaskingFragment onResume called")
         presenter.onResume()
+
+        // Refresh task data when returning to the fragment
+        viewModel.refreshData().also {
+            Log.d("TaskingFragment", "Triggered task data refresh")
+        }
     }
 
     override fun showTasks(tasks: List<TaskingUiModel>) {

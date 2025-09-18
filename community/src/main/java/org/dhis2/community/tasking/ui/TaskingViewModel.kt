@@ -230,9 +230,6 @@ class TaskingViewModel @Inject constructor(
         applyFilters()
     }
 
-    fun refreshTasks() {
-        loadInitialData()
-    }
 
     override fun tasksForProgressBar(): List<TaskingUiModel> {
         val filter = filterState.currentFilter
@@ -241,6 +238,33 @@ class TaskingViewModel @Inject constructor(
             (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
             matchesDateFilter(task, filter.dueDateRange)
+        }
+    }
+
+    fun refreshData() {
+        Log.d("TaskingViewModel", "Refreshing tasks data")
+        viewModelScope.launch {
+            try {
+                // Fetch fresh task data
+                val updatedTasks = repository.getAllTasks()
+                Log.d("TaskingViewModel", "Fetched ${updatedTasks.size} tasks")
+
+                // Map tasks to UI models
+                allTasks = updatedTasks.map { task ->
+                    val orgUnit = repository.getOrgUnit(task.teiUid)
+                    TaskingUiModel(task, orgUnit, repository).also { uiModel ->
+                        Log.d("TaskingViewModel", "Task ${task.name} status: ${task.status} -> UI status: ${uiModel.status.label}")
+                    }
+                }
+
+                // Update filters and UI
+                updateFilterOptions()
+                applyFilters()
+
+                Log.d("TaskingViewModel", "Data refresh complete. Filtered tasks: ${_filteredTasks.value.size}")
+            } catch (e: Exception) {
+                Log.e("TaskingViewModel", "Error refreshing tasks", e)
+            }
         }
     }
 }
