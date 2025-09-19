@@ -1,5 +1,7 @@
 package org.dhis2.usescases.enrollment
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
@@ -13,6 +15,8 @@ import org.dhis2.commons.matomo.Labels.Companion.CLICK
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
+import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
@@ -50,6 +54,8 @@ class EnrollmentPresenterImpl(
     private val eventCollectionRepository: EventCollectionRepository,
     private val teiAttributesProvider: TeiAttributesProvider,
     private val dateEditionWarningHandler: DateEditionWarningHandler,
+    private val creationEvaluator: CreationEvaluator,
+    private val taskingRepository: TaskingRepository,
 ) {
 
     private val disposable = CompositeDisposable()
@@ -132,6 +138,7 @@ class EnrollmentPresenterImpl(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun finish(enrollmentMode: EnrollmentActivity.EnrollmentMode) {
         when (enrollmentMode) {
             EnrollmentActivity.EnrollmentMode.NEW -> {
@@ -144,13 +151,25 @@ class EnrollmentPresenterImpl(
                                 it.second?.let { eventUid ->
                                     view.openEvent(eventUid)
                                 } ?: view.openDashboard(it.first)
+
                             },
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
+                //here !!
+                creationEvaluator.createTasks(
+                    taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+                    taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
+
+                )
             }
 
             EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
+
         }
     }
 

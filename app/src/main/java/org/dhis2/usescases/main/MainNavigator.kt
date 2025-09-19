@@ -1,5 +1,6 @@
 package org.dhis2.usescases.main
 
+import android.content.Context
 import android.transition.ChangeBounds
 import android.view.View
 import androidx.annotation.IdRes
@@ -19,6 +20,7 @@ import org.dhis2.usescases.about.AboutFragment
 import org.dhis2.usescases.main.program.ProgramFragment
 import org.dhis2.usescases.qrReader.QrReaderFragment
 import org.dhis2.usescases.settings.SyncManagerFragment
+import org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity
 import org.dhis2.usescases.troubleshooting.TroubleshootingFragment
 
 class MainNavigator(
@@ -135,7 +137,16 @@ class MainNavigator(
 
     fun openTasks() {
         beginTransaction(
-            TaskingFragment(),
+            TaskingFragment { context: Context, teiUid, programUid, enrollmentUid ->
+                context.startActivity(
+                    TeiDashboardMobileActivity.intent(
+                        context,
+                        teiUid,
+                        programUid,
+                        enrollmentUid,
+                    ),
+                )
+            },
             MainScreen.TASKS,
             useFadeInTransition = false
         )

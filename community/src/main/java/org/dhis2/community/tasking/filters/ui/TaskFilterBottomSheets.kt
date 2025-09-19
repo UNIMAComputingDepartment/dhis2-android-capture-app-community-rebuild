@@ -158,7 +158,7 @@ fun DueDateFilterBottomSheet(
         DateRangeFilter.ThisMonth to "This Month",
         DateRangeFilter.LastMonth to "Last Month"
     )
-    val dateRanges = DateRangeFilter.entries.filter { it != DateRangeFilter.Custom }
+    val dateRanges = DateRangeFilter.entries
     var selected by remember { mutableStateOf(selectedRange) }
 
     val radioButtonItems = dateRanges.map { range ->

@@ -32,7 +32,7 @@ fun TaskFilterBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 2.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
     ) {
         // Static filter icon on the left
@@ -80,10 +80,12 @@ fun TaskFilterBar(
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
         }
-        // Static clear button on the right
         Button(
+            modifier = Modifier
+                .padding(start = 2.dp)
+                .padding(horizontal = 2.dp),
             enabled = true,
-            style = ButtonStyle.TEXT,
+            style = ButtonStyle.FILLED,
             colorStyle = ColorStyle.DEFAULT,
             text = "Clear",
             onClick = onClearAllFilters
