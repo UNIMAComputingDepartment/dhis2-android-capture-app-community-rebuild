@@ -14,9 +14,11 @@ import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
+import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
+import java.util.Locale
 import javax.inject.Singleton
 
 @Singleton
@@ -62,7 +64,33 @@ class TaskingRepository(
             .blockingGet()
         return tei?.organisationUnit()
     }
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun dueDateCalculation(
+        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
+        sourceTieUid: String?
+    ): String?{
+        if (taskConfig.period.anchor.uid.isNullOrBlank() || sourceTieUid.isNullOrBlank()) {
+            val date =  Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            return date.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        }
 
+        val dateOfBirthValue : String? = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(taskConfig.period.anchor.uid, sourceTieUid?:"")
+            .blockingGet()?.value()
+
+        if (dateOfBirthValue.isNullOrBlank()) {
+            val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        }
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val birthDate = dateFormat.parse(dateOfBirthValue)
+
+        val dateOfBirth = birthDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
+        return dateOfBirth.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     fun calculateDueDate(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,

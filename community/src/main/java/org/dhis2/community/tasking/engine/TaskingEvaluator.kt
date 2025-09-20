@@ -40,7 +40,7 @@ open class TaskingEvaluator(
                 // Evaluate all conditions and return a list of results
                 val evalResults = evaluateTriggerConditions(taskConfig = taskConfig, tei.uid(), programUid)
                 evalResults.filter { it.isTriggered }.forEach { result ->
-                    val dueDate = repository.calculateDueDate(taskConfig, tei.uid(), programUid)
+                    val dueDate = repository.dueDateCalculation(taskConfig, sourceTieUid)
                         ?: return@forEach
                     val tieAttrs = getTieAttributes(tei.uid(), configsForProgram.teiView)
                     val taskTieOrgUnit = d2.enrollmentModule().enrollments()
