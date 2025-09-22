@@ -11,9 +11,13 @@ import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment
+import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
+import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,7 +27,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TaskingRepository(
-    private val d2: D2,
+    internal val d2: D2,
 ) {
 
     private val dataElementChangedSubject = PublishSubject.create<String>()
@@ -64,33 +68,7 @@ class TaskingRepository(
             .blockingGet()
         return tei?.organisationUnit()
     }
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun dueDateCalculation(
-        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
-        sourceTieUid: String?
-    ): String?{
-        if (taskConfig.period.anchor.uid.isNullOrBlank() || sourceTieUid.isNullOrBlank()) {
-            val date =  Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-            return date.plusDays(taskConfig.period.dueInDays.toLong()).toString()
-        }
 
-        val dateOfBirthValue : String? = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(taskConfig.period.anchor.uid, sourceTieUid?:"")
-            .blockingGet()?.value()
-
-        if (dateOfBirthValue.isNullOrBlank()) {
-            val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-            return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
-        }
-
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val birthDate = dateFormat.parse(dateOfBirthValue)
-
-        val dateOfBirth = birthDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-
-        return dateOfBirth.plusDays(taskConfig.period.dueInDays.toLong()).toString()
-
-    }
     @RequiresApi(Build.VERSION_CODES.O)
     fun calculateDueDate(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
@@ -122,56 +100,6 @@ class TaskingRepository(
 
     fun getDateOfBirth(tieUid: String){
 
-    }
-
-    fun resolvedReference(
-        trigger: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
-        teiUid: String,
-        attrOrDataElementUid: String,
-        programUid: String
-    ): String? {
-        return trigger.condition.firstNotNullOfOrNull { cond ->
-
-            val enrollment = getLatestEnrollment(teiUid, programUid)
-                ?: return@firstNotNullOfOrNull null
-
-            val events = d2.eventModule().events()
-                .byEnrollmentUid().eq(enrollment.uid())
-                .withTrackedEntityDataValues()
-                .blockingGet()
-            when (cond.lhs.ref) {
-                "teiAttribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .byTrackedEntityInstance().eq(teiUid)
-                    .byTrackedEntityAttribute().eq(attrOrDataElementUid)
-                    .one().blockingGet()?.value()
-
-                "eventData" -> {
-
-
-                    /**/
-
-                    val latestEvent = events
-                        .maxByOrNull { it.created()?: it.eventDate()?: Date(0) } // choose your ordering
-
-                    // From the latest event, get the value of the desired data element
-                    latestEvent
-                        ?.trackedEntityDataValues()
-                        ?.firstOrNull { it.dataElement() == attrOrDataElementUid }
-                        ?.value()
-                }
-
-                "allEventsData" -> {
-                    events.asSequence()
-                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
-                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
-                        ?.value()
-                }
-
-
-                "static" -> cond.lhs.uid
-                else -> null
-            }
-        }
     }
 
     fun getProgramName(programUid: String): String {
@@ -358,6 +286,12 @@ class TaskingRepository(
         }
     }
 
+    fun getTrackedEntityInstance(teiUid: String): TrackedEntityInstance? {
+        return d2.trackedEntityModule().trackedEntityInstances()
+            .uid(teiUid)
+            .blockingGet()
+    }
+
     fun getProgramDisplayName(programUid: String): String? {
         return try {
             d2.programModule().programs()
@@ -369,13 +303,54 @@ class TaskingRepository(
         }
     }
 
-    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): String? {
-        val enrollments = d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid).blockingGet()?.trackedEntityInstance()
-//            .byTrackedEntityInstance().eq(teiUid)
-//            .byProgram().eq(programUid)
-//            //.byStatus().eq(EnrollmentStatus.ACTIVE)
-//            .blockingGet()
-        return enrollments
+
+    fun createTask(
+        task: Task,
+        sourceTeiOrgUnitUid: String,
+        taskTEITypeUid: String,
+        taskProgramUid: String
+    ): Boolean {
+        val newTeiUid = try {
+            d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+                TrackedEntityInstanceCreateProjection.builder()
+                    .organisationUnit(sourceTeiOrgUnitUid)
+                    .trackedEntityType(taskTEITypeUid)
+                    .build()
+            )
+        } catch (e: D2Error) {
+            Timber.tag("CreationEvaluator")
+                .e("TEI creation failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            return false
+        }
+
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:"", "open", newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskNameUid?:"", task.name, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.priorityUid?:"", "high", newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:"", task.dueDate, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskTertiaryAttrUid?:"", task.teiTertiary, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSecondaryAttrUid?:"", task.teiSecondary, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskPrimaryAttrUid?:"", task.teiPrimary, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceProgramUid?: "",  task.sourceProgramUid, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceEnrollmentUid?: "", task.sourceEnrollmentUid, newTeiUid)
+        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceTeiUid?:"", task.sourceTeiUid, newTeiUid)
+
+        try {
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(newTeiUid)
+                    .program(taskProgramUid)
+                    .organisationUnit(sourceTeiOrgUnitUid)
+                    .build()
+            )
+            val today = Date()
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(today)
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(today)
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setStatus(EnrollmentStatus.ACTIVE)
+            return true
+        } catch (e: D2Error) {
+            Timber.tag("CreationEvaluator")
+                .e("Enrollment failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            return false
+        }
     }
 }

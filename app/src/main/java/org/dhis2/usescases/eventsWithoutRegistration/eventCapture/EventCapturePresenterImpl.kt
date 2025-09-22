@@ -26,6 +26,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
@@ -50,8 +51,7 @@ class EventCapturePresenterImpl(
     private val preferences: PreferenceProvider,
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
-    private val creationEvaluator: CreationEvaluator,
-    private val taskingRepository: TaskingRepository,
+    private val taskingEngine: TaskingEngine,
 ) : ViewModel(), EventCaptureContract.Presenter {
 
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -235,16 +235,12 @@ class EventCapturePresenterImpl(
     override fun saveAndExit(eventStatus: EventStatus?) {
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
-            creationEvaluator.createTasks(
-                taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-                taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+            taskingEngine.evaluate(
                 targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
                 sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                 sourceTieUid = eventCaptureRepository.getTeiUid(),
                 sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-
             )
-
         }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {

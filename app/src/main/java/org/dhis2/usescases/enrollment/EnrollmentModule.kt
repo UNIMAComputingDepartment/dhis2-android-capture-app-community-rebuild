@@ -17,6 +17,7 @@ import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
@@ -163,8 +164,7 @@ class EnrollmentModule(
         eventCollectionRepository: EventCollectionRepository,
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
-        creationEvaluator: CreationEvaluator,
-        taskingRepository: TaskingRepository,
+        taskingEngine: TaskingEngine
     ): EnrollmentPresenterImpl {
         return EnrollmentPresenterImpl(
             enrollmentView,
@@ -179,8 +179,7 @@ class EnrollmentModule(
             eventCollectionRepository,
             teiAttributesProvider,
             dateEditionWarningHandler,
-            creationEvaluator,
-            taskingRepository,
+            taskingEngine
         )
     }
 
@@ -270,10 +269,9 @@ class EnrollmentModule(
 
     @Provides
     @PerActivity
-    fun provideCreateTaskEvaluator(
-        repository: TaskingRepository,
-        d2: D2,
-    ): CreationEvaluator {
-        return CreationEvaluator(repository, d2)
+    fun provideTaskingEngine(
+        repository: TaskingRepository
+    ): TaskingEngine {
+        return TaskingEngine(repository)
     }
 }
