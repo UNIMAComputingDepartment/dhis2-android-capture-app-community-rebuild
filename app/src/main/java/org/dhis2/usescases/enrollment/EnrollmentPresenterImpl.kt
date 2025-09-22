@@ -16,6 +16,7 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
@@ -56,6 +57,7 @@ class EnrollmentPresenterImpl(
     private val dateEditionWarningHandler: DateEditionWarningHandler,
     private val creationEvaluator: CreationEvaluator,
     private val taskingRepository: TaskingRepository,
+    private val defaultingEvaluator: DefaultingEvaluator,
 ) {
 
     private val disposable = CompositeDisposable()
@@ -156,7 +158,7 @@ class EnrollmentPresenterImpl(
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
-                //here !!
+                // Task creation
                 creationEvaluator.createTasks(
                     taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
                     taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
@@ -164,12 +166,16 @@ class EnrollmentPresenterImpl(
                     sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
                     sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
                     sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
-
+                )
+                // Task defaulting
+                defaultingEvaluator.defaultTasks(
+                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:""
                 )
             }
-
             EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
-
         }
     }
 

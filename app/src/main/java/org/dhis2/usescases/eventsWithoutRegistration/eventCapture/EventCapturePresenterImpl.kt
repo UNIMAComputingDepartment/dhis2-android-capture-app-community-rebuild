@@ -52,6 +52,7 @@ class EventCapturePresenterImpl(
     private val resourceManager: ResourceManager,
     private val creationEvaluator: CreationEvaluator,
     private val taskingRepository: TaskingRepository,
+    private val defaultingEvaluator: org.dhis2.community.tasking.engine.DefaultingEvaluator
 ) : ViewModel(), EventCaptureContract.Presenter {
 
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -105,6 +106,16 @@ class EventCapturePresenterImpl(
 
         viewModelScope.launch {
             loadBottomBarItems()
+        // Run defaulting logic on init to catch overdue/defaulted tasks
+        if (eventCaptureRepository.getEnrollmentUid() != null) {
+            defaultingEvaluator.defaultTasks(
+                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+                sourceTieUid = eventCaptureRepository.getTeiUid(),
+                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+            )
+        }
+
         }
     }
 

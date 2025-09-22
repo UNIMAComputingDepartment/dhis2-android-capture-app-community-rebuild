@@ -16,6 +16,7 @@ import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
+import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.commons.orgunitselector.OUTreeFragment
 
 
@@ -25,6 +26,7 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
     private lateinit var presenter: TaskingPresenter
     private lateinit var filterRepository: TaskFilterRepository
     private lateinit var filterManager: FilterManager
+    private lateinit var defaultingEvaluator: DefaultingEvaluator
 
     private var tasks: List<TaskingUiModel> = emptyList()
     private lateinit var viewModel: TaskingViewModel
@@ -38,7 +40,8 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         repository = TaskingRepository(d2)
         filterRepository = TaskFilterRepository()
         filterManager = FilterManager.getInstance()
-        presenter = TaskingPresenter(filterRepository, filterManager, repository)
+        defaultingEvaluator = DefaultingEvaluator(repository, d2)
+        presenter = TaskingPresenter(filterRepository, filterManager, repository, defaultingEvaluator)
         viewModel = TaskingViewModel(repository, d2)
         presenter.init(this) // Initialize presenter with this fragment as view
         Log.d("TaskingFragment", "TaskingPresenter initialized")
