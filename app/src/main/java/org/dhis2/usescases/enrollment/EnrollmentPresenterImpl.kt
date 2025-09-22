@@ -156,21 +156,21 @@ class EnrollmentPresenterImpl(
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
-                //here !!
-                creationEvaluator.createTasks(
-                    taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-                    taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
-                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
-                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
-                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
-
-                )
             }
 
             EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
 
         }
+
+        creationEvaluator.createTasks(
+            taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+            taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+            targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+            sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+            sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+            sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
+
+            )
     }
 
     fun updateFields(action: RowAction? = null) {

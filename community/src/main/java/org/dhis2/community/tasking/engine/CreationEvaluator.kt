@@ -40,6 +40,8 @@ class CreationEvaluator (
             sourceTeiUid = sourceTieUid
         )
 
+
+
         val results = evaluateForTie(sourceTieUid, targetProgramUid, sourceTieOrgUnitUid)
         if (results.isEmpty()) return emptyList()
 
@@ -91,14 +93,31 @@ class CreationEvaluator (
                 Timber.e("CreationEvaluator: dueDate missing"); return@forEach
             }
 
-            val taskAlreadyExist = allAvailableTasks.any { task ->
+            val (primary, secondary, tertiary) = tieAttrs
+
+            val existingTask = allAvailableTasks.firstOrNull { task ->
                 task.sourceProgramUid == targetProgramUid &&
                         task.status != "completed" &&
                         task.sourceEnrollmentUid == sourceTieProgramEnrollment &&
                         task.name == result.taskingConfig.name
             }
 
-            if(taskAlreadyExist) return@forEach
+                if(existingTask != null){
+                    val secondaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSecondaryAttrUid?:""
+                    val tertiaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskTertiaryAttrUid?:""
+                    val dueDateAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:""
+                    val primaryAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskPrimaryAttrUid?:""
+                    //val newDuedate = repository.dueDateCalculation(result.taskingConfig, sourceTieUid) ?:
+                    if(result.taskingConfig.period.anchor.uid?.isNotEmpty() == true){
+                        repository.updateTaskAttrValue(dueDateAttrUid, dueDate, existingTask.teiUid)
+                    }
+                    repository.updateTaskAttrValue(dueDateAttrUid, dueDate, existingTask.teiUid)
+                    repository.updateTaskAttrValue(tertiaryAttrUid, tertiary, existingTask.teiUid)
+                    repository.updateTaskAttrValue(secondaryAttrUid, secondary, existingTask.teiUid)
+                    repository.updateTaskAttrValue(primaryAttrUid, primary, existingTask.teiUid)
+                    return@forEach
+                }
+
 
             // 3) Create TEI (CATCH D2Error!)
             val newTeiUid = try {
@@ -114,7 +133,7 @@ class CreationEvaluator (
                 return@forEach
             }
 
-            val (primary, secondary, tertiary) = tieAttrs
+
 
 
             val statusAttrUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:""

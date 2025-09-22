@@ -51,7 +51,8 @@ open class TaskingEvaluator(
                     results += result.copy(
                         dueDate = dueDate,
                         tieAttrs = tieAttrs,
-                        orgUnit = taskTieOrgUnit
+                        orgUnit = taskTieOrgUnit,
+                        taskingConfig = taskConfig
                     )
                 }
             }
