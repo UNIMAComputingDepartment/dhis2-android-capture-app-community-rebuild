@@ -179,7 +179,11 @@ fun TaskingUi(
                     selectedRange = filterState.uiState.selectedDateRange,
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selectedRange ->
-                        filterState.updateDueDateFilter(selectedRange ?: return@DueDateFilterBottomSheet)
+                        if (selectedRange != null) {
+                            filterState.updateDueDateFilter(selectedRange)
+                        } else {
+                            filterState.clearDueDateFilter()
+                        }
                         activeFilterSheet = null
                         viewModel.onFilterChanged()
                     }
@@ -216,7 +220,7 @@ fun TaskingUi(
                             isConstantItem = true
                         ),
                         AdditionalInfoItem(
-                            key = "Physical Address",
+                            key = "Village Name",
                             value = task.teiSecondary,
                             color = TextColor.OnSurface,
                             truncate = false,

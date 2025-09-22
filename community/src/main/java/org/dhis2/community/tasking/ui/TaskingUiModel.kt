@@ -108,16 +108,12 @@ data class TaskingUiModel(
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
-                val daysPastDue = today.get(Calendar.DAY_OF_YEAR) - due.get(Calendar.DAY_OF_YEAR) +
-                    (today.get(Calendar.YEAR) - due.get(Calendar.YEAR)) * 365
                 return when {
-                    //daysPastDue > 7 -> TaskingStatus.DEFAULTED
                     due.before(today) -> TaskingStatus.OVERDUE
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                            due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 &&
-                            due.get(Calendar.DAY_OF_YEAR) > today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_SOON
+                            due.get(Calendar.DAY_OF_YEAR) in (today.get(Calendar.DAY_OF_YEAR) + 1)..(today.get(Calendar.DAY_OF_YEAR) + 3) -> TaskingStatus.DUE_SOON
                     else -> TaskingStatus.OPEN
                 }
             }

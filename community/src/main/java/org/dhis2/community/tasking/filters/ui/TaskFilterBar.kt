@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -79,6 +80,7 @@ fun TaskFilterBar(
                 onSelected = { Timber.d("Due Date filter chip clicked"); onDueDateFilterClick() },
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
+            Spacer(modifier = Modifier.padding(end = 2.dp))
         }
         Button(
             modifier = Modifier
