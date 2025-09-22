@@ -26,7 +26,7 @@
               "ref": "",
               "uid": ""
             },
-            "dueInDays": 14
+            "dueInDays": 2
           },
           "priority": "HIGH",
           "trigger": {
