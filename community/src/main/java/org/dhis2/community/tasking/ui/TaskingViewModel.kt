@@ -190,6 +190,9 @@ class TaskingViewModel @Inject constructor(
         val taskCal = Calendar.getInstance().apply { time = taskDate }
         return when (dateRange) {
             DateRangeFilter.Today -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
             }
@@ -200,7 +203,21 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
             }
+            DateRangeFilter.Tomorrow -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                val tomorrow = Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, +1)
+                }
+                taskCal.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) &&
+                        taskCal.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)
+            }
+            }
             DateRangeFilter.ThisWeek -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
             }
@@ -211,7 +228,21 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == lastWeek.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
             }
+            DateRangeFilter.NextWeek -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextWeek = Calendar.getInstance().apply {
+                    add(Calendar.WEEK_OF_YEAR, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextWeek.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.WEEK_OF_YEAR) == nextWeek.get(Calendar.WEEK_OF_YEAR)
+                }
+            }
             DateRangeFilter.ThisMonth -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
             }
@@ -222,8 +253,27 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == lastMonth.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
             }
+            DateRangeFilter.NextMonth -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextMonth = Calendar.getInstance().apply {
+                    add(Calendar.MONTH, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextMonth.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.MONTH) == nextMonth.get(Calendar.MONTH)
+                }
+            }
             else -> false
         }
+    }
+
+    fun exemptOverDueTask(task: TaskingUiModel): Boolean {
+        return if (task.status == TaskingStatus.OVERDUE) {
+            val today = Calendar.getInstance()
+            val taskCal = Calendar.getInstance().apply { task.dueDate?.let { time = it } }
+            taskCal.before(today)
+        } else false
     }
 
     override fun onFilterChanged() {
