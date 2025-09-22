@@ -1,123 +1,67 @@
 package org.dhis2.community.tasking.ui
 
-import androidx.compose.runtime.mutableStateListOf
+import android.util.Log
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.commons.filters.FilterManager
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import org.dhis2.community.tasking.filters.models.TaskFilterModel
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import javax.inject.Inject
-import timber.log.Timber
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 
 class TaskingPresenter @Inject constructor(
     private val filterRepository: TaskFilterRepository,
-    private val filterManager: FilterManager
+    private val filterManager: FilterManager,
+    private val repository: TaskingRepository
 ) {
-    private val _tasks = mutableStateListOf<TaskingUiModel>()
-    val tasks: List<TaskingUiModel> get() = _tasks
+    private var view: TaskingView? = null
     private val disposable = CompositeDisposable()
 
     init {
-        Timber.d("TaskingPresenter initialized")
-    }
-    fun observeFilters(tasksFromRepo: List<TaskingUiModel>) {
-        Timber.d("observeFilters called with ${tasksFromRepo.size} tasks")
-        disposable.add(
-            filterManager.asFlowable()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    Timber.d("FilterManager emitted new filter state")
-                    val taskFilter = filterRepository.selectedFilters.value
-                    val filterModel = TaskFilterModel(
-                        programFilters = taskFilter.programFilters,
-                        orgUnitFilters = taskFilter.orgUnitFilters,
-                        priorityFilters = taskFilter.priorityFilters.mapNotNull { label ->
-                            TaskingPriority.entries.find { it.label == label }
-                        }.toSet(),
-                        statusFilters = taskFilter.statusFilters.mapNotNull { label ->
-                            TaskingStatus.entries.find { it.label == label }
-                        }.toSet(),
-                        dueDateRange = taskFilter.dueDateRange,
-                        customDateRange = taskFilter.customDateRange
-                    )
-                    Timber.d("Applying filters: $filterModel")
-                    val filtered = applyTaskFilters(tasksFromRepo, filterModel)
-                    Timber.d("Filtered tasks count: ${filtered.size}")
-                    updateFilteredTasks(filtered)
-                }
-        )
+        Log.d("TaskingPresenter", "TaskingPresenter initialized")
     }
 
-    fun initialize(tasksFromRepo: List<TaskingUiModel>) {
-        Timber.d("initialize called with ${tasksFromRepo.size} tasks")
-        updateFilteredTasks(tasksFromRepo)
+    fun init(view: TaskingView) {
+        Log.d("TaskingPresenter", "Initializing presenter with view")
+        this.view = view
+        loadData()
     }
-
 
     fun onResume() {
-        Timber.d("TaskingPresenter onResume called")
-        // Add any logic needed for resuming presenter
+        Log.d("TaskingPresenter", "onResume called - refreshing data")
+        loadData() // Refresh data when screen is resumed
     }
 
-    private fun applyTaskFilters(tasks: List<TaskingUiModel>, filter: TaskFilterModel): List<TaskingUiModel> {
-        Timber.d("applyTaskFilters called with ${tasks.size} tasks and filter: $filter")
-        return tasks.filter { task ->
-            val dueDate = task.dueDate
-            // Program filter
-            (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            // OrgUnit filter
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.teiSecondary)) &&
-            // Priority filter
-            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            // Status filter
-            (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
-            // Due date filter
-            (filter.dueDateRange == null || matchesDueDateFilter(dueDate, filter.dueDateRange, filter.customDateRange))
+    private fun loadData() {
+        try {
+            Log.d("TaskingPresenter", "Loading fresh task data")
+            val freshTasks = repository.getAllTasks().map { task ->
+                TaskingUiModel(task, repository.getOrgUnit(task.teiUid), repository)
+            }
+            Log.d("TaskingPresenter", "Loaded ${freshTasks.size} tasks")
+
+            // Update view with fresh task data
+            view?.showTasks(freshTasks)
+
+            // Notify filter manager to refresh filters
+            filterManager.publishData()
+
+        } catch (e: Exception) {
+            Log.e("TaskingPresenter", "Error loading tasks", e)
         }
-    }
-
-    private fun matchesDueDateFilter(
-        dueDate: java.util.Date?,
-        dateRange: org.dhis2.community.tasking.filters.models.DateRangeFilter?,
-        customRange: org.dhis2.community.tasking.filters.models.CustomDateRange?
-    ): Boolean {
-        Timber.d("matchesDueDateFilter called with dueDate: $dueDate, dateRange: $dateRange, customRange: $customRange")
-        if (dueDate == null) return false
-        val today = java.util.Calendar.getInstance()
-        val calDue = java.util.Calendar.getInstance().apply { time = dueDate }
-        return when (dateRange) {
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.Today -> calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && calDue.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.Yesterday -> {
-                today.add(java.util.Calendar.DAY_OF_YEAR, -1)
-                calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && calDue.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
-            }
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.ThisWeek -> calDue.get(java.util.Calendar.WEEK_OF_YEAR) == today.get(java.util.Calendar.WEEK_OF_YEAR) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.LastWeek -> {
-                today.add(java.util.Calendar.WEEK_OF_YEAR, -1)
-                calDue.get(java.util.Calendar.WEEK_OF_YEAR) == today.get(java.util.Calendar.WEEK_OF_YEAR) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            }
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.ThisMonth -> calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.LastMonth -> {
-                today.add(java.util.Calendar.MONTH, -1)
-                calDue.get(java.util.Calendar.MONTH) == today.get(java.util.Calendar.MONTH) && calDue.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR)
-            }
-            org.dhis2.community.tasking.filters.models.DateRangeFilter.Custom -> {
-                val from = customRange?.from
-                val to = customRange?.to
-                (from == null || !dueDate.before(from)) && (to == null || !dueDate.after(to))
-            }
-            else -> true
-        }
-    }
-
-    private fun updateFilteredTasks(filtered: List<TaskingUiModel>) {
-        _tasks.clear()
-        _tasks.addAll(filtered)
     }
 
     fun clear() {
+        Log.d("TaskingPresenter", "Cleaning up presenter")
         disposable.clear()
+        view = null
+    }
+
+    fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
+        val orgUnitUids = selectedOrgUnits.map { it.uid() }.toSet()
+        val currentFilter = filterRepository.selectedFilters.value
+        filterRepository.updateFilter(currentFilter.copy(orgUnitFilters = orgUnitUids))
     }
 }

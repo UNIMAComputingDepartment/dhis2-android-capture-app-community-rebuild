@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,22 +11,17 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.ui.*
-import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.*
 import org.hisp.dhis.mobile.ui.designsystem.component.state.*
 import org.hisp.dhis.mobile.ui.designsystem.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
-import timber.log.Timber
 
 const val TASKING_ITEMS = "TASKING_ITEMS"
 
@@ -34,23 +30,24 @@ fun TaskingUi(
     tasks: List<TaskingUiModel>,
     onTaskClick: (TaskingUiModel) -> Unit,
     viewModel: TaskingViewModelContract,
-    filterState: TaskFilterState
+    filterState: TaskFilterState,
+    onOrgUnitFilterSelected: () -> Unit
 ) {
-    Timber.d("TaskingUi composable rendered with ${tasks.size} tasks")
+    Log.d("TaskingUi", "TaskingUi composable rendered with ${tasks.size} tasks")
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
 
     // Collect tasks from viewModel's StateFlow
     val filteredTasks by viewModel.filteredTasks.collectAsState()
-    Timber.d("TaskingUi filteredTasks count: ${filteredTasks.size}")
+    Log.d("TaskingUi", "TaskingUi filteredTasks count: ${filteredTasks.size}")
 
-    // Calculate progress variables at the top scope
-    val allTasksForProgress = viewModel.allTasksForProgress.ifEmpty { tasks }
-    val completedTaskCount = allTasksForProgress.count { it.status == TaskingStatus.COMPLETED }
-    val totalTaskCount = allTasksForProgress.size
+    // For progress bar, use tasks filtered by all filters except status
+    val progressTasks = viewModel.tasksForProgressBar()
+    val completedTaskCount = progressTasks.count { it.status == TaskingStatus.COMPLETED }
+    val totalTaskCount = progressTasks.size
     val completionPercentage = if (totalTaskCount > 0) {
         (completedTaskCount * 100) / totalTaskCount
     } else 0
-    Timber.d("TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
+    Log.d("TaskingUi", "TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,27 +58,27 @@ fun TaskingUi(
         TaskFilterBar(
             filterState = filterState.uiState,
             onProgramFilterClick = {
-                Timber.d("Program filter clicked")
+                Log.d("TaskingUi", "Program filter clicked")
                 activeFilterSheet = FilterSheetType.PROGRAM
             },
             onOrgUnitFilterClick = {
-                Timber.d("OrgUnit filter clicked")
-                activeFilterSheet = FilterSheetType.ORG_UNIT
+                Log.d("TaskingUi", "OrgUnit filter clicked")
+                onOrgUnitFilterSelected()
             },
             onPriorityFilterClick = {
-                Timber.d("Priority filter clicked")
+                Log.d("TaskingUi", "Priority filter clicked")
                 activeFilterSheet = FilterSheetType.PRIORITY
             },
             onStatusFilterClick = {
-                Timber.d("Status filter clicked")
+                Log.d("TaskingUi", "Status filter clicked")
                 activeFilterSheet = FilterSheetType.STATUS
             },
             onDueDateFilterClick = {
-                Timber.d("DueDate filter clicked")
+                Log.d("TaskingUi", "DueDate filter clicked")
                 activeFilterSheet = FilterSheetType.DUE_DATE
             },
             onClearAllFilters = {
-                Timber.d("Clear all filters clicked")
+                Log.d("TaskingUi", "Clear all filters clicked")
                 filterState.clearAllFilters()
                 viewModel.onFilterChanged()
             }
@@ -131,7 +128,7 @@ fun TaskingUi(
         when (activeFilterSheet) {
             FilterSheetType.PROGRAM -> {
                 ProgramFilterBottomSheet(
-                    programs = viewModel.programs,
+                    programs = viewModel.programs.map { it.copy(checked = filterState.currentFilter.programFilters.contains(it.uid)) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updateProgramFilters(selected)
@@ -141,23 +138,23 @@ fun TaskingUi(
                 )
             }
             FilterSheetType.ORG_UNIT -> {
-                OrgUnitFilterBottomSheet(
-                    orgUnits = viewModel.orgUnits,
-                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = {
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
-                    },
-                    onItemSelected = { uid, checked ->
-                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
-                        filterState.updateOrgUnitFilters(updated)
-                    }
-                )
+//                OrgUnitFilterBottomSheet(
+//                    orgUnits = viewModel.orgUnits,
+//                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
+//                    onDismiss = { activeFilterSheet = null },
+//                    onApplyFilters = {
+//                        activeFilterSheet = null
+//                        viewModel.onFilterChanged()
+//                    },
+//                    onItemSelected = { uid, checked ->
+//                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
+//                        filterState.updateOrgUnitFilters(updated)
+//                    }
+//                )
             }
             FilterSheetType.PRIORITY -> {
                 PriorityFilterBottomSheet(
-                    priorities = viewModel.priorities,
+                    priorities = viewModel.priorities.map { it.copy(checked = filterState.currentFilter.priorityFilters.any { p -> p.label == it.uid }) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updatePriorityFilters(selected)
@@ -168,7 +165,7 @@ fun TaskingUi(
             }
             FilterSheetType.STATUS -> {
                 StatusFilterBottomSheet(
-                    statuses = viewModel.statuses,
+                    statuses = viewModel.statuses.map { it.copy(checked = filterState.currentFilter.statusFilters.any { s -> s.label == it.uid }) },
                     onDismiss = { activeFilterSheet = null },
                     onApplyFilters = { selected ->
                         filterState.updateStatusFilters(selected)
@@ -219,7 +216,7 @@ fun TaskingUi(
                             isConstantItem = true
                         ),
                         AdditionalInfoItem(
-                            key = "Details",
+                            key = "Physical Address",
                             value = task.teiSecondary,
                             color = TextColor.OnSurface,
                             truncate = false,
@@ -279,7 +276,7 @@ fun TaskingUi(
                             color = SurfaceColor.Primary
                         ),
                         description = ListCardDescriptionModel(
-                            text = task.sourceProgramName,
+                            text = task.displayProgramName,
                             color = TextColor.OnSurface
                         ),
                         lastUpdated = task.dueDate?.let {
@@ -294,7 +291,7 @@ fun TaskingUi(
                     )
 
                     ListCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.padding(8.dp),
                         listCardState = listCardState,
                         listAvatar = {
                             Avatar(
@@ -306,7 +303,12 @@ fun TaskingUi(
                             )
                         },
                         onCardClick = {
-                            onTaskClick(task)
+                            Log.d("TaskingUi", "Task card clicked: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
+                            if (task.sourceTeiUid != null) {
+                                onTaskClick(task)
+                            } else {
+                                Log.w("TaskingUi", "Navigation blocked: TEI ${task.teiUid} is not enrolled in program ${task.sourceProgramUid} with enrollment ${task.sourceEnrollmentUid}")
+                            }
                         }
                     )
                 }
@@ -317,102 +319,102 @@ fun TaskingUi(
 
 private enum class FilterSheetType { PROGRAM, ORG_UNIT, PRIORITY, STATUS, DUE_DATE }
 
-fun getDummyTasks() : List<TaskingUiModel> {
-    return listOf(
-        TaskingUiModel(
-            task = Task(
-                name = "BCG Immunization Due",
-                description = "BCG Immunization for newborn",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll1",
-                sourceProgramName = "Expanded Programme on Immunization - EPI",
-                teiUid = "tei1",
-                teiPrimary = "James Phiri",
-                teiSecondary = "2025-08-15",
-                teiTertiary = "Male",
-                dueDate = "2025-09-06",
-                priority = "Low",
-                status = "OPEN",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "ANC Follow-up Visit",
-                description = "Scheduled antenatal care follow-up",
-                sourceProgramUid = "WSGAb5XwJ3Y",
-                sourceEnrollmentUid = "enroll2",
-                sourceProgramName = "CBMNC - Woman Program",
-                teiUid = "tei2",
-                teiPrimary = "Mary Banda",
-                teiSecondary = "W123",
-                teiTertiary = "MAT456",
-                dueDate = "2025-09-10",
-                priority = "Medium",
-                status = "DUE_SOON",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "Post-delivery Follow-up",
-                description = "Neonatal check-up required",
-                sourceProgramUid = "uy2gU8kT1jF",
-                sourceEnrollmentUid = "enroll3",
-                sourceProgramName = "CBMNC - Neonatal Program",
-                teiUid = "tei3",
-                teiPrimary = "Baby Tembo",
-                teiSecondary = "2025-09-01",
-                teiTertiary = "MAT789",
-                dueDate = "2025-09-01",
-                priority = "High",
-                status = "OVERDUE",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "OPV-1 Vaccination",
-                description = "First dose of Oral Polio Vaccine",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll4",
-                sourceProgramName = "EPI",
-                teiUid = "tei4",
-                teiPrimary = "Sarah Mwanza",
-                teiSecondary = "2025-09-20",
-                teiTertiary = "Female",
-                dueDate = "2025-09-20",
-                priority = "High",
-                status = "COMPLETED",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        )
-    )
-
-    /*val filterState = remember { TaskFilterState() }
-
-    val filteredPreviewTasks = fakeTasks.filter {
-        it.status != TaskingStatus.COMPLETED
-    }
-
-    val previewViewModel = object : TaskingViewModelContract {
-        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
-        override val programs = emptyList<CheckBoxData>()
-        override val orgUnits = emptyList<OrgTreeItem>()
-        override val priorities = emptyList<CheckBoxData>()
-        override val statuses = emptyList<CheckBoxData>()
-        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
-        override fun onFilterChanged() {}
-    }
-
-    TaskingUi(
-        tasks = fakeTasks,
-        onTaskClick = {},
-        viewModel = previewViewModel,
-        filterState = filterState
-    )*/
-}
+//fun getDummyTasks() : List<TaskingUiModel> {
+//    return listOf(
+//        TaskingUiModel(
+//            task = Task(
+//                name = "BCG Immunization Due",
+//                description = "BCG Immunization for newborn",
+//                sourceProgramUid = "IpHINAT79UW",
+//                sourceEnrollmentUid = "enroll1",
+//                sourceProgramName = "Expanded Programme on Immunization - EPI",
+//                teiUid = "tei1",
+//                teiPrimary = "James Phiri",et
+//                teiSecondary = "2025-08-15",
+//                teiTertiary = "Male",
+//                dueDate = "2025-09-06",
+//                priority = "Low",
+//                status = "OPEN",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "ANC Follow-up Visit",
+//                description = "Scheduled antenatal care follow-up",
+//                sourceProgramUid = "WSGAb5XwJ3Y",
+//                sourceEnrollmentUid = "enroll2",
+//                sourceProgramName = "CBMNC - Woman Program",
+//                teiUid = "tei2",
+//                teiPrimary = "Mary Banda",
+//                teiSecondary = "W123",
+//                teiTertiary = "MAT456",
+//                dueDate = "2025-09-10",
+//                priority = "Medium",
+//                status = "DUE_SOON",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "Post-delivery Follow-up",
+//                description = "Neonatal check-up required",
+//                sourceProgramUid = "uy2gU8kT1jF",
+//                sourceEnrollmentUid = "enroll3",
+//                sourceProgramName = "CBMNC - Neonatal Program",
+//                teiUid = "tei3",
+//                teiPrimary = "Baby Tembo",
+//                teiSecondary = "2025-09-01",
+//                teiTertiary = "MAT789",
+//                dueDate = "2025-09-01",
+//                priority = "High",
+//                status = "OVERDUE",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        ),
+//        TaskingUiModel(
+//            task = Task(
+//                name = "OPV-1 Vaccination",
+//                description = "First dose of Oral Polio Vaccine",
+//                sourceProgramUid = "IpHINAT79UW",
+//                sourceEnrollmentUid = "enroll4",
+//                sourceProgramName = "EPI",
+//                teiUid = "tei4",
+//                teiPrimary = "Sarah Mwanza",
+//                teiSecondary = "2025-09-20",
+//                teiTertiary = "Female",
+//                dueDate = "2025-09-20",
+//                priority = "High",
+//                status = "COMPLETED",
+//                iconNane = ""
+//            ),
+//            orgUnit = ""
+//        )
+//    )
+//
+//    /*val filterState = remember { TaskFilterState() }
+//
+//    val filteredPreviewTasks = fakeTasks.filter {
+//        it.status != TaskingStatus.COMPLETED
+//    }
+//
+//    val previewViewModel = object : TaskingViewModelContract {
+//        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
+//        override val programs = emptyList<CheckBoxData>()
+//        override val orgUnits = emptyList<OrgTreeItem>()
+//        override val priorities = emptyList<CheckBoxData>()
+//        override val statuses = emptyList<CheckBoxData>()
+//        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
+//        override fun onFilterChanged() {}
+//    }
+//
+//    TaskingUi(
+//        tasks = fakeTasks,
+//        onTaskClick = {},
+//        viewModel = previewViewModel,
+//        filterState = filterState
+//    )*/
+//}

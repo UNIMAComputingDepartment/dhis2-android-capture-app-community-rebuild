@@ -16,6 +16,8 @@ import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -161,6 +163,8 @@ class EnrollmentModule(
         eventCollectionRepository: EventCollectionRepository,
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
+        creationEvaluator: CreationEvaluator,
+        taskingRepository: TaskingRepository,
     ): EnrollmentPresenterImpl {
         return EnrollmentPresenterImpl(
             enrollmentView,
@@ -175,6 +179,8 @@ class EnrollmentModule(
             eventCollectionRepository,
             teiAttributesProvider,
             dateEditionWarningHandler,
+            creationEvaluator,
+            taskingRepository,
         )
     }
 
@@ -254,5 +260,20 @@ class EnrollmentModule(
     @PerActivity
     fun providesTeiAttributesProvider(d2: D2): TeiAttributesProvider {
         return TeiAttributesProvider(d2)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideTaskingRepository(d2: D2): TaskingRepository {
+        return TaskingRepository(d2)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideCreateTaskEvaluator(
+        repository: TaskingRepository,
+        d2: D2,
+    ): CreationEvaluator {
+        return CreationEvaluator(repository, d2)
     }
 }

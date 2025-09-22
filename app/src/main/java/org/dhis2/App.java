@@ -123,6 +123,7 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
         initCustomCrashActivity();
     }
 
+
     public void initCrashController() {
         if (areTrackingPermissionGranted()) {
             SentryAndroid.init(this, options -> {

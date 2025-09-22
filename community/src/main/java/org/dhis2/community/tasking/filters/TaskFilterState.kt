@@ -18,12 +18,15 @@ class TaskFilterState {
                 org.dhis2.community.tasking.ui.TaskingStatus.OPEN,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
-                org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE,
-                org.dhis2.community.tasking.ui.TaskingStatus.DEFAULTED
+                org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE
             )
         )
     )
         private set
+
+    init {
+        updateUiState()
+    }
 
     fun updateProgramFilters(selectedPrograms: List<CheckBoxData>) {
         val selectedProgramIds = selectedPrograms.filter { it.checked }.map { it.uid }.toSet()
@@ -32,9 +35,9 @@ class TaskFilterState {
         updateUiState()
     }
 
-    fun updateOrgUnitFilters(selectedOrgUnits: Set<String>) {
+    fun updateOrgUnitFilters(selectedOrgUnits: List<String>) {
         Timber.d("updateOrgUnitFilters called with: $selectedOrgUnits")
-        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits)
+        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits.toSet())
         updateUiState()
     }
 
@@ -48,6 +51,7 @@ class TaskFilterState {
     }
 
     fun updateStatusFilters(selectedStatuses: List<CheckBoxData>) {
+        // If all are unselected, set to empty set
         val selectedStatusEnums = selectedStatuses.filter { it.checked }
             .mapNotNull { org.dhis2.community.tasking.ui.TaskingStatus.entries.find { s -> s.label == it.uid } }
             .toSet()
@@ -58,17 +62,17 @@ class TaskFilterState {
 
     fun updateDueDateFilter(dateRange: DateRangeFilter) {
         Timber.d("updateDueDateFilter called with: $dateRange")
-        currentFilter = currentFilter.copy(dueDateRange = dateRange, customDateRange = null)
+        currentFilter = currentFilter.copy(dueDateRange = dateRange)
         updateUiState()
     }
 
     fun clearAllFilters() {
         Timber.d("clearAllFilters called")
-        currentFilter = TaskFilterModel(dueDateRange = null, customDateRange = null)
+        currentFilter = TaskFilterModel(dueDateRange = null)
         updateUiState()
     }
 
-    private fun updateUiState() {
+    internal fun updateUiState() {
         Timber.d("updateUiState called. Current filter: $currentFilter")
         uiState = FilterUiState(
             isProgramFilterActive = currentFilter.programFilters.isNotEmpty(),
@@ -81,7 +85,7 @@ class TaskFilterState {
             statusFilterCount = currentFilter.statusFilters.size,
             isDueDateFilterActive = currentFilter.dueDateRange != null,
             dueDateFilterCount = if (currentFilter.dueDateRange != null) 1 else 0,
-            selectedDateRange = currentFilter.dueDateRange,
+            selectedDateRange = currentFilter.dueDateRange
         )
     }
 }
