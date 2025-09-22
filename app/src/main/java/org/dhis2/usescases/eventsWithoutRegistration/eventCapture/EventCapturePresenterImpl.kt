@@ -235,12 +235,14 @@ class EventCapturePresenterImpl(
     override fun saveAndExit(eventStatus: EventStatus?) {
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
-            taskingEngine.evaluate(
-                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-                sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-            )
+            eventCaptureRepository.getTeiUid()?.let {
+                taskingEngine.evaluate(
+                    targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+                    sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+                    sourceTieUid = it,
+                    sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+                )
+            }
         }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {

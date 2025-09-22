@@ -167,6 +167,7 @@ class EnrollmentPresenterImpl(
             sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
             sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
             sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
+            isEventTrigger = false
         )
     }
 
