@@ -38,14 +38,12 @@ class CompletionEvaluator(
                 }
 
                 if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
-                    val condition = evaluateCompletionConditions(
-                        taskConfig = taskConfig,
+                    val conditions = evaluateConditions(
+                        conditions = taskConfig.completion,
                         teiUid = sourceTeiUid!!,
                         programUid = sourceProgramUid)
 
-                    if(condition.any{it.isTriggered}){
-
-
+                    if(conditions.any{it}) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
                             "completed",

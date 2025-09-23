@@ -240,7 +240,8 @@ class EventCapturePresenterImpl(
                     targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
                     sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                     sourceTieUid = it,
-                    sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+                    sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!,
+                    eventUid = eventUid
                 )
             }
         }

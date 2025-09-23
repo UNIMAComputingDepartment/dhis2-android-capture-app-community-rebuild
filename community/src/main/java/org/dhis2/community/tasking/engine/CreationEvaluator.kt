@@ -34,12 +34,13 @@ class CreationEvaluator (
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            if (evaluateTriggerConditions(
-                    taskConfig = taskConfig,
-                    teiUid = sourceTeiUid,
-                    targetProgramUid) && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
-                ) {
+            val isTriggered = evaluateConditions(
+                conditions = taskConfig.trigger,
+                teiUid = sourceTeiUid,
+                targetProgramUid).any { it }
 
+            if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
+                ) {
                 val res = createTaskForTei(
                     taskConfig,
                     configsForProgram.teiView,
@@ -50,7 +51,6 @@ class CreationEvaluator (
                     sourceTeiOrgUnitUid,
                     sourceTeiProgramEnrollment
                 )
-
                 Timber.d("Task ${taskConfig.name} creation result: $res")
             }
         }

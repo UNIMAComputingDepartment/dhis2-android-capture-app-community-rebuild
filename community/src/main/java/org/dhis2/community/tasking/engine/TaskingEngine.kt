@@ -2,50 +2,104 @@ package org.dhis2.community.tasking.engine
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import timber.log.Timber
 
 class TaskingEngine(
     private val repository: TaskingRepository,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val TAG = TaskingEngine::class.java.simpleName
     private val creationEvaluator = CreationEvaluator(repository)
     private val completionEvaluator = CompletionEvaluator(repository)
     private val updateEvaluator = UpdateEvaluator(repository)
 
+    // internal scope for fire-and-forget usage; cancel it when the owner is cleared
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+
+    /** Call this from a ViewModel/lifecycle owner to avoid leaks */
+    fun clear() = (scope.coroutineContext[Job])?.cancel()
+
+    /** Structured version: call from viewModelScope/lifecycleScope */
     @RequiresApi(Build.VERSION_CODES.O)
-    fun evaluate(
+    suspend fun evaluate(
         targetProgramUid: String,
         sourceTieUid: String,
         sourceTieOrgUnitUid: String,
         sourceTieProgramEnrollment: String,
-        isEventTrigger: Boolean = true
-    ) {
-        val taskProgramUid = repository.getTaskingConfig().taskProgramConfig.first().programUid
-        val taskTIETypeUid = repository.getTaskingConfig().taskProgramConfig.first().teiTypeUid
-
-        if (!isEventTrigger) {
-            updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
-        }
-
-        completionEvaluator.taskCompletion(
-            tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
-            sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
-            sourceProgramUid = targetProgramUid,
-            sourceTeiUid = sourceTieUid
-        )
-
-        val createdTasks = creationEvaluator.evaluateForCreation(
-            taskProgramUid,
-            taskTIETypeUid,
+        eventUid: String? = null
+    ) = withContext(ioDispatcher) {
+        evaluateInternal(
             targetProgramUid,
             sourceTieUid,
             sourceTieOrgUnitUid,
-            sourceTieProgramEnrollment
+            sourceTieProgramEnrollment,
+            eventUid
         )
-
-        Timber.tag(TAG).d("Created tasks: $createdTasks")
-
     }
 
+    /** Fire-and-forget version that runs on a background thread and returns a Job you can cancel */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun evaluateAsync(
+        targetProgramUid: String,
+        sourceTieUid: String,
+        sourceTieOrgUnitUid: String,
+        sourceTieProgramEnrollment: String,
+        eventUid: String? = null
+    ): Job = scope.launch {
+        evaluateInternal(
+            targetProgramUid,
+            sourceTieUid,
+            sourceTieOrgUnitUid,
+            sourceTieProgramEnrollment,
+            eventUid
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun evaluateInternal(
+        targetProgramUid: String,
+        sourceTieUid: String,
+        sourceTieOrgUnitUid: String,
+        sourceTieProgramEnrollment: String,
+        eventUid: String?
+    ) {
+        try {
+            val config = repository.getTaskingConfig().taskProgramConfig.first()
+            val taskProgramUid = config.programUid
+            val taskTIETypeUid = config.teiTypeUid
+
+            if (!eventUid.isNullOrBlank()) {
+                updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
+            }
+
+            completionEvaluator.taskCompletion(
+                tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
+                sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
+                sourceProgramUid = targetProgramUid,
+                sourceTeiUid = sourceTieUid
+            )
+
+            val createdTasks = creationEvaluator.evaluateForCreation(
+                taskProgramUid,
+                taskTIETypeUid,
+                targetProgramUid,
+                sourceTieUid,
+                sourceTieOrgUnitUid,
+                sourceTieProgramEnrollment
+            )
+
+            Timber.tag(TAG).d("Created tasks: $createdTasks")
+        } catch (t: Throwable) {
+            Timber.tag(TAG).e(t, "TaskingEngine.evaluate failed")
+            throw t // rethrow if the caller needs to react
+        }
+    }
 }
