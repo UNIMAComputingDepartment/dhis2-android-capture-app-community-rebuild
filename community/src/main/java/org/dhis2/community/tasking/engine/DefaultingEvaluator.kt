@@ -6,9 +6,6 @@ import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import timber.log.Timber
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Date
 
 class DefaultingEvaluator(
     private val repository: TaskingRepository,
@@ -16,10 +13,7 @@ class DefaultingEvaluator(
 ) : TaskingEvaluator(d2, repository) {
 
     /**
-     * Evaluates and sets tasks as "defaulted" if:
-     *  - The task is "open" and not "completed"
-     *  - The trigger condition is no longer met (see evaluateDefaultingConditions)
-     *  - The task still exists for the enrollment
+     * Default a task if its trigger condition is no longer met but the task still exists.
      */
     @RequiresApi(Build.VERSION_CODES.O)
     fun defaultTasks(
@@ -41,42 +35,22 @@ class DefaultingEvaluator(
         val config = repository.getTaskingConfig()
         val configsForProgram = config.programTasks.firstOrNull { it.programUid == targetProgramUid } ?: return emptyList()
 
-        val today = LocalDate.now()
-        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
-
         openTasks.forEach { task ->
             val taskConfig = configsForProgram.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
-            val defaultingResults = evaluateDefaultingConditions(
-                taskConfig = taskConfig,
-                teiUid = sourceTieUid ?: task.teiUid,
-                programUid = targetProgramUid,
-                enrollmentUid = sourceTieProgramEnrollment
-            )
-            // Default if trigger is no longer met
-            if (defaultingResults.any { it.isTriggered }) {
+            // Evaluate trigger using TaskingEvaluator logic
+            val triggerResults = evaluateTriggerConditions(taskConfig, sourceTieUid ?: task.teiUid, targetProgramUid)
+            val isTriggered = triggerResults.any { it.isTriggered }
+            if (!isTriggered) {
+                // Task exists and trigger is not met, so default it
                 repository.updateTaskAttrValue(
                     repository.taskStatusAttributeUid,
                     "defaulted",
                     task.teiUid
                 )
-                tasksToDefault += task.copy(status = "DEFAULTED")
-                return@forEach
-            }
-            // Default if overdue by 2+ days
-            val dueDateStr = task.dueDate
-            if (dueDateStr.matches(Regex("\\d{2}-\\d{2}-\\d{4}"))) {
-                val dueDate = LocalDate.parse(dueDateStr, formatter)
-                if (dueDate.plusDays(2).isBefore(today)) {
-                    repository.updateTaskAttrValue(
-                        repository.taskStatusAttributeUid,
-                        "defaulted",
-                        task.teiUid
-                    )
-                    tasksToDefault += task.copy(status = "DEFAULTED")
-                }
+                tasksToDefault.add(task)
             }
         }
-        Timber.tag("DefaultingEvaluator").d("Defaulted tasks: $tasksToDefault")
+        Timber.tag("DEFAULTED_TASKS").d(tasksToDefault.toString())
         return tasksToDefault
     }
 }

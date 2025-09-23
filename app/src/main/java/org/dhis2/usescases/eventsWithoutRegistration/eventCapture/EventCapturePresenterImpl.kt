@@ -73,6 +73,7 @@ class EventCapturePresenterImpl(
         actions.value = onBack
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun init() {
         compositeDisposable.add(
             eventCaptureRepository.eventIntegrityCheck()
@@ -104,19 +105,19 @@ class EventCapturePresenterImpl(
         )
         checkExpiration()
 
-        viewModelScope.launch {
-            loadBottomBarItems()
-        // Run defaulting logic on init to catch overdue/defaulted tasks
-        if (eventCaptureRepository.getEnrollmentUid() != null) {
-            defaultingEvaluator.defaultTasks(
-                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-                sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-            )
-        }
-
-        }
+//        viewModelScope.launch {
+//            loadBottomBarItems()
+//        // Run defaulting logic on init to catch overdue/defaulted tasks
+//        if (eventCaptureRepository.getEnrollmentUid() != null) {
+//            defaultingEvaluator.defaultTasks(
+//                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+//                sourceTieUid = eventCaptureRepository.getTeiUid(),
+//                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+//                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+//            )
+//        }
+//
+//        }
     }
 
     private fun loadBottomBarItems() {
@@ -253,9 +254,13 @@ class EventCapturePresenterImpl(
                 sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                 sourceTieUid = eventCaptureRepository.getTeiUid(),
                 sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-
             )
-
+            defaultingEvaluator.defaultTasks(
+                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+                sourceTieUid = eventCaptureRepository.getTeiUid(),
+                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+            )
         }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {

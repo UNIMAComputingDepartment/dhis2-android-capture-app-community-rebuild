@@ -44,17 +44,16 @@ class TaskingPresenter @Inject constructor(
     private fun loadData() {
         try {
             Log.d("TaskingPresenter", "Loading fresh task data")
-            // Run defaulting logic for all open tasks (overdue by 2+ days or trigger no longer met)
-            val programUid = repository.getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid ?: ""
-            val teiTypeUid = repository.getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid ?: ""
-            val orgUnitUid = repository.currentOrgUnits.firstOrNull() ?: ""
-            val enrollmentUid = "" // If you have a way to get the current enrollment, use it here
-            defaultingEvaluator.defaultTasks(
-                targetProgramUid = programUid,
-                sourceTieUid = null,
-                sourceTieOrgUnitUid = orgUnitUid,
-                sourceTieProgramEnrollment = enrollmentUid
-            )
+//            val programUid = repository.getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid ?: ""
+//            val teiTypeUid = repository.getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid ?: ""
+//            val orgUnitUid = repository.currentOrgUnits.firstOrNull() ?: ""
+//            val enrollmentUid = "" // If you have a way to get the current enrollment, use it here
+//            defaultingEvaluator.defaultTasks(
+//                targetProgramUid = programUid,
+//                sourceTieUid = null,
+//                sourceTieOrgUnitUid = orgUnitUid,
+//                sourceTieProgramEnrollment = enrollmentUid
+//            )
             val freshTasks = repository.getAllTasks().map { task ->
                 TaskingUiModel(task, repository.getOrgUnit(task.teiUid), repository)
             }

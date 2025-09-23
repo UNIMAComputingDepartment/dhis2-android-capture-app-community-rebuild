@@ -61,7 +61,7 @@ open class TaskingEvaluator(
         return results
     }
 
-    private fun evaluateTriggerConditions(
+    protected fun evaluateTriggerConditions(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
         programUid: String
