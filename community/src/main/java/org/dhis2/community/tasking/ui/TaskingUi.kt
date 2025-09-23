@@ -221,7 +221,7 @@ fun TaskingUi(
                         ),
                         AdditionalInfoItem(
                             key = "Village Name",
-                            value = task.teiSecondary,
+                            value = task.displayVillageName ?: "",
                             color = TextColor.OnSurface,
                             truncate = false,
                             isConstantItem = true

@@ -56,6 +56,13 @@ data class TaskingUiModel(
     val displayProgramName: String get() = repository.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
     val sourceTeiUid: String get() = task.sourceTeiUid
     //repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
+    val displayVillageName: String?
+        get() {
+            val teiSecondaryAttributeUid = repository.getCachedConfig()?.programTasks?.firstOrNull()?.teiView?.teiSecondaryAttribute
+            return if (!teiSecondary.isNullOrEmpty() && !teiSecondaryAttributeUid.isNullOrEmpty()) {
+                repository.getVillageDisplayName(teiSecondary, teiSecondaryAttributeUid)
+            } else teiSecondary
+        }
 
 
     private fun parseDueDate(dueDate: String?): Date? {

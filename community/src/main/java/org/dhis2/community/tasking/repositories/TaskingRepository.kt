@@ -302,6 +302,32 @@ class TaskingRepository(
             null
         }
     }
+    fun getVillageDisplayName(teiSecondary: String?, teiSecondaryAttributeUid: String?): String? {
+        if (teiSecondary.isNullOrBlank() || teiSecondaryAttributeUid.isNullOrBlank()) {
+            Log.d("TaskingRepository", "teiSecondary or teiSecondaryAttributeUid is null or blank. Returning code: $teiSecondary")
+            return teiSecondary
+        }
+        return try {
+            Log.d("TaskingRepository", "Looking up display name for code: $teiSecondary and attribute UID: $teiSecondaryAttributeUid")
+            val attribute = d2.trackedEntityModule().trackedEntityAttributes()
+                .uid(teiSecondaryAttributeUid)
+                .blockingGet()
+            val optionSetUid = attribute?.optionSet()?.uid()
+            Log.d("TaskingRepository", "Resolved optionSetUid: $optionSetUid")
+            if (optionSetUid.isNullOrEmpty()) return teiSecondary
+            val options = d2.optionModule().options()
+                .byOptionSetUid().eq(optionSetUid)
+                .blockingGet()
+            Log.d("TaskingRepository", "Options for optionSetUid $optionSetUid: ${options.map { it.code() + ":" + it.name() }}")
+            val found = options.firstOrNull { it.code()?.trim() == teiSecondary.trim() }
+            Log.d("TaskingRepository", "Found option: code=${found?.code()}, name=${found?.name()}")
+            found?.name() ?: teiSecondary
+        } catch (e: Exception) {
+            Log.e("TaskingRepository", "Error fetching village display name for attribute UID: $teiSecondaryAttributeUid and code: $teiSecondary", e)
+            teiSecondary
+        }
+    }
+
 
 
     fun createTask(
