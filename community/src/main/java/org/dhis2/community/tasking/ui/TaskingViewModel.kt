@@ -28,6 +28,7 @@ interface TaskingViewModelContract {
     val allTasksForProgress: List<TaskingUiModel>
     fun onFilterChanged()
     fun tasksForProgressBar(): List<TaskingUiModel>
+    fun updateTasks(tasks: List<TaskingUiModel>) // Added method to handle updates from presenter
 }
 
 class TaskingViewModel @Inject constructor(
@@ -189,6 +190,9 @@ class TaskingViewModel @Inject constructor(
         val taskCal = Calendar.getInstance().apply { time = taskDate }
         return when (dateRange) {
             DateRangeFilter.Today -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
             }
@@ -199,7 +203,21 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
             }
+            DateRangeFilter.Tomorrow -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                val tomorrow = Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, +1)
+                }
+                taskCal.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) &&
+                        taskCal.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)
+            }
+            }
             DateRangeFilter.ThisWeek -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
             }
@@ -210,7 +228,21 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == lastWeek.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
             }
+            DateRangeFilter.NextWeek -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextWeek = Calendar.getInstance().apply {
+                    add(Calendar.WEEK_OF_YEAR, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextWeek.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.WEEK_OF_YEAR) == nextWeek.get(Calendar.WEEK_OF_YEAR)
+                }
+            }
             DateRangeFilter.ThisMonth -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
             }
@@ -221,8 +253,27 @@ class TaskingViewModel @Inject constructor(
                 taskCal.get(Calendar.YEAR) == lastMonth.get(Calendar.YEAR) &&
                         taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
             }
+            DateRangeFilter.NextMonth -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextMonth = Calendar.getInstance().apply {
+                    add(Calendar.MONTH, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextMonth.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.MONTH) == nextMonth.get(Calendar.MONTH)
+                }
+            }
             else -> false
         }
+    }
+
+    fun exemptOverDueTask(task: TaskingUiModel): Boolean {
+        return if (task.status == TaskingStatus.OVERDUE) {
+            val today = Calendar.getInstance()
+            val taskCal = Calendar.getInstance().apply { task.dueDate?.let { time = it } }
+            taskCal.before(today)
+        } else false
     }
 
     override fun onFilterChanged() {
@@ -230,9 +281,6 @@ class TaskingViewModel @Inject constructor(
         applyFilters()
     }
 
-    fun refreshTasks() {
-        loadInitialData()
-    }
 
     override fun tasksForProgressBar(): List<TaskingUiModel> {
         val filter = filterState.currentFilter
@@ -242,5 +290,39 @@ class TaskingViewModel @Inject constructor(
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
             matchesDateFilter(task, filter.dueDateRange)
         }
+    }
+
+    fun refreshData() {
+        Log.d("TaskingViewModel", "Refreshing tasks data")
+        viewModelScope.launch {
+            try {
+                // Fetch fresh task data
+                val updatedTasks = repository.getAllTasks()
+                Log.d("TaskingViewModel", "Fetched ${updatedTasks.size} tasks")
+
+                // Map tasks to UI models
+                allTasks = updatedTasks.map { task ->
+                    val orgUnit = repository.getOrgUnit(task.teiUid)
+                    TaskingUiModel(task, orgUnit, repository).also { uiModel ->
+                        Log.d("TaskingViewModel", "Task ${task.name} status: ${task.status} -> UI status: ${uiModel.status.label}")
+                    }
+                }
+
+                // Update filters and UI
+                updateFilterOptions()
+                applyFilters()
+
+                Log.d("TaskingViewModel", "Data refresh complete. Filtered tasks: ${_filteredTasks.value.size}")
+            } catch (e: Exception) {
+                Log.e("TaskingViewModel", "Error refreshing tasks", e)
+            }
+        }
+    }
+
+    override fun updateTasks(tasks: List<TaskingUiModel>) {
+        Log.d("TaskingViewModel", "Updating tasks from presenter with ${tasks.size} tasks")
+        allTasks = tasks
+        updateFilterOptions()
+        applyFilters()
     }
 }

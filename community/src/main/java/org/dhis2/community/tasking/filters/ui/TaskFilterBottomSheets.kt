@@ -153,10 +153,13 @@ fun DueDateFilterBottomSheet(
     val dateRangeLabels = mapOf(
         DateRangeFilter.Today to "Today",
         DateRangeFilter.Yesterday to "Yesterday",
+        DateRangeFilter.Tomorrow to "Tomorrow",
         DateRangeFilter.ThisWeek to "This Week",
         DateRangeFilter.LastWeek to "Last Week",
+        DateRangeFilter.NextWeek to "Next Week",
         DateRangeFilter.ThisMonth to "This Month",
-        DateRangeFilter.LastMonth to "Last Month"
+        DateRangeFilter.LastMonth to "Last Month",
+        DateRangeFilter.NextMonth to "Next Month"
     )
     val dateRanges = DateRangeFilter.entries
     var selected by remember { mutableStateOf(selectedRange) }
