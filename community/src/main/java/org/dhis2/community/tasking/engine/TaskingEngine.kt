@@ -102,7 +102,8 @@ class TaskingEngine(
                 targetProgramUid,
                 sourceTieUid,
                 sourceTieOrgUnitUid,
-                sourceTieProgramEnrollment
+                sourceTieProgramEnrollment,
+                eventUid
             )
 
             Timber.tag(TAG).d("Created tasks: $createdTasks")
