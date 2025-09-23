@@ -20,6 +20,7 @@ class TaskingEngine(
     private val creationEvaluator = CreationEvaluator(repository)
     private val completionEvaluator = CompletionEvaluator(repository)
     private val updateEvaluator = UpdateEvaluator(repository)
+    private val defaultingEvaluator = DefaultingEvaluator(repository)
 
     // internal scope for fire-and-forget usage; cancel it when the owner is cleared
     private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
@@ -86,6 +87,14 @@ class TaskingEngine(
                 sourceProgramUid = targetProgramUid,
                 sourceTeiUid = sourceTieUid
             )
+
+            eventUid?.let {
+                defaultingEvaluator.evaluateForDefaulting(
+                    sourceTeiUid = sourceTieUid,
+                    programUid = targetProgramUid,
+                    eventUid = it
+                )
+            }
 
             val createdTasks = creationEvaluator.evaluateForCreation(
                 taskProgramUid,

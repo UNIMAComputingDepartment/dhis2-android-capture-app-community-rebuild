@@ -2,9 +2,9 @@ package org.dhis2.community.tasking.engine
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import org.dhis2.community.tasking.models.EvaluationResult
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.hisp.dhis.android.core.event.Event
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -42,13 +42,14 @@ abstract class TaskingEvaluator(
     }
 
     internal fun evaluateConditions(
-       conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
-       teiUid: String,
-       programUid: String
+        conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
+        teiUid: String,
+        programUid: String,
+        eventUid: String? = null
     ): List<Boolean> {
         return conditions.condition.map { cond ->
-            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid)
-            val rhsValue = this.resolvedReference(cond.lhs, teiUid, programUid)
+            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid)
+            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
 
             when (cond.op) {
                 "EQUALS" -> rhsValue == lhsValue
@@ -98,7 +99,7 @@ abstract class TaskingEvaluator(
                         .withTrackedEntityDataValues()
                         .blockingGet()
 
-        if (reference.uid == null)
+        if (reference.uid.isNullOrBlank())
             return reference.value.toString()
 
         return when (reference.ref) {
@@ -108,8 +109,7 @@ abstract class TaskingEvaluator(
                 .one().blockingGet()?.value()
 
             "eventData" -> {
-                val latestEvent = events
-                    .maxByOrNull { it.created()?: it.eventDate()?: Date(0) }
+                val latestEvent = getLatestEvent(events, reference.uid)
                 latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
@@ -126,5 +126,13 @@ abstract class TaskingEvaluator(
             "static" -> reference.uid
             else -> null
         }
+    }
+
+    private fun getLatestEvent(events: List<Event>, dataElementUid: String): Event? {
+        return events
+            .filter { event -> event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true }
+            .maxByOrNull {
+                it.created()?: it.eventDate()?: Date(0)
+            }
     }
 }

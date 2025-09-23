@@ -236,7 +236,7 @@ class EventCapturePresenterImpl(
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
             eventCaptureRepository.getTeiUid()?.let {
-                taskingEngine.evaluate(
+                taskingEngine.evaluateAsync(
                     targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
                     sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                     sourceTieUid = it,

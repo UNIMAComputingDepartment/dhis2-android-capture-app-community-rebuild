@@ -116,6 +116,7 @@ class TaskingViewModel @Inject constructor(
                         priority = result.taskingConfig.priority,
                         status = "OPEN",
                         iconNane = repository.getSourceProgramIcon(result.programUid),
+                        sourceEventUid = "",
                     )
                 }
             }

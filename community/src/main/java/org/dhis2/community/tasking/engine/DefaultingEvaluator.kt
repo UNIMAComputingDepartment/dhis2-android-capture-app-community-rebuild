@@ -12,7 +12,7 @@ class DefaultingEvaluator(
     fun evaluateForDefaulting(
         sourceTeiUid: String,
         programUid: String,
-        taskProgramUid: String
+        eventUid: String,
     ){
         val tasks = repository.getTasksForTei(sourceTeiUid)
 
@@ -21,35 +21,35 @@ class DefaultingEvaluator(
             ?: return
 
         tasks.forEach { task ->
-            val taskTriggerEventUid = "task.triggerEvent" ?: return
-            val taskConfigs = programTaskConfig.taskConfigs.first { it.name == task.name }
+            if (eventUid == task.sourceEventUid) {
+                val taskTriggerEventUid = eventUid
+                val taskConfigs = programTaskConfig.taskConfigs.first { it.name == task.name }
 
-            val taskTeiEnrollmentUid = repository.d2.enrollmentModule().enrollments()
-                .byTrackedEntityInstance().eq(task.teiUid)
-                .byProgram().eq(taskProgramUid)
-                .byStatus().eq(EnrollmentStatus.ACTIVE)
-                .one().blockingGet()?.uid()
+                val taskTeiEnrollmentUid = repository.d2.enrollmentModule().enrollments()
+                    .byTrackedEntityInstance().eq(task.teiUid)
+                    .byProgram().eq(repository.getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid)
+                    .byStatus().eq(EnrollmentStatus.ACTIVE)
+                    .one().blockingGet()?.uid()
 
-
-            if (evaluateForDefaultingConditions(
-                configs = taskConfigs,
-                teiUid = task.teiUid,
-                programUid = programUid,
-                taskTriggerEventUid
-            )){
-                repository.updateTaskAttrValue(
-                    repository.taskStatusAttributeUid,
-                    "defaulted",
-                    task.teiUid)
-
-                repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setStatus(EnrollmentStatus.CANCELLED)
-                repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setCompletedDate(Date())
+                if (evaluateConditions(
+                        conditions = taskConfigs.trigger,
+                        teiUid = sourceTeiUid,
+                        programUid = programUid,
+                        eventUid = taskTriggerEventUid
+                    ).all { it }){
+                    repository.updateTaskAttrValue(
+                        repository.taskStatusAttributeUid,
+                        "defaulted",
+                        task.teiUid)
+                    repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setStatus(EnrollmentStatus.CANCELLED)
+                    repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setCompletedDate(Date())
+                }
             }
         }
 
     }
 
     private fun TaskingRepository.getTasksForTei(teiUid: String): List<Task> {
-        return this.getAllTasks().filter { it.sourceTeiUid == teiUid }
+        return this.getAllTasks().filter { it.sourceTeiUid == teiUid && it.status != "completed" && it.status != "defaulted" }
     }
 }
