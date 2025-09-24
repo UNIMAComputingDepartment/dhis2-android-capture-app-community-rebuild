@@ -189,39 +189,38 @@ open class TaskingEvaluator(
                 }
 
             if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
-                val condition = evaluateCompletionConditions(
+                // Check trigger first
+                val triggerResults = evaluateTriggerConditions(
                     taskConfig = taskConfig,
                     teiUid = sourceTeiUid!!,
-                    programUid = sourceProgramUid)
-
-                if(condition.any{it.isTriggered}){
-
-
-                    repository.updateTaskAttrValue(
-                        repository.taskStatusAttributeUid,
-                        "completed",
-                        task.teiUid
-                    )
-
-                    val taskTeiEnrollmentUid = d2.enrollmentModule().enrollments()
-                        .byTrackedEntityInstance().eq(task.teiUid)
-                        .byProgram().eq(taskProgramUid)
-                        .byStatus().eq(EnrollmentStatus.ACTIVE)
-                        .one().blockingGet()?.uid()
-//
-//                    val taskTeiEventUid = d2.eventModule().events()
-//                        .byTrackedEntityInstance().eq(task.teiUid)
-//                        .byProgram().eq(taskProgramUid)
-//                        .byStatus().eq(EventStatus.ACTIVE)
-//                        .one().blockingGet()?.uid()
-
-                    if (taskTeiEnrollmentUid != null) {
-                        d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-                            .setStatus(EnrollmentStatus.COMPLETED)
-                        d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-                            .setCompletedDate(Date())
-                    }   else{
-                        Timber.d("No active enrollment")
+                    programUid = sourceProgramUid
+                )
+                val isTriggered = triggerResults.any { it.isTriggered }
+                if (isTriggered) {
+                    // Only check completion if trigger is still met
+                    val completionResults = evaluateCompletionConditions(
+                        taskConfig = taskConfig,
+                        teiUid = sourceTeiUid,
+                        programUid = sourceProgramUid)
+                    if(completionResults.any{it.isTriggered}){
+                        repository.updateTaskAttrValue(
+                            repository.taskStatusAttributeUid,
+                            "completed",
+                            task.teiUid
+                        )
+                        val taskTeiEnrollmentUid = d2.enrollmentModule().enrollments()
+                            .byTrackedEntityInstance().eq(task.teiUid)
+                            .byProgram().eq(taskProgramUid)
+                            .byStatus().eq(EnrollmentStatus.ACTIVE)
+                            .one().blockingGet()?.uid()
+                        if (taskTeiEnrollmentUid != null) {
+                            d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                                .setStatus(EnrollmentStatus.COMPLETED)
+                            d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                                .setCompletedDate(Date())
+                        }   else{
+                            Timber.d("No active enrollment")
+                        }
                     }
                 }
 

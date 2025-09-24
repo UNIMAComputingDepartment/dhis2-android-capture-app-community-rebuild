@@ -93,7 +93,7 @@ class CreationEvaluator (
 
             val taskAlreadyExist = allAvailableTasks.any { task ->
                 task.sourceProgramUid == targetProgramUid &&
-                        task.status != "completed" &&
+                        (task.status.equals("open", ignoreCase = true) || task.status.equals("completed", ignoreCase = true)) &&
                         task.sourceEnrollmentUid == sourceTieProgramEnrollment &&
                         task.name == result.taskingConfig.name
             }
@@ -184,4 +184,3 @@ class CreationEvaluator (
         return created.toList()
     }
 }
-

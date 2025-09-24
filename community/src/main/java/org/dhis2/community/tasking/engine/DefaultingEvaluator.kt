@@ -42,37 +42,14 @@ class DefaultingEvaluator(
         openTasks.forEach { task ->
             val taskConfig = configsForProgram.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
 
-            // 1. Check if this is a Follow-up task by name/description
-            val isFollowUpTask = isFollowUpTaskByName(taskConfig)
+            // Evaluate the trigger condition for this task
+            val triggerResults = evaluateTriggerConditions(taskConfig, sourceTieUid ?: task.teiUid, targetProgramUid)
+            val isTriggered = triggerResults.any { it.isTriggered }
 
-            if (isFollowUpTask) {
-                // 2. For Follow-up tasks, check if visit type has changed from Follow-up to Scheduled
-                val currentVisitType = getCurrentVisitType(sourceTieProgramEnrollment)
-                val wasOriginallyFollowUp = wasTaskTriggeredByFollowUp(task, sourceTieProgramEnrollment)
-
-                if (wasOriginallyFollowUp && currentVisitType != FOLLOW_UP_VISIT_CODE) {
-                    // Visit type changed from Follow-up to something else → default the task
-                    Timber.tag("DEFAULTING").d("Defaulting task ${task.name} due to visit type change from Follow-up to ${if (currentVisitType == SCHEDULED_VISIT_CODE) "Scheduled" else "Unknown"}")
-                    repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "defaulted", task.teiUid)
-                    tasksToDefault.add(task)
-                } else {
-                    // Standard trigger evaluation for current visit type
-                    val triggerResults = evaluateTriggerConditions(taskConfig, sourceTieUid ?: task.teiUid, targetProgramUid)
-                    val isTriggered = triggerResults.any { it.isTriggered }
-                    if (!isTriggered) {
-                        Timber.tag("DEFAULTING").d("Defaulting task ${task.name} due to trigger condition no longer met")
-                        repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "defaulted", task.teiUid)
-                        tasksToDefault.add(task)
-                    }
-                }
-            } else {
-                // Standard logic for non-Follow-Up tasks
-                val triggerResults = evaluateTriggerConditions(taskConfig, sourceTieUid ?: task.teiUid, targetProgramUid)
-                val isTriggered = triggerResults.any { it.isTriggered }
-                if (!isTriggered) {
-                    repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "defaulted", task.teiUid)
-                    tasksToDefault.add(task)
-                }
+            if (!isTriggered) {
+                Timber.tag("DEFAULTING").d("Defaulting task ${task.name} due to trigger condition no longer met")
+                repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "defaulted", task.teiUid)
+                tasksToDefault.add(task)
             }
         }
 
@@ -134,7 +111,7 @@ class DefaultingEvaluator(
             tasksToDefault.add(task)
         }
 
-        Timber.tag("DELETED_ENROLLMENT_DEFAULTED").d("Enrollment: $enrollmentUid, Tasks: ${tasksToDefault.size}")
+        Timber.tag("DELETED_DEFAULTED").d("Enrollment: $enrollmentUid, Tasks: ${tasksToDefault.size}")
         return tasksToDefault
     }
 }
