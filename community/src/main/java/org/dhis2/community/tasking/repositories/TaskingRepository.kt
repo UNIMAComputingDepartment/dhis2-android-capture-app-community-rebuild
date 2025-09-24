@@ -379,4 +379,12 @@ class TaskingRepository(
             return false
         }
     }
+
+    fun isValidTeiEnrollment(teiUid: String, programUid: String, enrollmentUid: String): String? {
+        val enrollments = d2.enrollmentModule().enrollments()
+            .uid(enrollmentUid)
+            .blockingGet()
+            ?.trackedEntityInstance()
+        return enrollments
+    }
 }

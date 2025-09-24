@@ -12,7 +12,6 @@ class TaskingViewModelFactory @Inject constructor(
     private val d2: D2
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        Log.d("TaskingViewModelFactory", "create called for ${modelClass.simpleName}")
         if (modelClass.isAssignableFrom(TaskingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return TaskingViewModel(repository, d2) as T

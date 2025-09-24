@@ -19,16 +19,14 @@ data class Task(
     val sourceEnrollmentUid: String,
     val sourceProgramName: String,
     val sourceTeiUid: String,
-    val teiUid: String, //source teiUid
+    val teiUid: String,
     val teiPrimary: String,
     val teiSecondary: String,
     val teiTertiary: String,
     val dueDate: String,
     val priority: String,
     val status: String = "OPEN",
-    val iconNane : String?
-) {
-    init {
-        Log.d("Task", "Task created: name=$name, description=$description, sourceProgramUid=$sourceProgramUid, sourceEnrollmentUid=$sourceEnrollmentUid, sourceProgramName=$sourceProgramName, teiUid=$teiUid, teiPrimary=$teiPrimary, teiSecondary=$teiSecondary, teiTertiary=$teiTertiary, dueDate=$dueDate, priority=$priority, status=$status, iconNane=$iconNane")
-    }
-}
+    val iconNane : String?,
+    val progressCurrent: Int = 0,
+    val progressTotal: Int = 0
+)

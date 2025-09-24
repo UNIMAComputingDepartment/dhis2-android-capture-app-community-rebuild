@@ -8,7 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
@@ -17,9 +19,12 @@ import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.dhis2.commons.orgunitselector.OUTreeFragment
+import androidx.lifecycle.MutableLiveData
 
 
-class TaskingFragment(private val onTaskClick: (Context, String, String, String) -> Unit) : Fragment(), TaskingView {
+class TaskingFragment(
+    private val onTaskClick: ((Context, String, String, String) -> Unit)? = null
+) : Fragment(), TaskingView {
     private lateinit var repository: TaskingRepository
     private lateinit var d2: D2
     private lateinit var presenter: TaskingPresenter
@@ -29,6 +34,17 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
     private var tasks: List<TaskingUiModel> = emptyList()
     private lateinit var viewModel: TaskingViewModel
     private val filterState = org.dhis2.community.tasking.filters.TaskFilterState()
+    val showFilterBar = MutableLiveData(false)
+
+    companion object {
+        fun newInstance(onTaskClick: (Context, String, String, String) -> Unit): TaskingFragment {
+            return TaskingFragment(onTaskClick)
+        }
+
+        fun findInstance(fragmentManager: androidx.fragment.app.FragmentManager): TaskingFragment? {
+            return fragmentManager.fragments.filterIsInstance<TaskingFragment>().firstOrNull()
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,10 +69,11 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
+                val showFilterBarState = showFilterBar.observeAsState(false).value
                 TaskingUi(
                     tasks = viewModel.filteredTasks.collectAsState().value,
                     onTaskClick = {
-                        onTaskClick(
+                        onTaskClick?.invoke(
                             requireContext(),
                             it.sourceTeiUid,
                             it.sourceProgramUid,
@@ -68,7 +85,8 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                     filterState = viewModel.filterState,
                     onOrgUnitFilterSelected = {
                         openOrgUnitTreeSelector()
-                    }
+                    },
+                    showFilterBar = showFilterBarState
                 )
             }
         }
@@ -108,5 +126,9 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
             }
             .build()
             .show(parentFragmentManager, "OUTreeFragment")
+    }
+
+    fun toggleFilterBar() {
+        showFilterBar.value = !(showFilterBar.value ?: false)
     }
 }
