@@ -50,14 +50,6 @@ data class TaskingUiModel(
 
     val displayProgramName: String get() = repository?.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
     val sourceTeiUid: String get() = task.sourceTeiUid
-    val displayVillageName: String?
-        get() {
-            val teiSecondaryAttributeUid = repository?.getCachedConfig()?.programTasks?.firstOrNull()?.teiView?.teiSecondaryAttribute
-            return if (!teiSecondary.isNullOrEmpty() && !teiSecondaryAttributeUid.isNullOrEmpty()) {
-                repository?.getVillageDisplayName(teiSecondary, teiSecondaryAttributeUid)
-            } else teiSecondary
-        }
-
 
     // Progress properties
     val progressCurrent: Int get() = task.progressCurrent

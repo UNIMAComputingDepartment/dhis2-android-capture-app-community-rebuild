@@ -63,13 +63,6 @@ fun TaskingUi(
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
                     containerColor = TextColor.OnSurface,
-                    action = {
-                        Text(
-                            text = data.visuals.actionLabel ?: "Dismiss",
-                            color = SurfaceColor.Primary,
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                    },
                     content = {
                         Text(
                             text = data.visuals.message,
@@ -294,7 +287,7 @@ fun TaskingUi(
                             ),
                             AdditionalInfoItem(
                                 key = "Village Name",
-                                value = task.displayVillageName ?: "",
+                                value = task.teiSecondary,
                                 color = TextColor.OnSurface,
                                 truncate = false,
                                 isConstantItem = false
@@ -319,12 +312,6 @@ fun TaskingUi(
                             minItemsToShow = 3,
                             scrollableContent = false
                         )
-//                        val personName = task.teiPrimary
-//                        val titleText = buildString {
-//                            append(personName)
-//                            if (personName.isNotBlank()) append("\n")
-//                            append(task.taskName)
-//                        }
                         val listCardState = rememberListCardState(
                             title = ListCardTitleModel(
                                 text = task.taskName,
@@ -356,18 +343,20 @@ fun TaskingUi(
                                 )
                             },
                             onCardClick = {
-                                val validEnrollment = task.sourceTeiUid
-                                if (validEnrollment == null) {
-                                    Log.d("TaskingUi", "Invalid enrollment for task: ${task.taskName}")
+                                val validTei = task.sourceTeiUid
+                                val validProgram = task.sourceProgramUid
+                                val validEnrollment = task.sourceEnrollmentUid
+
+                                if (validTei.isNullOrEmpty() || validProgram.isNullOrEmpty() || validEnrollment.isNullOrEmpty()) {
+                                    Log.d("TaskingUi", "Invalid task details: TEI=$validTei, Program=$validProgram, Enrollment=$validEnrollment")
                                     scope.launch {
                                         snackbarHostState.showSnackbar(
-                                            message = "TEI enrollment is not valid",
-                                            actionLabel = "Dismiss",
+                                            message = "Missing TEI, Program or Enrollment, can’t proceed",
                                             duration = SnackbarDuration.Short
                                         )
                                     }
                                 } else {
-                                    Log.d("TaskingUi", "Valid enrollment for task: ${task.taskName}")
+                                    Log.d("TaskingUi", "Valid task details: ${task.taskName}")
                                     onTaskClick(task)
                                 }
                             },
