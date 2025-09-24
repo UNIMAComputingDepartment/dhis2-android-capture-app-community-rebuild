@@ -16,6 +16,8 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.engine.TaskingEvaluator
+import org.dhis2.community.tasking.engine.TaskingOrchestrator
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
@@ -48,7 +50,8 @@ class EventCaptureModule(
         resourceManager: ResourceManager,
         taskingRepository: TaskingRepository,
         createTaskEvaluator: CreationEvaluator,
-        defaultingEvaluator: DefaultingEvaluator
+        defaultingEvaluator: DefaultingEvaluator,
+        taskingOrchestrator: TaskingOrchestrator
     ): EventCaptureContract.Presenter {
         return EventCapturePresenterImpl(
             view,
@@ -60,7 +63,8 @@ class EventCaptureModule(
             resourceManager,
             createTaskEvaluator,
             taskingRepository,
-            defaultingEvaluator
+            defaultingEvaluator,
+            taskingOrchestrator
         )
     }
 
@@ -153,5 +157,26 @@ class EventCaptureModule(
         d2: D2,
     ): DefaultingEvaluator {
         return DefaultingEvaluator(repository, d2)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideTaskingOrchestrator(
+        creationEvaluator: CreationEvaluator,
+        defaultingEvaluator: DefaultingEvaluator,
+        taskingEvaluator: TaskingEvaluator,
+        repository: TaskingRepository,
+        d2: D2
+    ): TaskingOrchestrator {
+        return TaskingOrchestrator(creationEvaluator, defaultingEvaluator, taskingEvaluator, repository, d2)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideTaskingEvaluator(
+        d2: D2,
+        repository: TaskingRepository
+    ): TaskingEvaluator {
+        return TaskingEvaluator(d2, repository)
     }
 }

@@ -41,6 +41,8 @@ import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
 import timber.log.Timber
 import java.util.Date
+import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.engine.TaskingOrchestrator
 
 class EventCapturePresenterImpl(
     private val view: EventCaptureContract.View,
@@ -52,7 +54,8 @@ class EventCapturePresenterImpl(
     private val resourceManager: ResourceManager,
     private val creationEvaluator: CreationEvaluator,
     private val taskingRepository: TaskingRepository,
-    private val defaultingEvaluator: org.dhis2.community.tasking.engine.DefaultingEvaluator
+    private val defaultingEvaluator: DefaultingEvaluator,
+    private val taskingOrchestrator: TaskingOrchestrator
 ) : ViewModel(), EventCaptureContract.Presenter {
 
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -247,13 +250,21 @@ class EventCapturePresenterImpl(
     override fun saveAndExit(eventStatus: EventStatus?) {
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
-            defaultingEvaluator.defaultTasks(
-                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-                sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
-                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-            )
-            creationEvaluator.createTasks(
+//            defaultingEvaluator.defaultTasks(
+//                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+//                sourceTieUid = eventCaptureRepository.getTeiUid(),
+//                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+//                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+//            )
+//            creationEvaluator.createTasks(
+//                taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
+//                taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
+//                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+//                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+//                sourceTieUid = eventCaptureRepository.getTeiUid(),
+//                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+//            )
+            taskingOrchestrator.evaluateTasks(
                 taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
                 taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
                 targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),

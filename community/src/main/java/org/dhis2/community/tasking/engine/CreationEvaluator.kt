@@ -33,12 +33,12 @@ class CreationEvaluator (
         sourceTieProgramEnrollment: String
     ): List<Task> {
 
-        taskCompletion(
-            tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
-            sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
-            sourceProgramUid = targetProgramUid,
-            sourceTeiUid = sourceTieUid
-        )
+//        taskCompletion(
+//            tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
+//            sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
+//            sourceProgramUid = targetProgramUid,
+//            sourceTeiUid = sourceTieUid
+//        )
 
         val results = evaluateForTie(sourceTieUid, targetProgramUid, sourceTieOrgUnitUid)
         if (results.isEmpty()) return emptyList()

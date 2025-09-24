@@ -18,6 +18,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.engine.TaskingOrchestrator
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
@@ -166,8 +167,8 @@ class EnrollmentModule(
         dateEditionWarningHandler: DateEditionWarningHandler,
         creationEvaluator: CreationEvaluator,
         taskingRepository: TaskingRepository,
-        defaultingEvaluator: DefaultingEvaluator
-    ): EnrollmentPresenterImpl {
+        defaultingEvaluator: DefaultingEvaluator,
+        ): EnrollmentPresenterImpl {
         return EnrollmentPresenterImpl(
             enrollmentView,
             d2,
@@ -183,7 +184,7 @@ class EnrollmentModule(
             dateEditionWarningHandler,
             creationEvaluator,
             taskingRepository,
-            defaultingEvaluator
+            defaultingEvaluator,
         )
     }
 
@@ -289,3 +290,4 @@ class EnrollmentModule(
         return DefaultingEvaluator(repository, d2)
     }
 }
+
