@@ -19,7 +19,8 @@ class CreationEvaluator (
         targetProgramUid: String,
         sourceTeiUid: String?,
         sourceTeiOrgUnitUid: String,
-        sourceTeiProgramEnrollment: String
+        sourceTeiProgramEnrollment: String,
+        eventUid: String? = null
     ) {
         if (sourceTeiUid == null) {
             Timber.e("CreationEvaluator: sourceTeiUid is null")
@@ -34,12 +35,14 @@ class CreationEvaluator (
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            if (evaluateTriggerConditions(
-                    taskConfig = taskConfig,
-                    teiUid = sourceTeiUid,
-                    targetProgramUid) && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
-                ) {
+            val isTriggered = evaluateConditions(
+                conditions = taskConfig.trigger,
+                teiUid = sourceTeiUid,
+                targetProgramUid
+            ).any { it }
 
+            if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
+                ) {
                 val res = createTaskForTei(
                     taskConfig,
                     configsForProgram.teiView,
@@ -48,9 +51,9 @@ class CreationEvaluator (
                     targetProgramUid,
                     sourceTeiUid,
                     sourceTeiOrgUnitUid,
-                    sourceTeiProgramEnrollment
+                    sourceTeiProgramEnrollment,
+                    eventUid
                 )
-
                 Timber.d("Task ${taskConfig.name} creation result: $res")
             }
         }
@@ -81,7 +84,8 @@ class CreationEvaluator (
         targetProgramUid: String,
         sourceTeiUid: String,
         sourceTeiOrgUnitUid: String,
-        sourceTeiProgramEnrollment: String
+        sourceTeiProgramEnrollment: String,
+        eventUid: String?
     ): Boolean {
 
         val (primary, secondary, tertiary) = getTeiAttributes(sourceTeiUid, teiView)
@@ -100,7 +104,8 @@ class CreationEvaluator (
             status = "OPEN",
             sourceEnrollmentUid = sourceTeiProgramEnrollment,
             sourceTeiUid = sourceTeiUid,
-            iconNane = repository.getSourceProgramIcon(targetProgramUid)
+            iconNane = repository.getSourceProgramIcon(targetProgramUid),
+            sourceEventUid = eventUid
         )
 
         return repository.createTask(

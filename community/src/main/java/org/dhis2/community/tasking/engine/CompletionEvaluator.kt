@@ -2,7 +2,6 @@ package org.dhis2.community.tasking.engine
 
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import timber.log.Timber
 import java.util.Date
@@ -38,14 +37,13 @@ class CompletionEvaluator(
                 }
 
                 if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
-                    val condition = evaluateCompletionConditions(
-                        taskConfig = taskConfig,
+                    val conditions = evaluateConditions(
+                        conditions = taskConfig.completion,
                         teiUid = sourceTeiUid!!,
-                        programUid = sourceProgramUid)
+                        programUid = sourceProgramUid
+                    )
 
-                    if(condition.any{it.isTriggered}){
-
-
+                    if(conditions.any{it}) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
                             "completed",

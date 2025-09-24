@@ -162,12 +162,11 @@ class EnrollmentPresenterImpl(
 
         }
 
-        taskingEngine.evaluate(
+        taskingEngine.evaluateAsync(
             targetProgramUid = programRepository.blockingGet()?.uid()?: "",
             sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
             sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
             sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
-            isEventTrigger = false
         )
     }
 

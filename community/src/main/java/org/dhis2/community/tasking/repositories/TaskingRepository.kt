@@ -193,7 +193,8 @@ class TaskingRepository(
                 dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
-                iconNane = getSourceProgramIcon(sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")
+                iconNane = getSourceProgramIcon(sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:""),
+                sourceEventUid = tei.getAttributeValue(programConfig?.taskSourceEventUid) ?: "",
             )
         }
     }
@@ -244,6 +245,7 @@ class TaskingRepository(
                 priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
                 iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
                 status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
+                sourceEventUid = tei.getAttributeValue(programConfig?.taskSourceEventUid) ?: "",
             )
         }
 
@@ -321,17 +323,19 @@ class TaskingRepository(
                 .e("TEI creation failed: code=${e.errorCode()} desc=${e.errorDescription()}")
             return false
         }
-
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?:"", "open", newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskNameUid?:"", task.name, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.priorityUid?:"", "high", newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.dueDateUid?:"", task.dueDate, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskTertiaryAttrUid?:"", task.teiTertiary, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSecondaryAttrUid?:"", task.teiSecondary, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskPrimaryAttrUid?:"", task.teiPrimary, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceProgramUid?: "",  task.sourceProgramUid, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceEnrollmentUid?: "", task.sourceEnrollmentUid, newTeiUid)
-        this.updateTaskAttrValue(this.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.taskSourceTeiUid?:"", task.sourceTeiUid, newTeiUid)
+        
+        val taskProgramConfig = this.getTaskingConfig().taskProgramConfig.firstOrNull()
+        this.updateTaskAttrValue(taskProgramConfig?.statusUid ?:"", "open", newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskNameUid?:"", task.name, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.priorityUid?:"", "high", newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.dueDateUid?:"", task.dueDate, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskTertiaryAttrUid?:"", task.teiTertiary, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskSecondaryAttrUid?:"", task.teiSecondary, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskPrimaryAttrUid?:"", task.teiPrimary, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskSourceProgramUid?: "",  task.sourceProgramUid, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskSourceEnrollmentUid?: "", task.sourceEnrollmentUid, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskSourceTeiUid?:"", task.sourceTeiUid, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskSourceEventUid?:"", task.sourceEventUid, newTeiUid)
 
         try {
             val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
