@@ -31,7 +31,7 @@ class DefaultingEvaluator(
                     .byStatus().eq(EnrollmentStatus.ACTIVE)
                     .one().blockingGet()?.uid()
 
-                if (evaluateConditions(
+                if (!evaluateConditions(
                         conditions = taskConfigs.trigger,
                         teiUid = sourceTeiUid,
                         programUid = programUid,
