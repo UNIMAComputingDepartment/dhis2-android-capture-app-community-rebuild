@@ -67,7 +67,7 @@ class CreationEvaluator (
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status != "completed" &&
+                    task.status == "open" &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
         }

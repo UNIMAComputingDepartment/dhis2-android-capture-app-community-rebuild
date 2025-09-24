@@ -36,7 +36,11 @@ class CompletionEvaluator(
                     return@forEach
                 }
 
-                if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
+                if (
+                    task.sourceEnrollmentUid == sourceProgramEnrollmentUid &&
+                    task.status != "defaulted" &&
+                    task.status != "completed"
+                    ){
                     val conditions = evaluateConditions(
                         conditions = taskConfig.completion,
                         teiUid = sourceTeiUid!!,

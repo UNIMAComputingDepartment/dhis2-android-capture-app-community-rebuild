@@ -21,7 +21,9 @@ class DefaultingEvaluator(
             ?: return
 
         tasks.forEach { task ->
-            if (eventUid == task.sourceEventUid) {
+            if (eventUid == task.sourceEventUid &&
+                task.status == "open"
+                ) {
                 val taskTriggerEventUid = eventUid
                 val taskConfigs = programTaskConfig.taskConfigs.first { it.name == task.name }
 
@@ -44,7 +46,7 @@ class DefaultingEvaluator(
                     repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setStatus(EnrollmentStatus.CANCELLED)
                     repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid).setCompletedDate(Date())
                 }
-            }
+            } else null
         }
 
     }
