@@ -247,18 +247,18 @@ class EventCapturePresenterImpl(
     override fun saveAndExit(eventStatus: EventStatus?) {
 
         if (eventCaptureRepository.getEnrollmentUid() != null){
+            defaultingEvaluator.defaultTasks(
+                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+                sourceTieUid = eventCaptureRepository.getTeiUid(),
+                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
+                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
+            )
             creationEvaluator.createTasks(
                 taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
                 taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
                 targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
                 sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                 sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
-            )
-            defaultingEvaluator.defaultTasks(
-                targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-                sourceTieUid = eventCaptureRepository.getTeiUid(),
-                sourceTieOrgUnitUid = eventCaptureRepository.orgUnit().blockingFirst().uid(),
                 sourceTieProgramEnrollment = eventCaptureRepository.getEnrollmentUid()!!
             )
         }

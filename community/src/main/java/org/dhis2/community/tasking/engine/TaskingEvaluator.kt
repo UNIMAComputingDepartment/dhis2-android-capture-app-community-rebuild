@@ -208,6 +208,12 @@ open class TaskingEvaluator(
                         .byProgram().eq(taskProgramUid)
                         .byStatus().eq(EnrollmentStatus.ACTIVE)
                         .one().blockingGet()?.uid()
+//
+//                    val taskTeiEventUid = d2.eventModule().events()
+//                        .byTrackedEntityInstance().eq(task.teiUid)
+//                        .byProgram().eq(taskProgramUid)
+//                        .byStatus().eq(EventStatus.ACTIVE)
+//                        .one().blockingGet()?.uid()
 
                     if (taskTeiEnrollmentUid != null) {
                         d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
@@ -223,86 +229,86 @@ open class TaskingEvaluator(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun evaluateDefaultingConditions(
-        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
-        teiUid: String,
-        programUid: String,
-        enrollmentUid: String
-    ): List<EvaluationResult> {
-        val result = taskConfig.trigger.condition.map { cond ->
-            val lhsValue = repository.resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
-            val rhsValue = repository.resolvedReference(taskConfig.trigger, teiUid, cond.rhs.uid.toString(), programUid)
-
-            // Defaulting logic:
-            // 1. If lhsValue is null or empty (trigger no longer met)
-            // 2. But rhsValue exists (task still present for enrollment)
-            lhsValue.isNullOrEmpty() && !rhsValue.isNullOrEmpty()
-        }
-
-        val isDefaulted = result.any { it }
-
-        val results = if (isDefaulted) {
-            listOf(
-                EvaluationResult(
-                    taskingConfig = taskConfig,
-                    teiUid = teiUid,
-                    programUid = programUid,
-                    isTriggered = true,
-                    dueDate = null,
-                    tieAttrs = Triple("", "", ""),
-                    orgUnit = null
-                )
-            )
-        } else emptyList()
-
-        return results
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun taskDefaulting(
-        tasks: List<Task>,
-        sourceProgramEnrollmentUid: String,
-        sourceProgramUid: String,
-        sourceTeiUid: String?
-    ) {
-        val taskConf = repository.getTaskingConfig()
-        require(taskConf.programTasks.isNotEmpty()) { "Task Config is Empty" }
-
-        val configForPg = taskConf.programTasks
-            .filter { it.programUid == sourceProgramUid }
-            .flatMap { it.taskConfigs }
-
-        if (configForPg.isEmpty()) return
-
-        val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
-
-        tasks.filter { it.sourceProgramUid == sourceProgramUid }
-            .forEach { task ->
-                val taskConfig = configForPg.firstOrNull { it.name == task.name }
-                if (taskConfig == null) {
-                    return@forEach
-                }
-
-                if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
-                    val condition = evaluateDefaultingConditions(
-                        taskConfig = taskConfig,
-                        teiUid = sourceTeiUid!!,
-                        programUid = sourceProgramUid,
-                        enrollmentUid = sourceProgramEnrollmentUid
-                    )
-
-                    // Defaulting criteria: (1) trigger no longer met, (2) task exists for enrollment
-                    if (condition.any { it.isTriggered }) {
-                        repository.updateTaskAttrValue(
-                            repository.taskStatusAttributeUid,
-                            "defaulted",
-                            task.teiUid
-                        )
-                    }
-                }
-            }
-    }
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    fun evaluateDefaultingConditions(
+//        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
+//        teiUid: String,
+//        programUid: String,
+//        enrollmentUid: String
+//    ): List<EvaluationResult> {
+//        val result = taskConfig.trigger.condition.map { cond ->
+//            val lhsValue = repository.resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
+//            val rhsValue = repository.resolvedReference(taskConfig.trigger, teiUid, cond.rhs.uid.toString(), programUid)
+//
+//            // Defaulting logic:
+//            // 1. If lhsValue is null or empty (trigger no longer met)
+//            // 2. But rhsValue exists (task still present for enrollment)
+//            lhsValue.isNullOrEmpty() && !rhsValue.isNullOrEmpty()
+//        }
+//
+//        val isDefaulted = result.any { it }
+//
+//        val results = if (isDefaulted) {
+//            listOf(
+//                EvaluationResult(
+//                    taskingConfig = taskConfig,
+//                    teiUid = teiUid,
+//                    programUid = programUid,
+//                    isTriggered = true,
+//                    dueDate = null,
+//                    tieAttrs = Triple("", "", ""),
+//                    orgUnit = null
+//                )
+//            )
+//        } else emptyList()
+//
+//        return results
+//    }
+//
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    fun taskDefaulting(
+//        tasks: List<Task>,
+//        sourceProgramEnrollmentUid: String,
+//        sourceProgramUid: String,
+//        sourceTeiUid: String?
+//    ) {
+//        val taskConf = repository.getTaskingConfig()
+//        require(taskConf.programTasks.isNotEmpty()) { "Task Config is Empty" }
+//
+//        val configForPg = taskConf.programTasks
+//            .filter { it.programUid == sourceProgramUid }
+//            .flatMap { it.taskConfigs }
+//
+//        if (configForPg.isEmpty()) return
+//
+//        val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
+//
+//        tasks.filter { it.sourceProgramUid == sourceProgramUid }
+//            .forEach { task ->
+//                val taskConfig = configForPg.firstOrNull { it.name == task.name }
+//                if (taskConfig == null) {
+//                    return@forEach
+//                }
+//
+//                if (task.sourceEnrollmentUid == sourceProgramEnrollmentUid) {
+//                    val condition = evaluateDefaultingConditions(
+//                        taskConfig = taskConfig,
+//                        teiUid = sourceTeiUid!!,
+//                        programUid = sourceProgramUid,
+//                        enrollmentUid = sourceProgramEnrollmentUid
+//                    )
+//
+//                    // Defaulting criteria: (1) trigger no longer met, (2) task exists for enrollment
+//                    if (condition.any { it.isTriggered }) {
+//                        repository.updateTaskAttrValue(
+//                            repository.taskStatusAttributeUid,
+//                            "defaulted",
+//                            task.teiUid
+//                        )
+//                    }
+//                }
+//            }
+//    }
 
 
 

@@ -37,6 +37,9 @@ class DefaultingEvaluator(
 
         openTasks.forEach { task ->
             val taskConfig = configsForProgram.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
+
+
+
             // Evaluate trigger using TaskingEvaluator logic
             val triggerResults = evaluateTriggerConditions(taskConfig, sourceTieUid ?: task.teiUid, targetProgramUid)
             val isTriggered = triggerResults.any { it.isTriggered }

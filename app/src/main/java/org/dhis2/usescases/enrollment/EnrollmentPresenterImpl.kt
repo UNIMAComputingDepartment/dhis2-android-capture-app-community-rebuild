@@ -158,6 +158,13 @@ class EnrollmentPresenterImpl(
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
+                // Task defaulting
+                defaultingEvaluator.defaultTasks(
+                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:""
+                )
                 // Task creation
                 creationEvaluator.createTasks(
                     taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
@@ -167,13 +174,7 @@ class EnrollmentPresenterImpl(
                     sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
                     sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
                 )
-                // Task defaulting
-                defaultingEvaluator.defaultTasks(
-                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
-                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
-                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
-                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:""
-                )
+
             }
             EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
         }
