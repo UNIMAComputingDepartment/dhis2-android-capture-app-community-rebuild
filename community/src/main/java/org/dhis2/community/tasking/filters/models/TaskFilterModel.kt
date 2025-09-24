@@ -18,10 +18,13 @@ data class TaskFilterModel(
 enum class DateRangeFilter {
     Today,
     Yesterday,
+    Tomorrow,
     ThisWeek,
     LastWeek,
+    NextWeek,
     ThisMonth,
-    LastMonth
+    LastMonth,
+    NextMonth,
 }
 
 data class FilterUiState(

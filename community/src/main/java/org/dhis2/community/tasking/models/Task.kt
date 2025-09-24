@@ -19,6 +19,7 @@ data class Task(
     val sourceEnrollmentUid: String,
     val sourceProgramName: String,
     val sourceTeiUid: String,
+    val sourceEventUid: String?,
     val teiUid: String, //source teiUid
     val teiPrimary: String,
     val teiSecondary: String,

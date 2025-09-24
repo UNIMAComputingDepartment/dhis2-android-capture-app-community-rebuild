@@ -1,6 +1,10 @@
 package org.dhis2.community.tasking.filters
 
 import android.util.Log
+import io.reactivex.Flowable
+import io.reactivex.processors.FlowableProcessor
+import io.reactivex.processors.PublishProcessor
+import org.dhis2.community.tasking.filters.models.TaskFilterModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -15,14 +19,32 @@ class TaskFilterRepository @Inject constructor() {
     private val _selectedFilters = MutableStateFlow(TaskFilter())
     val selectedFilters: StateFlow<TaskFilter> = _selectedFilters
 
+    private val _selectedFiltersRx = PublishProcessor.create<TaskFilterModel>()
+    val selectedFiltersRx: FlowableProcessor<TaskFilterModel> = _selectedFiltersRx
+    private var currentFilters = TaskFilterModel()
+
+    fun onResumeFilters() {
+        Log.d("TaskFilterRepository", "onResumeFilters called")
+        _selectedFiltersRx.onNext(currentFilters)
+    }
+
     fun updateFilter(filter: TaskFilter) {
         Log.d("TaskFilterRepository", "updateFilter called with: $filter")
         _selectedFilters.value = filter
     }
 
+    fun updateFilter(filters: TaskFilterModel) {
+        Log.d("TaskFilterRepository", "Updating filters: $filters")
+        currentFilters = filters
+        _selectedFiltersRx.onNext(filters)
+    }
+
     fun clearFilters() {
         Log.d("TaskFilterRepository", "clearFilters called, resetting filters to default")
         _selectedFilters.value = TaskFilter()
+        Log.d("TaskFilterRepository", "Clearing all filters")
+        currentFilters = TaskFilterModel()
+        _selectedFiltersRx.onNext(currentFilters)
     }
 
     fun filterTasks(tasks: List<org.dhis2.community.tasking.ui.TaskingUiModel>): List<org.dhis2.community.tasking.ui.TaskingUiModel> {

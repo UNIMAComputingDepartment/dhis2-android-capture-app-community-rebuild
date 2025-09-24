@@ -16,6 +16,7 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
@@ -54,8 +55,7 @@ class EnrollmentPresenterImpl(
     private val eventCollectionRepository: EventCollectionRepository,
     private val teiAttributesProvider: TeiAttributesProvider,
     private val dateEditionWarningHandler: DateEditionWarningHandler,
-    private val creationEvaluator: CreationEvaluator,
-    private val taskingRepository: TaskingRepository,
+    private val taskingEngine: TaskingEngine,
 ) {
 
     private val disposable = CompositeDisposable()
@@ -156,21 +156,18 @@ class EnrollmentPresenterImpl(
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
-                //here !!
-                creationEvaluator.createTasks(
-                    taskProgramUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().programUid,
-                    taskTIETypeUid = taskingRepository.getTaskingConfig().taskProgramConfig.first().teiTypeUid,
-                    targetProgramUid = programRepository.blockingGet()?.uid()?: "",
-                    sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
-                    sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
-                    sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
-
-                )
             }
 
             EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
 
         }
+
+        taskingEngine.evaluateAsync(
+            targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+            sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+            sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+            sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
+        )
     }
 
     fun updateFields(action: RowAction? = null) {

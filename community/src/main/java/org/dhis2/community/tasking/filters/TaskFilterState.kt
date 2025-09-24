@@ -11,7 +11,7 @@ import timber.log.Timber
 
 class TaskFilterState {
     var uiState by mutableStateOf(FilterUiState())
-    // Default status filter
+    // Default status and due date filter
     var currentFilter by mutableStateOf(
         TaskFilterModel(
             statusFilters = setOf(
@@ -19,7 +19,8 @@ class TaskFilterState {
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
                 org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
                 org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE
-            )
+            ),
+            dueDateRange = DateRangeFilter.ThisWeek
         )
     )
         private set
@@ -69,6 +70,12 @@ class TaskFilterState {
     fun clearAllFilters() {
         Timber.d("clearAllFilters called")
         currentFilter = TaskFilterModel(dueDateRange = null)
+        updateUiState()
+    }
+
+    fun clearDueDateFilter() {
+        Timber.d("clearDueDateFilter called")
+        currentFilter = currentFilter.copy(dueDateRange = null)
         updateUiState()
     }
 

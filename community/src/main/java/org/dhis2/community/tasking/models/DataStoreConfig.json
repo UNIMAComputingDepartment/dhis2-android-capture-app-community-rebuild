@@ -22,6 +22,10 @@
           "description": "Trigger a follow-up task if danger sign is YES",
           "name": "Danger Sign Follow-up",
           "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
             "dueInDays": 2
           },
           "priority": "HIGH",
@@ -79,7 +83,11 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "At Birth to Two Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 14
           },
           "priority": "HIGH",
           "trigger": {
@@ -155,7 +163,11 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "6 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 42
           },
           "priority": "HIGH",
           "trigger": {
@@ -251,7 +263,11 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "10 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 70
           },
           "priority": "HIGH",
           "trigger": {
@@ -357,7 +373,11 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "14 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 98
           },
           "priority": "HIGH",
           "trigger": {
@@ -418,7 +438,7 @@
       ],
       "teiView": {
         "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "p79QNVjFu45",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc",
         "teiTertiaryAttribute": "HYlWwg511tF"
       }
     }
