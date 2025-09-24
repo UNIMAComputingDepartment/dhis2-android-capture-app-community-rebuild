@@ -26,9 +26,10 @@ interface TaskingViewModelContract {
     val statuses: List<CheckBoxData>
     val orgUnits: List<OrgTreeItem>
     val allTasksForProgress: List<TaskingUiModel>
+    val progressTasks: StateFlow<List<TaskingUiModel>>
     fun onFilterChanged()
     fun tasksForProgressBar(): List<TaskingUiModel>
-    fun updateTasks(tasks: List<TaskingUiModel>) // Added method to handle updates from presenter
+    fun updateTasks(tasks: List<TaskingUiModel>)
 }
 
 class TaskingViewModel @Inject constructor(
@@ -39,6 +40,9 @@ class TaskingViewModel @Inject constructor(
     private var allTasks: List<TaskingUiModel> = emptyList()
     private val _filteredTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
     override val filteredTasks: StateFlow<List<TaskingUiModel>> = _filteredTasks
+
+    private val _progressTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
+    override val progressTasks: StateFlow<List<TaskingUiModel>> = _progressTasks
 
     override var programs: List<CheckBoxData> = emptyList()
         private set
@@ -280,6 +284,12 @@ class TaskingViewModel @Inject constructor(
     override fun onFilterChanged() {
         Log.d("TaskingViewModel", "onFilterChanged called")
         applyFilters()
+        // Only update progress bar for non-status filters
+        val filter = filterState.currentFilter
+        val shouldUpdateProgress = filter.programFilters.isNotEmpty() || filter.orgUnitFilters.isNotEmpty() || filter.priorityFilters.isNotEmpty() || filter.dueDateRange != null
+        if (shouldUpdateProgress) {
+            _progressTasks.value = tasksForProgressBar()
+        }
     }
 
 
@@ -325,5 +335,11 @@ class TaskingViewModel @Inject constructor(
         allTasks = tasks
         updateFilterOptions()
         applyFilters()
+        refreshProgressTasks()
+    }
+
+    fun refreshProgressTasks() {
+        Log.d("TaskingViewModel", "Refreshing progress tasks")
+        _progressTasks.value = tasksForProgressBar()
     }
 }

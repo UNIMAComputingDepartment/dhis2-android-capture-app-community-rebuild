@@ -51,8 +51,10 @@ fun TaskingUi(
     // Collect tasks from viewModel's StateFlow
     val filteredTasks by viewModel.filteredTasks.collectAsState()
 
-    // For progress bar, use tasks filtered by all filters except status
-    val progressTasks = viewModel.tasksForProgressBar()
+    // Collect progress tasks from ViewModel's StateFlow
+    val progressTasks by viewModel.progressTasks.collectAsState()
+
+    // Calculate progress bar data
     val completedTaskCount = progressTasks.count { it.status == TaskingStatus.COMPLETED }
     val totalTaskCount = progressTasks.size
     val completionPercentage = if (totalTaskCount > 0) {

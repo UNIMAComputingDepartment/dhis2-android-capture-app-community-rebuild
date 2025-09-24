@@ -17,6 +17,8 @@ class TaskingPresenter @Inject constructor(
     private val repository: TaskingRepository
 ) {
     private var view: TaskingView? = null
+    @Inject
+    lateinit var viewModel: TaskingViewModel
     private val disposable = CompositeDisposable()
 
     init {
@@ -47,6 +49,9 @@ class TaskingPresenter @Inject constructor(
 
             // Notify filter manager to refresh filters
             filterManager.publishData()
+
+            // Refresh progress tasks in ViewModel
+            viewModel.refreshProgressTasks()
 
         } catch (e: Exception) {
             Log.e("TaskingPresenter", "Error loading tasks", e)
