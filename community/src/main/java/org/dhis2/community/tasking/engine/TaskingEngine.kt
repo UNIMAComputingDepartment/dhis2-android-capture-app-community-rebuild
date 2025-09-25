@@ -83,6 +83,7 @@ class TaskingEngine(
 
             eventUid?.let {
                 defaultingEvaluator.evaluateForDefaultingEvent(
+                    tasks = repository.getTasksPerOrgUnit(sourceTieUid),
                     sourceTeiUid = sourceTieUid,
                     programUid = targetProgramUid,
                     eventUid = it

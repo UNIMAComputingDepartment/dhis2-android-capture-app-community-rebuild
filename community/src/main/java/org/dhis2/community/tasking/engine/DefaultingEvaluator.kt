@@ -13,15 +13,16 @@ class DefaultingEvaluator(
         sourceTeiUid: String,
         programUid: String,
         eventUid: String,
+        tasks: List<Task>,
     ){
-        val tasks = repository.getTasksForTei(sourceTeiUid)
+        //val tasks = repository.getTasksForTei(sourceTeiUid)
 
         val programTaskConfig = repository.getTaskingConfig().programTasks
             .firstOrNull { it.programUid == programUid }
             ?: return
 
         tasks.forEach { task ->
-            if (eventUid == task.sourceEventUid) {
+            if (eventUid == task.sourceEventUid && task.status == "open") {
                 val taskTriggerEventUid = eventUid
                 val taskConfigs = programTaskConfig.taskConfigs.first { it.name == task.name }
 
