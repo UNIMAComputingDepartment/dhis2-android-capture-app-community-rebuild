@@ -96,6 +96,7 @@ class TaskingFragment(
         super.onResume()
         Log.d("TaskingFragment", "TaskingFragment onResume called")
         presenter.onResume()
+        viewModel.reloadTasks()
     }
 
     override fun onDestroy() {

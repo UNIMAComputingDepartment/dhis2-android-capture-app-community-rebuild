@@ -81,7 +81,6 @@ class TaskingViewModel @Inject constructor(
                         Log.d("TaskingViewModel", "Fetching tasks for orgUnit $orgUnitUid and programUid $programUid")
                         val teis = repository.getTaskTei(orgUnitUid)
                         Log.d("TaskingViewModel", "TEIs fetched for orgUnit $orgUnitUid: ${teis.size}")
-//                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
                         val tasks = repository.getAllTasks()
                         val tasksDebug = repository.getTasksPerOrgUnit(orgUnitUid)
                         Log.d("TaskingViewModel", "Tasks fetched for orgUnit $orgUnitUid: ${tasksDebug.size}")
@@ -179,13 +178,30 @@ class TaskingViewModel @Inject constructor(
     private fun applyFilters() {
         Log.d("TaskingViewModel", "applyFilters called")
         val filter = filterState.currentFilter
+        // Task list: filter by all filters including status
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
-                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-                    (filter.statusFilters.isEmpty() || filter.statusFilters.any { status -> status.label == task.status.label }) &&
-                    matchesDateFilter(task, filter.dueDateRange)
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+            (filter.statusFilters.isEmpty() || filter.statusFilters.any { status -> status.label == task.status.label }) &&
+            matchesDateFilter(task, filter.dueDateRange)
         }
+        updateProgressTasks()
+    }
+
+    private fun updateProgressTasks() {
+        val filter = filterState.currentFilter
+        // Progress bar: filter by all filters except status
+        val progressFiltered = allTasks.filter { task ->
+            (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+            matchesDateFilter(task, filter.dueDateRange)
+        }
+        _progressTasks.value = progressFiltered
+        val completedCount = progressFiltered.count { it.status == TaskingStatus.COMPLETED }
+        val defaultedCount = progressFiltered.count { it.status == TaskingStatus.DEFAULTED }
+        Log.d("TaskingViewModel", "[PROGRESS] ProgressTasks size = ${progressFiltered.size}, completed = $completedCount, defaulted = $defaultedCount, filter = $filter")
     }
 
     private fun matchesDateFilter(task: TaskingUiModel, dateRange: DateRangeFilter?): Boolean {
@@ -284,14 +300,34 @@ class TaskingViewModel @Inject constructor(
     override fun onFilterChanged() {
         Log.d("TaskingViewModel", "onFilterChanged called")
         applyFilters()
-        // Only update progress bar for non-status filters
-        val filter = filterState.currentFilter
-        val shouldUpdateProgress = filter.programFilters.isNotEmpty() || filter.orgUnitFilters.isNotEmpty() || filter.priorityFilters.isNotEmpty() || filter.dueDateRange != null
-        if (shouldUpdateProgress) {
-            _progressTasks.value = tasksForProgressBar()
-        }
     }
 
+    fun onTaskCreated(newTask: TaskingUiModel) {
+        Log.d("TaskingViewModel", "Task created: ${newTask.taskName}")
+        allTasks = allTasks + newTask
+        onTaskStateChanged()
+    }
+
+    fun onTaskCompleted(taskId: String) {
+        Log.d("TaskingViewModel", "Task completed: $taskId")
+        allTasks = allTasks.map { task ->
+            if (task.task.teiUid == taskId) task.copy(task = task.task.copy(status = "COMPLETED")) else task
+        }
+        onTaskStateChanged()
+    }
+
+    fun onTaskDefaulted(taskId: String) {
+        Log.d("TaskingViewModel", "Task defaulted: $taskId")
+        allTasks = allTasks.map { task ->
+            if (task.task.teiUid == taskId) task.copy(task = task.task.copy(status = "DEFAULTED")) else task
+        }
+        onTaskStateChanged()
+    }
+
+    fun onTaskStateChanged() {
+        Log.d("TaskingViewModel", "onTaskStateChanged called (creation, completion, defaulting, etc.)")
+        applyFilters()
+    }
 
     override fun tasksForProgressBar(): List<TaskingUiModel> {
         val filter = filterState.currentFilter
@@ -341,5 +377,9 @@ class TaskingViewModel @Inject constructor(
     fun refreshProgressTasks() {
         Log.d("TaskingViewModel", "Refreshing progress tasks")
         _progressTasks.value = tasksForProgressBar()
+    }
+
+    fun reloadTasks() {
+        loadInitialData()
     }
 }
