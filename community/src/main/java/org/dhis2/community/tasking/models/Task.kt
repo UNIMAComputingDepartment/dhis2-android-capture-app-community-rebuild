@@ -27,7 +27,9 @@ data class Task(
     val dueDate: String,
     val priority: String,
     val status: String = "OPEN",
-    val iconNane : String?
+    val iconNane : String?,
+    val progressCurrent: Int = 0,
+    val progressTotal: Int = 0
 ) {
     init {
         Log.d("Task", "Task created: name=$name, description=$description, sourceProgramUid=$sourceProgramUid, sourceEnrollmentUid=$sourceEnrollmentUid, sourceProgramName=$sourceProgramName, teiUid=$teiUid, teiPrimary=$teiPrimary, teiSecondary=$teiSecondary, teiTertiary=$teiTertiary, dueDate=$dueDate, priority=$priority, status=$status, iconNane=$iconNane")

@@ -33,16 +33,9 @@ fun TaskFilterBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 2.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
     ) {
-        // Static filter icon on the left
-        Icon(
-            imageVector = Icons.Filled.Tune,
-            contentDescription = "Filter Icon",
-            modifier = Modifier.padding(top = 12.dp)
-        )
-
         // Scrollable row for chips only
         Row(
             modifier = Modifier

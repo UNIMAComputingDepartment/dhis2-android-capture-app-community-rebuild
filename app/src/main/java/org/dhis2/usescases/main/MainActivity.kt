@@ -363,31 +363,36 @@ class MainActivity :
     }
 
     override fun showHideFilter() {
-        val transition = ChangeBounds()
-        transition.duration = 100
-        TransitionManager.beginDelayedTransition(binding.backdropLayout, transition)
-        backDropActive = !backDropActive
-        val initSet = ConstraintSet()
-        initSet.clone(binding.backdropLayout)
-        if (backDropActive) {
-            initSet.connect(
-                R.id.fragment_container,
-                ConstraintSet.TOP,
-                R.id.filterRecycler,
-                ConstraintSet.BOTTOM,
-                0,
-            )
+        val fragment = org.dhis2.community.tasking.ui.TaskingFragment.findInstance(supportFragmentManager)
+        if (mainNavigator.isTasks() && fragment != null) {
+            fragment.toggleFilterBar()
         } else {
-            initSet.connect(
-                R.id.fragment_container,
-                ConstraintSet.TOP,
-                R.id.toolbar,
-                ConstraintSet.BOTTOM,
-                0,
-            )
+            val transition = ChangeBounds()
+            transition.duration = 100
+            TransitionManager.beginDelayedTransition(binding.backdropLayout, transition)
+            backDropActive = !backDropActive
+            val initSet = ConstraintSet()
+            initSet.clone(binding.backdropLayout)
+            if (backDropActive) {
+                initSet.connect(
+                    R.id.fragment_container,
+                    ConstraintSet.TOP,
+                    R.id.filterRecycler,
+                    ConstraintSet.BOTTOM,
+                    0,
+                )
+            } else {
+                initSet.connect(
+                    R.id.fragment_container,
+                    ConstraintSet.TOP,
+                    R.id.toolbar,
+                    ConstraintSet.BOTTOM,
+                    0,
+                )
+            }
+            initSet.applyTo(binding.backdropLayout)
+            updateNavigationBarVisibility()
         }
-        initSet.applyTo(binding.backdropLayout)
-        updateNavigationBarVisibility()
     }
 
     private fun updateNavigationBarVisibility() {
@@ -778,5 +783,12 @@ class MainActivity :
     private fun launchUrl(uri: Uri) {
         val intent = Intent(Intent.ACTION_VIEW, uri)
         startActivity(intent)
+    }
+
+    private fun shouldShowFilter(screen: MainNavigator.MainScreen): Boolean {
+        return when (screen) {
+            MainNavigator.MainScreen.PROGRAMS, MainNavigator.MainScreen.TASKS -> true
+            else -> false
+        }
     }
 }
