@@ -37,7 +37,6 @@ const val TASKING_ITEMS = "TASKING_ITEMS"
 
 @Composable
 fun TaskingUi(
-    tasks: List<TaskingUiModel>,
     onTaskClick: (TaskingUiModel) -> Unit,
     viewModel: TaskingViewModelContract,
     filterState: TaskFilterState,
@@ -164,21 +163,6 @@ fun TaskingUi(
                         }
                     )
                 }
-                FilterSheetType.ORG_UNIT -> {
-//                OrgUnitFilterBottomSheet(
-//                    orgUnits = viewModel.orgUnits,
-//                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
-//                    onDismiss = { activeFilterSheet = null },
-//                    onApplyFilters = {
-//                        activeFilterSheet = null
-//                        viewModel.onFilterChanged()
-//                    },
-//                    onItemSelected = { uid, checked ->
-//                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
-//                        filterState.updateOrgUnitFilters(updated)
-//                    }
-//                )
-                }
                 FilterSheetType.PRIORITY -> {
                     PriorityFilterBottomSheet(
                         priorities = viewModel.priorities.map { it.copy(checked = filterState.currentFilter.priorityFilters.any { p -> p.label == it.uid }) },
@@ -235,135 +219,10 @@ fun TaskingUi(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(filteredTasks) { task ->
-                        val statusColor = task.status.color
-                        val infoList = listOf(
-                            AdditionalInfoItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Flag,
-                                        contentDescription = null,
-                                        tint = task.priority.color,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                value = task.priority.label,
-                                color = task.priority.color,
-                                truncate = false,
-                                isConstantItem = false
-                            ),
-                            AdditionalInfoItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Event,
-                                        contentDescription = null,
-                                        tint = statusColor,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                value = task.status.label,
-                                color = statusColor,
-                                truncate = false,
-                                isConstantItem = false
-                            ),
-                            AdditionalInfoItem(
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Outlined.CheckCircle,
-                                        contentDescription = null,
-                                        tint = task.progressColor,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                },
-                                value = task.progressDisplay,
-                                color = task.progressColor,
-                                truncate = false,
-                                isConstantItem = false
-                            ),
-                            AdditionalInfoItem(
-                                key = "Name",
-                                value = task.teiPrimary,
-                                color = TextColor.OnSurface,
-                                truncate = false,
-                                isConstantItem = false
-                            ),
-                            AdditionalInfoItem(
-                                key = "Village Name",
-                                value = task.teiSecondary,
-                                color = TextColor.OnSurface,
-                                truncate = false,
-                                isConstantItem = false
-                            ),
-                            AdditionalInfoItem(
-                                key = "Date of Birth",
-                                value = task.teiTertiary,
-                                color = TextColor.OnSurface,
-                                truncate = false,
-                                isConstantItem = false
-                            )
-                        )
-                        val additionalInfoState = rememberAdditionalInfoColumnState(
-                            additionalInfoList = infoList,
-                            syncProgressItem = AdditionalInfoItem(
-                                value = "",
-                                color = TextColor.OnSurface,
-                                isConstantItem = true
-                            ),
-                            expandLabelText = "Show more",
-                            shrinkLabelText = "Show less",
-                            minItemsToShow = 3,
-                            scrollableContent = false
-                        )
-                        val listCardState = rememberListCardState(
-                            title = ListCardTitleModel(
-                                text = task.taskName,
-                                color = SurfaceColor.Primary
-                            ),
-                            description = ListCardDescriptionModel(
-                                text = task.displayProgramName,
-                                color = TextColor.OnSurface
-                            ),
-                            lastUpdated = task.dueDate?.let {
-                                "Due: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)}"
-                            },
-                            additionalInfoColumnState = additionalInfoState,
-                            loading = false,
-                            shadow = true,
-                            itemVerticalPadding = 8.dp,
-                            selectionState = SelectionState.NONE
-                        )
-                        ListCard(
-                            modifier = Modifier.padding(8.dp),
-                            listCardState = listCardState,
-                            listAvatar = {
-                                Avatar(
-                                    style = AvatarStyleData.Metadata(
-                                        imageCardData = task.metadataIconData.imageCardData,
-                                        avatarSize = MetadataAvatarSize.S(),
-                                        tintColor = task.metadataIconData.color
-                                    )
-                                )
-                            },
-                            onCardClick = {
-                                val validTei = task.sourceTeiUid
-                                val validProgram = task.sourceProgramUid
-                                val validEnrollment = task.sourceEnrollmentUid
-
-                                if (validTei.isNullOrEmpty() || validProgram.isNullOrEmpty() || validEnrollment.isNullOrEmpty()) {
-                                    Log.d("TaskingUi", "Invalid task details: TEI=$validTei, Program=$validProgram, Enrollment=$validEnrollment")
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = "Missing TEI, Program or Enrollment, can’t proceed",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                } else {
-                                    Log.d("TaskingUi", "Valid task details: ${task.taskName}")
-                                    onTaskClick(task)
-                                }
-                            },
-                            onSizeChanged = {}
-                        )
+                    items(filteredTasks) {
+                        TaskItem(it) {
+                            onTaskClick(it)
+                        }
                     }
                 }
             }
@@ -371,124 +230,121 @@ fun TaskingUi(
     }
 }
 
-private enum class FilterSheetType { PROGRAM, ORG_UNIT, PRIORITY, STATUS, DUE_DATE }
+@Composable
+fun TaskItem(task: TaskingUiModel, onTaskClick: (TaskingUiModel) -> Unit)  {
+    val statusColor = task.status.color
+    val infoList = listOf(
+        AdditionalInfoItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Flag,
+                    contentDescription = null,
+                    tint = task.priority.color,
+                    modifier = Modifier.size(24.dp)
+                )
+            },
+            value = task.priority.label,
+            color = task.priority.color,
+            truncate = false,
+            isConstantItem = false
+        ),
+        AdditionalInfoItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Event,
+                    contentDescription = null,
+                    tint = statusColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            },
+            value = task.status.label,
+            color = statusColor,
+            truncate = false,
+            isConstantItem = false
+        ),
+        AdditionalInfoItem(
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = null,
+                    tint = task.progressColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            },
+            value = task.progressDisplay,
+            color = task.progressColor,
+            truncate = false,
+            isConstantItem = false
+        ),
+        AdditionalInfoItem(
+            key = "Name",
+            value = task.teiPrimary,
+            color = TextColor.OnSurface,
+            truncate = false,
+            isConstantItem = false
+        ),
+        AdditionalInfoItem(
+            key = "Village Name",
+            value = task.teiSecondary,
+            color = TextColor.OnSurface,
+            truncate = false,
+            isConstantItem = false
+        ),
+        AdditionalInfoItem(
+            key = "Date of Birth",
+            value = task.teiTertiary,
+            color = TextColor.OnSurface,
+            truncate = false,
+            isConstantItem = false
+        )
+    )
+    val additionalInfoState = rememberAdditionalInfoColumnState(
+        additionalInfoList = infoList,
+        syncProgressItem = AdditionalInfoItem(
+            value = "",
+            color = TextColor.OnSurface,
+            isConstantItem = true
+        ),
+        expandLabelText = "Show more",
+        shrinkLabelText = "Show less",
+        minItemsToShow = 3,
+        scrollableContent = false
+    )
+    val listCardState = rememberListCardState(
+        title = ListCardTitleModel(
+            text = task.taskName,
+            color = SurfaceColor.Primary
+        ),
+        description = ListCardDescriptionModel(
+            text = task.displayProgramName,
+            color = TextColor.OnSurface
+        ),
+        lastUpdated = task.dueDate?.let {
+            "Due: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)}"
+        },
+        additionalInfoColumnState = additionalInfoState,
+        loading = false,
+        shadow = true,
+        itemVerticalPadding = 8.dp,
+        selectionState = SelectionState.NONE
+    )
+    ListCard(
+        modifier = Modifier.padding(8.dp),
+        listCardState = listCardState,
+        listAvatar = {
+            Avatar(
+                style = AvatarStyleData.Metadata(
+                    imageCardData = task.metadataIconData.imageCardData,
+                    avatarSize = MetadataAvatarSize.S(),
+                    tintColor = task.metadataIconData.color
+                )
+            )
+        },
+        onCardClick = {
+            onTaskClick(task)
+        },
+        onSizeChanged = {}
+    )
+}
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewTaskingUi() {
-//    val fakeTasks = getDummyTasks()
-//    val filterState = remember { TaskFilterState() }
-//    val filteredPreviewTasks = fakeTasks.filter { it.status != TaskingStatus.COMPLETED }
-//    val previewViewModel = object : TaskingViewModelContract {
-//        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
-//        override val programs = emptyList<CheckBoxData>()
-//        override val orgUnits = emptyList<OrgTreeItem>()
-//        override val priorities = emptyList<CheckBoxData>()
-//        override val statuses = emptyList<CheckBoxData>()
-//        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
-//        override fun onFilterChanged() {}
-//        override fun tasksForProgressBar(): List<TaskingUiModel> = fakeTasks
-//        override fun updateTasks(tasks: List<TaskingUiModel>) {}
-//    }
-//    TaskingUi(
-//        tasks = fakeTasks,
-//        onTaskClick = {},
-//        viewModel = previewViewModel,
-//        filterState = filterState,
-//        onOrgUnitFilterSelected = {},
-//        showFilterBar = true // Provide default value for preview
-//    )
-//}
-//
-//fun getDummyTasks(): List<TaskingUiModel> {
-//    return listOf(
-//        TaskingUiModel(
-//            task = Task(
-//                name = "BCG Immunization Due",
-//                description = "BCG Immunization for newborn",
-//                sourceProgramUid = "IpHINAT79UW",
-//                sourceEnrollmentUid = "enroll1",
-//                sourceProgramName = "Expanded Programme on Immunization - EPI",
-//                sourceTeiUid = "tei1",
-//                teiUid = "tei1",
-//                teiPrimary = "James Phiri",
-//                teiSecondary = "2025-08-15",
-//                teiTertiary = "Male",
-//                dueDate = "2025-09-06",
-//                priority = "Low",
-//                status = "OPEN",
-//                iconNane = "",
-//                progressCurrent = 0,
-//                progressTotal = 4
-//            ),
-//            orgUnit = null,
-//            repository = null
-//        ),
-//        TaskingUiModel(
-//            task = Task(
-//                name = "ANC Follow-up Visit",
-//                description = "Scheduled antenatal care follow-up",
-//                sourceProgramUid = "WSGAb5XwJ3Y",
-//                sourceEnrollmentUid = "enroll2",
-//                sourceProgramName = "CBMNC - Woman Program",
-//                sourceTeiUid = "tei2",
-//                teiUid = "tei2",
-//                teiPrimary = "Mary Banda",
-//                teiSecondary = "W123",
-//                teiTertiary = "MAT456",
-//                dueDate = "2025-09-10",
-//                priority = "Medium",
-//                status = "DUE_SOON",
-//                iconNane = "",
-//                progressCurrent = 1,
-//                progressTotal = 4
-//            ),
-//            orgUnit = null,
-//            repository = null
-//        ),
-//        TaskingUiModel(
-//            task = Task(
-//                name = "Post-delivery Follow-up",
-//                description = "Neonatal check-up required",
-//                sourceProgramUid = "uy2gU8kT1jF",
-//                sourceEnrollmentUid = "enroll3",
-//                sourceProgramName = "CBMNC - Neonatal Program",
-//                sourceTeiUid = "tei3",
-//                teiUid = "tei3",
-//                teiPrimary = "Baby Tembo",
-//                teiSecondary = "2025-09-01",
-//                teiTertiary = "MAT789",
-//                dueDate = "2025-09-01",
-//                priority = "High",
-//                status = "OVERDUE",
-//                iconNane = "",
-//                progressCurrent = 2,
-//                progressTotal = 4
-//            ),
-//            orgUnit = null,
-//            repository = null
-//        ),
-//        TaskingUiModel(
-//            task = Task(
-//                name = "OPV-1 Vaccination",
-//                description = "First dose of Oral Polio Vaccine",
-//                sourceProgramUid = "IpHINAT79UW",
-//                sourceEnrollmentUid = "enroll4",
-//                sourceProgramName = "EPI",
-//                sourceTeiUid = "tei4",
-//                teiUid = "tei4",
-//                teiPrimary = "Sarah Mwanza",
-//                teiSecondary = "2025-09-20",
-//                teiTertiary = "Female",
-//                dueDate = "2025-09-20",
-//                priority = "High",
-//                status = "COMPLETED",
-//                iconNane = "",
-//                progressCurrent = 4,
-//                progressTotal = 4
-//            ),
-//            orgUnit = null,
-//            repository = null
-//        )
-//    )
-//}
+private enum class FilterSheetType { PROGRAM, PRIORITY, STATUS, DUE_DATE }

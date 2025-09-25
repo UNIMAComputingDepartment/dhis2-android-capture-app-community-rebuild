@@ -90,7 +90,7 @@ class TaskingEngine(
             }
 
             completionEvaluator.taskCompletion(
-                tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
+                tasks = repository.getTasks(),
                 sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
                 sourceProgramUid = targetProgramUid,
                 sourceTeiUid = sourceTieUid
