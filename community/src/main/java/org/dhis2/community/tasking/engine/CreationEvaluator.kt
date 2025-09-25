@@ -38,7 +38,8 @@ class CreationEvaluator (
             val isTriggered = evaluateConditions(
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
-                targetProgramUid
+                targetProgramUid,
+                eventUid
             ).any { it }
 
             if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
