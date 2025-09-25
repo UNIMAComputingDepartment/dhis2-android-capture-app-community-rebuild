@@ -22,6 +22,8 @@ import org.dhis2.commons.prefs.Preference.Companion.TIME_DAILY
 import org.dhis2.commons.prefs.Preference.Companion.TIME_DATA
 import org.dhis2.commons.prefs.Preference.Companion.TIME_META
 import org.dhis2.commons.prefs.PreferenceProvider
+import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.data.service.workManager.WorkerItem
 import org.dhis2.data.service.workManager.WorkerType
@@ -647,5 +649,10 @@ class SyncPresenterImpl(
                 )
             }
         } ?: analyticsHelper.clearMatomoSecondaryTracker()
+    }
+
+    override fun taskingDefault() {
+        DefaultingEvaluator(TaskingRepository(d2))
+            .periodicCheck()
     }
 }

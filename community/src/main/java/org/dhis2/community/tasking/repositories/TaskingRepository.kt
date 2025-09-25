@@ -13,6 +13,7 @@ import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
+import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
@@ -305,6 +306,7 @@ class TaskingRepository(
         }
     }
 
+
     fun createTask(
         task: Task,
         sourceTeiOrgUnitUid: String,
@@ -363,5 +365,37 @@ class TaskingRepository(
             .blockingGet()
             ?.trackedEntityInstance()
         return enrollments
+    }
+
+    fun getLatestEvent(programUid: String, dataElementUid: String, enrollmentUd: String, eventUid: String?): Event? {
+        val stage = d2.programModule().programStages().byProgramUid()
+            .eq(programUid).blockingGet()
+            .firstOrNull {
+                d2.programModule().programStageDataElements()
+                    .byProgramStage().eq(it.uid())
+                    .byDataElement().eq(dataElementUid)
+                    .blockingGet().isNotEmpty()
+            } ?: return null
+
+        val events = if (eventUid == null)
+            d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollmentUd)
+                .byProgramStageUid().eq(stage.uid())
+                .withTrackedEntityDataValues()
+                .blockingGet()
+        else
+            d2.eventModule().events()
+                .byUid().eq(eventUid)
+                .withTrackedEntityDataValues()
+                .blockingGet()
+
+        return events
+            .maxByOrNull {
+                it.created()?: it.eventDate()?: Date(0)
+            }
+    }
+
+    fun getTasksForPgEnrollment(enrollmentUID: String): List<Task> {
+        return getAllTasks().filter { it.sourceEnrollmentUid == enrollmentUID }
     }
 }

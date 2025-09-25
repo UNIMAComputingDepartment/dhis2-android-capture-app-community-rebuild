@@ -38,7 +38,8 @@ class CreationEvaluator (
             val isTriggered = evaluateConditions(
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
-                targetProgramUid
+                targetProgramUid,
+                eventUid
             ).any { it }
 
             if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
@@ -67,7 +68,7 @@ class CreationEvaluator (
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status != "completed" &&
+                    task.status == "open" &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
         }
