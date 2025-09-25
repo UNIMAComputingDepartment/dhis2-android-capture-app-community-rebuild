@@ -88,17 +88,6 @@ abstract class TaskingEvaluator(
         val enrollment = repository.getLatestEnrollment(teiUid, programUid)
             ?: return null
 
-        val events = if (eventUid == null)
-                repository.d2.eventModule().events()
-                    .byEnrollmentUid().eq(enrollment.uid())
-                    .withTrackedEntityDataValues()
-                    .blockingGet()
-                else
-                    repository.d2.eventModule().events()
-                        .byUid().eq(eventUid)
-                        .withTrackedEntityDataValues()
-                        .blockingGet()
-
         if (reference.uid.isNullOrBlank())
             return reference.value.toString()
 
@@ -109,7 +98,7 @@ abstract class TaskingEvaluator(
                 .one().blockingGet()?.value()
 
             "eventData" -> {
-                val latestEvent = getLatestEvent(events, reference.uid)
+                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
@@ -117,22 +106,15 @@ abstract class TaskingEvaluator(
             }
 
             "allEventsData" -> {
-                events.asSequence()
-                    .flatMap { it.trackedEntityDataValues() ?: emptyList() }
-                    .firstOrNull { it.dataElement() == reference.uid }
+                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                latestEvent
+                    ?.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == reference.uid }
                     ?.value()
             }
 
             "static" -> reference.uid
             else -> null
         }
-    }
-
-    private fun getLatestEvent(events: List<Event>, dataElementUid: String): Event? {
-        return events
-            .filter { event -> event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true }
-            .maxByOrNull {
-                it.created()?: it.eventDate()?: Date(0)
-            }
     }
 }

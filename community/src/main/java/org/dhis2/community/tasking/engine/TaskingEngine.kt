@@ -81,20 +81,20 @@ class TaskingEngine(
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
             }
 
+            eventUid?.let {
+                defaultingEvaluator.evaluateForDefaultingEvent(
+                    sourceTeiUid = sourceTieUid,
+                    programUid = targetProgramUid,
+                    eventUid = it
+                )
+            }
+
             completionEvaluator.taskCompletion(
                 tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
                 sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
                 sourceProgramUid = targetProgramUid,
                 sourceTeiUid = sourceTieUid
             )
-
-            eventUid?.let {
-                defaultingEvaluator.evaluateForDefaulting(
-                    sourceTeiUid = sourceTieUid,
-                    programUid = targetProgramUid,
-                    eventUid = it
-                )
-            }
 
             val createdTasks = creationEvaluator.evaluateForCreation(
                 taskProgramUid,
