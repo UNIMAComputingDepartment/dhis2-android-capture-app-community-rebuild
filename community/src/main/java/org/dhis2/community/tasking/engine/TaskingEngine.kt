@@ -81,6 +81,14 @@ class TaskingEngine(
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
             }
 
+            eventUid?.let {
+                defaultingEvaluator.evaluateForDefaultingEvent(
+                    sourceTeiUid = sourceTieUid,
+                    programUid = targetProgramUid,
+                    eventUid = it
+                )
+            }
+
             completionEvaluator.taskCompletion(
                 tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
                 sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
@@ -88,21 +96,14 @@ class TaskingEngine(
                 sourceTeiUid = sourceTieUid
             )
 
-            eventUid?.let {
-                defaultingEvaluator.evaluateForDefaulting(
-                    sourceTeiUid = sourceTieUid,
-                    programUid = targetProgramUid,
-                    eventUid = it
-                )
-            }
-
             val createdTasks = creationEvaluator.evaluateForCreation(
                 taskProgramUid,
                 taskTIETypeUid,
                 targetProgramUid,
                 sourceTieUid,
                 sourceTieOrgUnitUid,
-                sourceTieProgramEnrollment
+                sourceTieProgramEnrollment,
+                eventUid
             )
 
             Timber.tag(TAG).d("Created tasks: $createdTasks")

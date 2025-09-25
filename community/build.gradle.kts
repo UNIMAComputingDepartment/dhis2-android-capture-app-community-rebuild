@@ -48,6 +48,8 @@ dependencies {
     implementation(libs.androidx.coreKtx)
     implementation(libs.androidx.appcompat)
     implementation(libs.google.material)
+    implementation(libs.androidx.work)
+    implementation(libs.androidx.workrx)
     testImplementation(libs.test.junit)
     androidTestImplementation(libs.test.junit.ext)
     androidTestImplementation(libs.test.espresso)

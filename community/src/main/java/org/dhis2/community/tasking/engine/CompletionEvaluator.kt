@@ -28,7 +28,7 @@ class CompletionEvaluator(
         val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
 
 
-        tasks.filter{it.sourceProgramUid == sourceProgramUid}
+        tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == "open"}
             .forEach { task ->
 
                 val taskConfig = configForPg.firstOrNull() { it.name == task.name }
