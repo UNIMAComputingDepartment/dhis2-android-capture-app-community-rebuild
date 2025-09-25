@@ -77,7 +77,7 @@ class TaskingEngine(
             val taskProgramUid = config.programUid
             val taskTIETypeUid = config.teiTypeUid
 
-            if (!eventUid.isNullOrBlank()) {
+            if (eventUid.isNullOrBlank()) {
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
             }
 
