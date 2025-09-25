@@ -282,5 +282,5 @@ class TaskingRepository(
         return getAllTasks().filter { it.sourceEnrollmentUid == enrollmentUID }
     }
 
-    fun getEnrollment(enrollmentUid: String)= d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
+    fun getEnrollment(enrollmentUid: String) = d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
 }
