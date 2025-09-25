@@ -17,6 +17,10 @@ import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.dhis2.commons.orgunitselector.OUTreeFragment
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class TaskingFragment(
@@ -64,17 +68,7 @@ class TaskingFragment(
                 
                 TaskingUi(
                     onTaskClick = {
-                        if (viewModel.canOpenTask(it)) {
-                            onTaskClick?.invoke(
-                                requireContext(),
-                                it.sourceTeiUid,
-                                it.sourceProgramUid,
-                                it.sourceEnrollmentUid
-                            )
-                        } else {
-                            // Display snackbar message that task cannot be opened
-                            
-                        }
+                        onTaskClicked(it)
                     },
                     viewModel = viewModel,
                     filterState = viewModel.filterState,
@@ -83,6 +77,23 @@ class TaskingFragment(
                     },
                     showFilterBar = showFilterBarState
                 )
+            }
+        }
+    }
+
+    private fun onTaskClicked(task: TaskingUiModel) {
+        lifecycleScope.launch { val canOpen = withContext(Dispatchers.IO) { viewModel.canOpenTask(task) }
+            if (canOpen) {
+                withContext(Dispatchers.Main) {
+                    onTaskClick?.invoke(
+                        requireContext(),
+                        task.sourceTeiUid,
+                        task.sourceProgramUid,
+                        task.sourceEnrollmentUid
+                    )
+                }
+            } else {
+                // Display snackbar message that task cannot be opened
             }
         }
     }
