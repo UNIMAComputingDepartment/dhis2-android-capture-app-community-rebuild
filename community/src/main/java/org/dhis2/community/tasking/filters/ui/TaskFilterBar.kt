@@ -1,28 +1,39 @@
 package org.dhis2.community.tasking.filters.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.dhis2.community.tasking.filters.models.FilterUiState
+import org.dhis2.community.tasking.ui.TaskItemDefaults.programNameTextSize
+import org.hisp.dhis.mobile.ui.designsystem.component.Button
+import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
 import org.hisp.dhis.mobile.ui.designsystem.component.FilterChip
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2TextStyle
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
+import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.getTextStyle
 import timber.log.Timber
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -34,21 +45,56 @@ fun TaskFilterBar(
     onPriorityFilterClick: () -> Unit,
     onStatusFilterClick: () -> Unit,
     onDueDateFilterClick: () -> Unit,
-    onClearAllFilters: () -> Unit
+    onClearAllFilters: () -> Unit,
+    fontSize: Float = 20f
 ) {
     Timber.d("TaskFilterBar composable rendered with state: $filterState")
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
+            .padding(horizontal = 6.dp, vertical = 8.dp)
     ) {
-        // Scrollable row for chips only
-        FlowRow (
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Filters",
+                    tint = SurfaceColor.Primary,
+                    modifier = Modifier.size(30.dp)
+                )
+                Text(
+                    text = "Filters",
+                    style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).copy(fontSize = fontSize.sp),
+                    color = SurfaceColor.Primary,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .wrapContentWidth()
+                )
+            }
+            Button(
+                modifier = Modifier.padding(start = 2.dp),
+                enabled = true,
+                style = ButtonStyle.FILLED,
+                onClick = onClearAllFilters,
+                text = "Clear All",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.ClearAll,
+                        contentDescription = "Clear Filters"
+                    )
+                },
+            )
+        }
+        FlowRow(
             modifier = Modifier
-                //.horizontalScroll(rememberScrollState())
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing10),
+            verticalArrangement = Arrangement.spacedBy(-Spacing.Spacing4)
         ) {
             FilterChip(
                 label = "Program",
@@ -80,28 +126,14 @@ fun TaskFilterBar(
                 onSelected = { Timber.d("Due Date filter chip clicked"); onDueDateFilterClick() },
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
-            Spacer(modifier = Modifier.padding(end = 2.dp))
         }
-        IconButton(
+        HorizontalDivider(
             modifier = Modifier
-                .padding(start = 2.dp)
-                .padding(horizontal = 2.dp)
-                .align(Alignment.CenterVertically),
-            enabled = true,
-            //style = ButtonStyle.FILLED,
-            colors = IconButtonColors(
-                containerColor = if (filterState.isAnyFilterActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = if (filterState.isAnyFilterActive) TextColor.OnPrimary else TextColor.OnSurfaceVariant,
-                disabledContainerColor = Color.Gray,
-                disabledContentColor = TextColor.OnSurfaceVariant.copy(alpha = 0.38f)
-            ),
-            onClick = onClearAllFilters
-        ) {
-            Icon(
-                imageVector = Icons.Default.Clear,
-                contentDescription = "Clear Filters"
-            )
-        }
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            thickness = 0.5.dp,
+            color = TextColor.OnSurface.copy(alpha = 0.190f)
+        )
     }
 }
 

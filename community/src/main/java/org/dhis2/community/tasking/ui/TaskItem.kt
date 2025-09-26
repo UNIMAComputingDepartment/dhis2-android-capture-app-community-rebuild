@@ -14,19 +14,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -50,12 +51,41 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import org.dhis2.community.tasking.ui.TaskItemDefaults.chipIconSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.chipTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.detailLabelTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.detailValueTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.dueDateTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.programNameTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.showMoreIconSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.showMoreTextSize
+import org.dhis2.community.tasking.ui.TaskItemDefaults.taskNameTextSize
 import org.hisp.dhis.mobile.ui.designsystem.component.Avatar
 import org.hisp.dhis.mobile.ui.designsystem.component.AvatarStyleData
 import org.hisp.dhis.mobile.ui.designsystem.component.MetadataAvatarSize
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2TextStyle
+import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.dropShadow
+import org.hisp.dhis.mobile.ui.designsystem.theme.getTextStyle
 import java.text.SimpleDateFormat
 import java.util.Locale
+
+object TaskItemDefaults {
+    val taskNameTextSize = 15.sp
+    val programNameTextSize = 13.sp
+    val dueDateTextSize = 11.sp
+    val chipTextSize = 12.sp
+    val chipIconSize = 12.dp
+    val showMoreTextSize = 12.sp
+    val showMoreIconSize = 12.dp
+    val detailLabelTextSize = 12.sp
+    val detailValueTextSize = 12.sp
+}
 
 @Composable
 fun TaskItem(
@@ -84,7 +114,9 @@ fun TaskItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .shadow(elevation = 16.dp, ambientColor = SurfaceColor.ContainerHighest,
+                spotColor = SurfaceColor.ContainerHighest, shape = RoundedCornerShape(8.dp))
             .semantics {
                 contentDescription = buildString {
                     append("${task.taskName}, ")
@@ -99,29 +131,37 @@ fun TaskItem(
                 onClick = { onTaskClick(task) },
                 role = Role.Button
             ),
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp
+            defaultElevation = 4.dp,
+            pressedElevation = 6.dp,
+            focusedElevation = 6.dp,
+            hoveredElevation = 6.dp,
+            draggedElevation = 8.dp
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = Color.White
         )
     ) {
         Column {
             // Progress indicator at the top
             if (progressFraction > 0f) {
                 LinearProgressIndicator(
-                progress = { animatedProgress },
-                modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(2.dp),
-                color = when {
-                                        isCompleted -> Color(0xFF4CAF50)
-                                        isOverdue -> Color(0xFFFF5722)
-                                        isDefaulted -> Color(0xFF9E9E9E)
-                                        else -> MaterialTheme.colorScheme.primary
-                                    },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    progress = { animatedProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp),
+                    color = when {
+                        isCompleted -> TaskingStatus.COMPLETED.color
+                        isOverdue -> TaskingStatus.OVERDUE.color
+                        isDefaulted -> TaskingStatus.DEFAULTED.color
+                        else -> TaskingStatus.OPEN.color
+                    },
+                    trackColor = TaskingStatus.OPEN.color.copy(alpha = 0.3f),
                 )
             }
 
@@ -158,64 +198,63 @@ fun TaskItem(
 
                             val annotated = buildAnnotatedString {
                                 person?.let {
-                                    append(it)
-                                    append(" • ")
+                                    withStyle(style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).toSpanStyle().copy(
+                                        fontSize = taskNameTextSize,
+                                        color = TextColor.OnPrimaryContainer
+                                    )) {
+                                        append(it)
+                                        append(" • ")
+                                    }
                                 }
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                                withStyle(style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).toSpanStyle().copy(
+                                    fontSize = taskNameTextSize,
+                                    color = TextColor.OnPrimaryContainer
+                                )) {
                                     append(taskName)
                                 }
                             }
 
                             Text(
                                 text = annotated,
-                                maxLines = 2,
+                                maxLines = 3,
+                                lineHeight = 20.sp,
                                 overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.primary
+                                style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).copy(
+                                    fontSize = taskNameTextSize,
+                                    color = TextColor.OnPrimaryContainer
                                 )
                             )
-
-
+                            Spacer(modifier = Modifier.height(4.dp))
                             if (showProgramName && task.displayProgramName.isNotEmpty()) {
                                 Text(
                                     text = task.displayProgramName,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(
+                                        fontSize = programNameTextSize,
+                                        color = TextColor.OnSurface
+                                    )
                                 )
                             }
                         }
 
                         // Due date badge
                         dueDateText?.let {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color =task.status.color.copy(alpha = 0.12f),
-                                tonalElevation = 0.dp
-                            ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DateRange,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = task.status.color
-                                    )
                                     Text(
-                                        text = it,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = task.status.color
+                                        text = "Due: $it",
+                                        style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(
+                                            fontSize = dueDateTextSize,
+                                            color = TextColor.OnSurfaceLight
+                                        )
                                     )
-                                }
                             }
+
                         }
                     }
 
-                    // Status and Priority chips
+                    // Status, Priority, and Show More chips row
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -223,8 +262,10 @@ fun TaskItem(
                         // Priority chip
                         TaskChip(
                             label = task.priority.label,
-                            icon = Icons.Default.Star,
-                            color = task.priority.color
+                            icon = Icons.Default.Flag,
+                            color = task.priority.color,
+                            textSize = chipTextSize,
+                            iconSize = chipIconSize
                         )
 
                         // Status chip
@@ -236,27 +277,39 @@ fun TaskItem(
                                 isDefaulted -> Icons.Default.Stop
                                 else -> Icons.Default.Schedule
                             },
-                            color = task.status.color
+                            color = task.status.color,
+                            textSize = chipTextSize,
+                            iconSize = chipIconSize
                         )
 
+                        // Spacer pushes Show More to the end
                         Spacer(modifier = Modifier.weight(1f))
 
-                        // Expand/Collapse button
+                        // Show More button (right-aligned)
                         if (hasExpandableContent(task)) {
                             TextButton(
                                 onClick = { expanded = !expanded },
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp),
                                 modifier = Modifier.height(28.dp)
                             ) {
-                                Text(
-                                    text = if (expanded) "Show less" else "Show more",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Icon(
-                                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (expanded) "Show less" else "Show more",
+                                        style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(
+                                            fontSize = showMoreTextSize,
+                                            color = TextColor.OnSurfaceLight
+                                        )
+                                    )
+                                    Icon(
+                                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(showMoreIconSize),
+                                        tint = TextColor.OnSurfaceLight
+                                    )
+                                }
                             }
                         }
                     }
@@ -275,26 +328,26 @@ fun TaskItem(
                         ) {
                             HorizontalDivider(
                                 Modifier.padding(), 0.5.dp,
-                                MaterialTheme.colorScheme.surfaceVariant
+                                TextColor.OnSurface.copy(alpha = 0.2f)
                             )
 
                             task.teiPrimary.takeIf { it.isNotBlank() }?.let {
-                                DetailRow(label = "Name", value = it)
+                                DetailRow(label = "Name", value = it, labelTextSize = detailLabelTextSize, valueTextSize = detailValueTextSize)
                             }
-
                             task.teiSecondary.takeIf { it.isNotBlank() }?.let {
-                                DetailRow(label = "Village", value = it)
+                                DetailRow(label = "Village", value = it, labelTextSize = detailLabelTextSize, valueTextSize = detailValueTextSize)
                             }
-
                             task.teiTertiary.takeIf { it.isNotBlank() }?.let {
-                                DetailRow(label = "DOB", value = it)
+                                DetailRow(label = "Date of Birth", value = it, labelTextSize = detailLabelTextSize, valueTextSize = detailValueTextSize)
                             }
 
                             // Progress details
                             if (progressFraction > 0f) {
                                 DetailRow(
                                     label = "Progress",
-                                    value = "${(progressFraction * 100).toInt()}% complete"
+                                    value = "${(progressFraction * 100).toInt()}% complete",
+                                    labelTextSize = detailLabelTextSize,
+                                    valueTextSize = detailValueTextSize
                                 )
                             }
                         }
@@ -309,28 +362,29 @@ fun TaskItem(
 private fun TaskChip(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color
+    color: Color,
+    textSize: TextUnit = 12.sp,
+    iconSize: Dp = 14.dp
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = color.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(4.dp),
+        color = color.copy(alpha = 0.08f),
         tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(iconSize),
                 tint = color
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
+                style = getTextStyle(DHIS2TextStyle.LABEL_LARGE).copy(fontSize = textSize, color = color),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -341,25 +395,26 @@ private fun TaskChip(
 @Composable
 private fun DetailRow(
     label: String,
-    value: String
+    value: String,
+    labelTextSize: TextUnit = 13.sp,
+    valueTextSize: TextUnit = 13.sp,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.Medium
+            text = "$label",
+            style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(fontSize = labelTextSize, color = TextColor.OnSurfaceLight),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(fontSize = valueTextSize, color = TextColor.OnSurface),
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .padding(start = 16.dp),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false).padding(start = 16.dp)
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

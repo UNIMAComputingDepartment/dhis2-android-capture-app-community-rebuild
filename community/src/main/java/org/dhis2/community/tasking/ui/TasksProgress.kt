@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicator
 import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicatorType
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
@@ -27,14 +28,15 @@ fun TaskProgressSection(
     totalCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val progressFraction = remember(completedCount, totalCount) {
+    val completionPercentage = remember(completedCount, totalCount) {
         if (totalCount > 0) (completedCount.toFloat() / totalCount.toFloat()).coerceIn(0f, 1f) else 0f
     }
+    val completionPercentInt = (completionPercentage * 100).toInt()
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(0.dp),
+            .padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -46,9 +48,9 @@ fun TaskProgressSection(
             ) {
                 Text(
                     text = "Task Progress",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextColor.OnSurface,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextColor.OnSurface
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -56,10 +58,10 @@ fun TaskProgressSection(
                 // compact numeric summary
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "$completedCount / $totalCount",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextColor.OnSurface,
-                        fontWeight = FontWeight.Medium
+                        text = "$completedCount of $totalCount completed ($completionPercentInt%)",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = TextColor.OnSurface
                     )
                 }
             }
@@ -72,11 +74,10 @@ fun TaskProgressSection(
                     .height(16.dp)
                     .padding(top = 8.dp),
                 type = ProgressIndicatorType.LINEAR,
-                progress = progressFraction
+                progress = completionPercentage
             )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
-

@@ -7,6 +7,7 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.graphics.toColorInt
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 data class TaskingUiModel(
     val task: Task,
@@ -149,7 +150,7 @@ enum class TaskingStatus(
 ) {
     OPEN(
         "Open",
-        SurfaceColor.Primary
+        TextColor.OnPrimaryContainer
     ),
     DUE_TODAY(
         "Due Today",
