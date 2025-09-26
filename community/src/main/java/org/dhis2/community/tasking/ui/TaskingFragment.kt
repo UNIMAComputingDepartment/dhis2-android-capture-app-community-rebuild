@@ -6,42 +6,51 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.community.tasking.filters.TaskFilterRepository
-import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
-import org.dhis2.commons.orgunitselector.OUTreeFragment
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 
 
-class TaskingFragment(private val onTaskClick: (Context, String, String, String) -> Unit) : Fragment(), TaskingView {
+class TaskingFragment(
+    private val onTaskClick: ((Context, String, String, String) -> Unit)? = null
+) : Fragment(), TaskingView {
     private lateinit var repository: TaskingRepository
     private lateinit var d2: D2
-    private lateinit var presenter: TaskingPresenter
+    //private lateinit var presenter: TaskingPresenter
     private lateinit var filterRepository: TaskFilterRepository
-    private lateinit var filterManager: FilterManager
 
-    private var tasks: List<TaskingUiModel> = emptyList()
     private lateinit var viewModel: TaskingViewModel
-    private val filterState = org.dhis2.community.tasking.filters.TaskFilterState()
+    val showFilterBar = MutableLiveData(false)
+
+    companion object {
+        fun newInstance(onTaskClick: (Context, String, String, String) -> Unit): TaskingFragment {
+            return TaskingFragment(onTaskClick)
+        }
+
+        fun findInstance(fragmentManager: androidx.fragment.app.FragmentManager): TaskingFragment? {
+            return fragmentManager.fragments.filterIsInstance<TaskingFragment>().firstOrNull()
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("TaskingFragment", "TaskingFragment onCreate called")
         d2 = org.hisp.dhis.android.core.D2Manager.getD2()
         repository = TaskingRepository(d2)
         filterRepository = TaskFilterRepository()
-        filterManager = FilterManager.getInstance()
-        presenter = TaskingPresenter(filterRepository, filterManager, repository)
-        viewModel = TaskingViewModel(repository, d2)
-        presenter.init(this) // Initialize presenter with this fragment as view
-        Log.d("TaskingFragment", "TaskingPresenter initialized")
+        viewModel = TaskingViewModel(repository, filterRepository)
     }
 
     override fun onCreateView(
@@ -49,49 +58,60 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        Log.d("TaskingFragment", "TaskingFragment onCreateView called")
+
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                TaskingUi(
-                    tasks = viewModel.filteredTasks.collectAsState().value,
-                    onTaskClick = {
-                        onTaskClick(
-                            requireContext(),
-                            it.sourceTeiUid,
-                            it.sourceProgramUid,
-                            it.sourceEnrollmentUid
-                        )
-                        Log.d("TaskingFragment", "Task clicked: $it")
-                    },
-                    viewModel = viewModel,
-                    filterState = viewModel.filterState,
-                    onOrgUnitFilterSelected = {
-                        openOrgUnitTreeSelector()
-                    }
-                )
+                val showFilterBarState = showFilterBar.observeAsState(false).value
+
+                DHIS2Theme {
+                    TaskingUi(
+                        onTaskClick = {
+                            onTaskClicked(it)
+                        },
+                        viewModel = viewModel,
+                        filterState = viewModel.filterState,
+                        onOrgUnitFilterSelected = {
+                            openOrgUnitTreeSelector()
+                        },
+                        showFilterBar = showFilterBarState
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onTaskClicked(task: TaskingUiModel) {
+        lifecycleScope.launch { val canOpen = withContext(Dispatchers.IO) { viewModel.canOpenTask(task) }
+            if (canOpen) {
+                withContext(Dispatchers.Main) {
+                    onTaskClick?.invoke(
+                        requireContext(),
+                        task.sourceTeiUid,
+                        task.sourceProgramUid,
+                        task.sourceEnrollmentUid
+                    )
+                }
+            } else {
+                // Display snackbar message that task cannot be opened
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        Log.d("TaskingFragment", "TaskingFragment onResume called")
-        presenter.onResume()
+        viewModel.reloadTasks()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        presenter.clear()
     }
 
     override fun showTasks(tasks: List<TaskingUiModel>) {
-        Log.d("TaskingFragment", "Showing ${tasks.size} tasks")
         viewModel.updateTasks(tasks)
     }
 
     override fun clearFilters() {
-        Log.d("TaskingFragment", "Clearing filters")
         filterRepository.clearFilters()
     }
 
@@ -104,9 +124,13 @@ class TaskingFragment(private val onTaskClick: (Context, String, String, String)
                 viewModel.filterState.updateOrgUnitFilters(
                     selectedOrgUnits.map { it.uid() }
                 )
-                presenter.setOrgUnitFilters(selectedOrgUnits)
+                viewModel.setOrgUnitFilters(selectedOrgUnits)
             }
             .build()
             .show(parentFragmentManager, "OUTreeFragment")
+    }
+
+    fun toggleFilterBar() {
+        showFilterBar.value = showFilterBar.value != true
     }
 }

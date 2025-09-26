@@ -21,12 +21,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import timber.log.Timber
 
-val Spacing0 = 0.dp
-val Spacing24 = 24.dp
-
-object InternalSizeValues {
-    val Size386 = 386.dp
-}
 
 @Composable
 fun ProgramFilterBottomSheet(
@@ -48,39 +42,6 @@ fun ProgramFilterBottomSheet(
         onDismiss = {
             Timber.d("ProgramFilterBottomSheet dismissed")
             onDismiss()
-        }
-    )
-}
-
-@Composable
-fun OrgUnitFilterBottomSheet(
-    orgUnits: List<OrgTreeItem>,
-    selectedOrgUnits: Set<String>,
-    onDismiss: () -> Unit,
-    onSearch: (String) -> Unit = {},
-    onItemSelected: (String, Boolean) -> Unit = { _, _ -> },
-    onApplyFilters: () -> Unit
-) {
-    Timber.d("OrgUnitFilterBottomSheet rendered with ${orgUnits.size} orgUnits")
-    OrgBottomSheet(
-        orgTreeItems = orgUnits,
-        title = "Filter by Organisation Unit",
-        headerTextAlignment = TextAlign.Start,
-        onSearch = onSearch,
-        onDismiss = {
-            Timber.d("OrgUnitFilterBottomSheet dismissed")
-            onDismiss()
-        },
-        onItemClick = { uid ->
-            val checked = !selectedOrgUnits.contains(uid)
-            Timber.d("OrgUnitFilterBottomSheet item selected: $uid, checked: $checked")
-            onItemSelected(uid, checked)
-        },
-        onItemSelected = onItemSelected,
-        onClearAll = {},
-        onDone = {
-            Timber.d("OrgUnitFilterBottomSheet applied filters")
-            onApplyFilters()
         }
     )
 }

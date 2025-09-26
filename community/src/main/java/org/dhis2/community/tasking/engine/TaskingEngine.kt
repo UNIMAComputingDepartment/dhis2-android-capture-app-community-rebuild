@@ -77,13 +77,13 @@ class TaskingEngine(
             val taskProgramUid = config.programUid
             val taskTIETypeUid = config.teiTypeUid
 
-            if (!eventUid.isNullOrBlank()) {
+            if (eventUid.isNullOrBlank()) {
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)
             }
 
             eventUid?.let {
                 defaultingEvaluator.evaluateForDefaultingEvent(
-                    tasks = repository.getTasksPerOrgUnit(sourceTieUid),
+                    tasks = repository.getTasks(),
                     sourceTeiUid = sourceTieUid,
                     programUid = targetProgramUid,
                     eventUid = it
@@ -91,7 +91,7 @@ class TaskingEngine(
             }
 
             completionEvaluator.taskCompletion(
-                tasks = repository.getTasksPerOrgUnit(sourceTieOrgUnitUid),
+                tasks = repository.getTasks(),
                 sourceProgramEnrollmentUid = sourceTieProgramEnrollment,
                 sourceProgramUid = targetProgramUid,
                 sourceTeiUid = sourceTieUid

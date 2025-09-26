@@ -1,7 +1,6 @@
 package org.dhis2.community.tasking.filters.models
 
 import android.util.Log
-import java.util.Date
 
 data class TaskFilterModel(
     val programFilters: Set<String> = emptySet(),
@@ -41,4 +40,8 @@ data class FilterUiState(
     val selectedDateRange: DateRangeFilter? = null,
     val selectedOrgUnits: List<String> = listOf()
 ) {
+
+    val isAnyFilterActive: Boolean
+        get() = isProgramFilterActive || isOrgUnitFilterActive || isPriorityFilterActive ||
+                isStatusFilterActive || isDueDateFilterActive
 }
