@@ -8,15 +8,11 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.dhis2.commons.filters.FilterManager
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.models.DateRangeFilter
-import org.dhis2.community.tasking.models.EvaluationResult
-import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData
 import org.hisp.dhis.mobile.ui.designsystem.component.OrgTreeItem
@@ -40,8 +36,6 @@ interface TaskingViewModelContract {
 class TaskingViewModel @Inject constructor(
     private val repository: TaskingRepository,
     private val filterRepository: TaskFilterRepository,
-    private val filterManager: FilterManager,
-    private val d2: D2
 ) : ViewModel(), TaskingViewModelContract {
     val filterState = TaskFilterState()
     private var allTasks: List<TaskingUiModel> = emptyList()
@@ -158,15 +152,11 @@ class TaskingViewModel @Inject constructor(
         // Progress bar: filter by all filters except status
         val progressFiltered = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
-            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
-            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            matchesDateFilter(task, filter.dueDateRange)
+                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+                    matchesDateFilter(task, filter.dueDateRange)
         }
         _progressTasks.value = progressFiltered
-        val completedCount = progressFiltered.count { it.status == TaskingStatus.COMPLETED }
-        val defaultedCount = progressFiltered.count { it.status == TaskingStatus.DEFAULTED }
-        Timber.tag("TaskingViewModel")
-            .d("[PROGRESS] ProgressTasks size = ${progressFiltered.size}, completed = $completedCount, defaulted = $defaultedCount, filter = $filter")
     }
 
     private fun matchesDateFilter(task: TaskingUiModel, dateRange: DateRangeFilter?): Boolean {
@@ -250,7 +240,6 @@ class TaskingViewModel @Inject constructor(
                             taskCal.get(Calendar.MONTH) == nextMonth.get(Calendar.MONTH)
                 }
             }
-            else -> false
         }
     }
 
