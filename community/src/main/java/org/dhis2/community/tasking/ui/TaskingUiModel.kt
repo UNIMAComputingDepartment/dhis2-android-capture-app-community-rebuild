@@ -6,6 +6,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.ImageCardData
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.graphics.toColorInt
 
 data class TaskingUiModel(
     val task: Task,
@@ -14,7 +15,6 @@ data class TaskingUiModel(
 ) {
     // Delegate properties from Task
     val taskName: String get() = task.name
-    val taskDescription: String get() = task.description
     val sourceProgramUid: String get() = task.sourceProgramUid
     val sourceProgramName: String get() = task.sourceProgramName
     val sourceEnrollmentUid: String get() = task.sourceEnrollmentUid
@@ -25,6 +25,7 @@ data class TaskingUiModel(
     val dueDate: Date? get() = parseDueDate(task.dueDate)
     val priority: TaskingPriority get() = TaskingPriority.fromLabel(task.priority)
     val status: TaskingStatus get() = calculateStatus(task.status, dueDate)
+    val progress: Float get() = task.progress.toFloat()
     val metadataIconData: MetadataIconData
         get() {
             val iconName = task.iconNane?.takeIf { it.isNotBlank() }
@@ -32,7 +33,7 @@ data class TaskingUiModel(
             val colorString = repository?.getSourceProgramColor(task.sourceProgramUid)
             val color = colorString?.takeIf { it.isNotBlank() }?.let {
                 try {
-                    Color(android.graphics.Color.parseColor(it))
+                    Color(it.toColorInt())
                 } catch (e: Exception) {
                     SurfaceColor.Primary
                 }
@@ -50,22 +51,6 @@ data class TaskingUiModel(
 
     val displayProgramName: String get() = repository?.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
     val sourceTeiUid: String get() = task.sourceTeiUid
-
-    // Progress properties
-    val progressCurrent: Int get() = task.progressCurrent
-    val progressTotal: Int get() = task.progressTotal
-    val progressPercent: Int get() = if (progressTotal > 0) (progressCurrent * 100 / progressTotal) else 0
-    val progressDisplay: String get() = "$progressCurrent of $progressTotal done ($progressPercent%)"
-    // Color logic for progress
-    val progressColor: Color
-        get() = when (progressPercent) {
-            0 -> SurfaceColor.Error
-            in 1..24 -> SurfaceColor.Warning
-            in 25..74 -> SurfaceColor.Primary
-            in 75..99 -> SurfaceColor.Primary
-            100 -> SurfaceColor.CustomGreen
-            else -> SurfaceColor.Scrim
-        }
 
     private fun parseDueDate(dueDate: String?): Date? {
 
@@ -184,7 +169,7 @@ enum class TaskingStatus(
     ),
     DEFAULTED(
         "Defaulted",
-        SurfaceColor.Error
+        Color.Gray
     )
 }
 

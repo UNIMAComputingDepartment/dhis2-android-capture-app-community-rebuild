@@ -2,7 +2,6 @@ package org.dhis2.community.tasking.repositories
 
 import android.util.Log
 import com.google.gson.Gson
-import io.reactivex.subjects.PublishSubject
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.hisp.dhis.android.core.D2
@@ -28,6 +27,8 @@ class TaskingRepository(
 
     val taskStatusAttributeUid =
         getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid ?: ""
+    val taskProgressAttributeUid =
+        getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid ?: ""
 
     fun getCachedConfig() = cachedConfig
     fun getTaskingConfig(): TaskingConfig {
@@ -171,6 +172,7 @@ class TaskingRepository(
             iconNane = getSourceProgramIcon(sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)?:"")),
             status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
             sourceEventUid = tei.getAttributeValue(programConfig?.taskSourceEventUid) ?: "",
+            progress = tei.getAttributeValue(programConfig?.taskProgressUid)?.toFloatOrNull() ?: 0f
         )
     }
 
@@ -192,7 +194,8 @@ class TaskingRepository(
                 .byUid().eq(programUid).one()
                 .blockingGet()?.displayName()
         } catch (e: Exception) {
-            Log.e("TaskingRepository", "Error fetching program display name for UID: $programUid", e)
+            Timber.tag("TaskingRepository")
+                .e(e, "Error fetching program display name for UID: $programUid")
             null
         }
     }

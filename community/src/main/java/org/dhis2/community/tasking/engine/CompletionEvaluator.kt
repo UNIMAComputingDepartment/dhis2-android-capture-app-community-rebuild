@@ -31,7 +31,7 @@ class CompletionEvaluator(
         tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == "open"}
             .forEach { task ->
 
-                val taskConfig = configForPg.firstOrNull() { it.name == task.name }
+                val taskConfig = configForPg.firstOrNull { it.name == task.name }
                 if (taskConfig == null){
                     return@forEach
                 }
@@ -47,7 +47,17 @@ class CompletionEvaluator(
                         programUid = sourceProgramUid
                     )
 
-                    if(conditions.any{it}) {
+                    val progress = if (conditions.isNotEmpty()) {
+                        conditions.filter { it }.size.toFloat() / conditions.size.toFloat()
+                    } else 0f
+
+                    repository.updateTaskAttrValue(
+                        repository.taskProgressAttributeUid,
+                        progress.toString(),
+                        task.teiUid
+                    )
+
+                    if(conditions.all{it}) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
                             "completed",

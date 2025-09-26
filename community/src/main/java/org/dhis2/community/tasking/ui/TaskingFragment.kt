@@ -11,16 +11,16 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import org.dhis2.community.tasking.filters.TaskFilterRepository
-import org.dhis2.commons.filters.FilterManager
-import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
-import org.dhis2.commons.orgunitselector.OUTreeFragment
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.dhis2.commons.orgunitselector.OUTreeFragment
+import org.dhis2.community.tasking.filters.TaskFilterRepository
+import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 
 
 class TaskingFragment(
@@ -30,7 +30,6 @@ class TaskingFragment(
     private lateinit var d2: D2
     //private lateinit var presenter: TaskingPresenter
     private lateinit var filterRepository: TaskFilterRepository
-    private lateinit var filterManager: FilterManager
 
     private lateinit var viewModel: TaskingViewModel
     val showFilterBar = MutableLiveData(false)
@@ -51,8 +50,7 @@ class TaskingFragment(
         d2 = org.hisp.dhis.android.core.D2Manager.getD2()
         repository = TaskingRepository(d2)
         filterRepository = TaskFilterRepository()
-        filterManager = FilterManager.getInstance()
-        viewModel = TaskingViewModel(repository, filterRepository, filterManager, d2)
+        viewModel = TaskingViewModel(repository, filterRepository)
     }
 
     override fun onCreateView(
@@ -65,18 +63,20 @@ class TaskingFragment(
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 val showFilterBarState = showFilterBar.observeAsState(false).value
-                
-                TaskingUi(
-                    onTaskClick = {
-                        onTaskClicked(it)
-                    },
-                    viewModel = viewModel,
-                    filterState = viewModel.filterState,
-                    onOrgUnitFilterSelected = {
-                        openOrgUnitTreeSelector()
-                    },
-                    showFilterBar = showFilterBarState
-                )
+
+                DHIS2Theme {
+                    TaskingUi(
+                        onTaskClick = {
+                            onTaskClicked(it)
+                        },
+                        viewModel = viewModel,
+                        filterState = viewModel.filterState,
+                        onOrgUnitFilterSelected = {
+                            openOrgUnitTreeSelector()
+                        },
+                        showFilterBar = showFilterBarState
+                    )
+                }
             }
         }
     }
@@ -131,6 +131,6 @@ class TaskingFragment(
     }
 
     fun toggleFilterBar() {
-        showFilterBar.value = !(showFilterBar.value ?: false)
+        showFilterBar.value = showFilterBar.value != true
     }
 }
