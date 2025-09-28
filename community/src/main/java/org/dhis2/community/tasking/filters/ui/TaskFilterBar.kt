@@ -48,7 +48,6 @@ fun TaskFilterBar(
     onClearAllFilters: () -> Unit,
     fontSize: Float = 20f
 ) {
-    Timber.d("TaskFilterBar composable rendered with state: $filterState")
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -68,8 +67,8 @@ fun TaskFilterBar(
                 )
                 Text(
                     text = "Filters",
-                    style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).copy(fontSize = fontSize.sp),
-                    color = SurfaceColor.Primary,
+                    style = getTextStyle(DHIS2TextStyle.LABEL_LARGE).copy(fontSize = fontSize.sp),
+                    color = TextColor.OnSurface,
                     modifier = Modifier
                         .padding(start = 8.dp)
                         .wrapContentWidth()
@@ -92,7 +91,7 @@ fun TaskFilterBar(
         FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp),
+                .padding(top = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing10),
             verticalArrangement = Arrangement.spacedBy(-Spacing.Spacing4)
         ) {
