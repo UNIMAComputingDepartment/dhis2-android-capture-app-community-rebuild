@@ -30,6 +30,8 @@ class TaskingRepository(
     val taskProgressAttributeUid =
         getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid ?: ""
 
+    private val programDisplayNames = mutableMapOf<String, String?>()
+
     fun getCachedConfig() = cachedConfig
     fun getTaskingConfig(): TaskingConfig {
         cachedConfig?.let { return it }
@@ -189,10 +191,12 @@ class TaskingRepository(
         .blockingGet().map { it.uid() }
 
     fun getProgramDisplayName(programUid: String): String? {
+        programDisplayNames[programUid]?.let { return it }
         return try {
-            d2.programModule().programs()
+            programDisplayNames[programUid] = d2.programModule().programs()
                 .byUid().eq(programUid).one()
                 .blockingGet()?.displayName()
+            programDisplayNames[programUid]
         } catch (e: Exception) {
             Timber.tag("TaskingRepository")
                 .e(e, "Error fetching program display name for UID: $programUid")
