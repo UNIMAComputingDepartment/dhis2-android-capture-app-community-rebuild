@@ -7,9 +7,24 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +36,8 @@ import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 
 class TaskingFragment(
@@ -33,6 +50,8 @@ class TaskingFragment(
 
     private lateinit var viewModel: TaskingViewModel
     val showFilterBar = MutableLiveData(false)
+
+    private val snackbarHostState = SnackbarHostState()
 
     companion object {
         fun newInstance(onTaskClick: (Context, String, String, String) -> Unit): TaskingFragment {
@@ -53,36 +72,62 @@ class TaskingFragment(
         viewModel = TaskingViewModel(repository, filterRepository)
     }
 
+    @Composable
+    private fun SnackbarHostComposable() {
+        SnackbarHost(hostState = snackbarHostState) { snackbarData ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Snackbar(
+                    modifier = Modifier.widthIn(max = 360.dp),
+                    containerColor = TextColor.OnSurface,
+                    content = {
+                        Text(
+                            text = snackbarData.visuals.message,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+                )
+            }
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                val showFilterBarState = showFilterBar.observeAsState(false).value
-
                 DHIS2Theme {
-                    TaskingUi(
-                        onTaskClick = {
-                            onTaskClicked(it)
-                        },
-                        viewModel = viewModel,
-                        filterState = viewModel.filterState,
-                        onOrgUnitFilterSelected = {
-                            openOrgUnitTreeSelector()
-                        },
-                        showFilterBar = showFilterBarState
-                    )
+                    Scaffold(
+                        snackbarHost = { SnackbarHostComposable() }
+                    ) { paddingValues ->
+                        TaskingUi(
+                            onTaskClick = {
+                                onTaskClicked(it)
+                            },
+                            viewModel = viewModel,
+                            filterState = viewModel.filterState,
+                            onOrgUnitFilterSelected = {
+                                openOrgUnitTreeSelector()
+                            },
+                            showFilterBar = showFilterBar.observeAsState(false).value
+                        )
+                    }
                 }
             }
         }
     }
 
     private fun onTaskClicked(task: TaskingUiModel) {
-        lifecycleScope.launch { val canOpen = withContext(Dispatchers.IO) { viewModel.canOpenTask(task) }
+        lifecycleScope.launch {
+            val canOpen = withContext(Dispatchers.IO) { viewModel.canOpenTask(task) }
             if (canOpen) {
                 withContext(Dispatchers.Main) {
                     onTaskClick?.invoke(
@@ -93,7 +138,11 @@ class TaskingFragment(
                     )
                 }
             } else {
-                // Display snackbar message that task cannot be opened
+                val message = "Task cannot be opened"
+                snackbarHostState.showSnackbar(
+                    message = message,
+                    duration = SnackbarDuration.Short
+                )
             }
         }
     }
