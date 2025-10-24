@@ -40,7 +40,7 @@ data class TaskingConfig(
             val description: String,
             val trigger: Trigger,
             val period: Period,
-            val priority: String,
+            val priority: String = "medium",
             val completion: Completion,
             val singleIncomplete: Boolean,
             val anchorDate: String

@@ -227,7 +227,7 @@ class TaskingRepository(
         val taskProgramConfig = this.getTaskingConfig().taskProgramConfig.firstOrNull()
         this.updateTaskAttrValue(taskProgramConfig?.statusUid ?:"", "open", newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.taskNameUid?:"", task.name, newTeiUid)
-        this.updateTaskAttrValue(taskProgramConfig?.priorityUid?:"", "high", newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.priorityUid?:"", task.priority, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.dueDateUid?:"", task.dueDate, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.taskTertiaryAttrUid?:"", task.teiTertiary, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.taskSecondaryAttrUid?:"", task.teiSecondary, newTeiUid)

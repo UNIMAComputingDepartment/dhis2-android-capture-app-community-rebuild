@@ -4,6 +4,8 @@ package org.dhis2.usescases.teiDashboard.teiProgramList;
 import android.os.Build;
 import android.widget.DatePicker;
 
+import androidx.annotation.NonNull;
+
 import org.dhis2.R;
 import org.dhis2.commons.dialogs.calendarpicker.CalendarPicker;
 import org.dhis2.commons.dialogs.calendarpicker.OnDatePickerListener;
@@ -22,6 +24,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -252,7 +255,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
         );
     }
 
-    private void deleteRepeatedPrograms(List<ProgramUiModel> allPrograms, List<Program> alreadyEnrolledPrograms) {
+    private void deleteRepeatedPrograms(@NonNull List<ProgramUiModel> allPrograms, List<Program> alreadyEnrolledPrograms) {
         ArrayList<ProgramUiModel> programListToPrint = new ArrayList<>();
         for (ProgramUiModel programUiModel : allPrograms) {
             boolean isAlreadyEnrolled = false;
@@ -271,16 +274,15 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
         compositeDisposable.add(
                 Single.fromCallable(() -> {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                List<String> uids = programListToPrint.stream().map(ProgramUiModel::getUid).toList();
+                                List<String> uids = programListToPrint.stream().map(ProgramUiModel::getUid).collect(Collectors.toList());
                                 return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
                             }
-                            return null;
+                            return new ArrayList<>();
                         }).subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(programUid ->{
-
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                view.setPrograms(programListToPrint.stream().filter(e -> programUid.contains(e.getUid())).toList());
+                                view.setPrograms(programListToPrint.stream().filter(e -> programUid.contains(e.getUid())).collect(Collectors.toList()));
                             }
                         },Timber ::d)
         );

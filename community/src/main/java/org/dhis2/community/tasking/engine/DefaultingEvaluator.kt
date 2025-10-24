@@ -27,7 +27,7 @@ class DefaultingEvaluator(
                 task.sourceTeiUid == sourceTeiUid
             ) {
                 val taskTriggerEventUid = eventUid
-                val taskConfigs = programTaskConfig.taskConfigs.first { it.name == task.name }
+                val taskConfigs = programTaskConfig.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
 
                 if (!evaluateConditions(
                         conditions = taskConfigs.trigger,

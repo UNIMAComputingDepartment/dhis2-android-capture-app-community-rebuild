@@ -1,0 +1,76 @@
+{
+  "autoIncrementAttributes": [
+    {
+      "attributeUid": "bkhGCsC86np",
+      "programUid": "sXzdrtXMink"
+    },
+    {
+      "attributeUid": "I2Dec1l0kti",
+      "programUid": "NFnp1h3IMzl"
+    }
+  ],
+  "entityAutoCreation": [
+    {
+      "attributesMappings": [
+        {
+          "defaultValue": "",
+          "sourceAttribute": "RSr9YoqpPS7",
+          "targetAttribute": "X5UOKXdwvbI"
+        },
+        {
+          "defaultValue": "",
+          "sourceAttribute": "xK1CC4oWFaL",
+          "targetAttribute": "sMXnVr16R9k"
+        },
+        {
+          "defaultValue": "",
+          "sourceAttribute": "EJNn7hgabnL",
+          "targetAttribute": "HYlWwg511tF"
+        },
+        {
+          "defaultValue": "true",
+          "sourceAttribute": "",
+          "targetAttribute": "KtvWIpMdbc3"
+        },
+        {
+          "defaultValue": "1",
+          "sourceAttribute": "",
+          "targetAttribute": "I2Dec1l0kti"
+        }
+      ],
+      "relationshipType": "fSGdhlMFrwo",
+      "targetProgram": "NFnp1h3IMzl",
+      "targetTeiType": "EMdK2EGQS6x",
+      "triggerProgram": "sXzdrtXMink"
+    }
+  ],
+  "programEnrollmentControl": [
+    {
+      "attributeUid": "HYlWwg511tF",
+      "attributeValue": "0.1667,5",
+      "condition": "between",
+      "programUid": "ZzP0Onn0wgT"
+    },
+    {
+      "attributeUid": "sMXnVr16R9k",
+      "attributeValue": "Female",
+      "condition": "equals",
+      "programUid": "cJEpYzKPHqg"
+    },
+    {
+      "attributeUid": "HYlWwg511tF",
+      "attributeValue": 13,
+      "condition": "greater_than",
+      "programUid": "cJEpYzKPHqg"
+    },
+    {
+      "attributeUid": "HYlWwg511tF",
+      "attributeValue": 0.0767,
+      "condition": "less_than",
+      "programUid": "J0EYs4wVHDQ"
+    }
+  ],
+  "teiCreatablePrograms": [
+    "l2qkPBBghe5"
+  ]
+}
