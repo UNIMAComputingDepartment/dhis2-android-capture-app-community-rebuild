@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.ui.DueDateFilterBottomSheet
@@ -168,14 +169,17 @@ fun TaskingUi(
                 null -> {}
             }
 
-            // Display filtered tasks
+            //  Display filtered tasks or empty state
             if (filteredTasks.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "No tasks available",
+                        textAlign = TextAlign.Center,
                         color = TextColor.OnSurface
                     )
                 }

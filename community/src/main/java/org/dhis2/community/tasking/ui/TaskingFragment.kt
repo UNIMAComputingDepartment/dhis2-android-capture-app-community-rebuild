@@ -3,11 +3,15 @@ package org.dhis2.community.tasking.ui
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -18,6 +22,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +41,8 @@ import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicator
+import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicatorType
 import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
@@ -105,22 +113,47 @@ class TaskingFragment(
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 DHIS2Theme {
-                    Scaffold(
-                        snackbarHost = { SnackbarHostComposable() }
-                    ) { paddingValues ->
-                        TaskingUi(
-                            onTaskClick = {
-                                onTaskClicked(it)
-                            },
-                            viewModel = viewModel,
-                            filterState = viewModel.filterState,
-                            onOrgUnitFilterSelected = {
-                                openOrgUnitTreeSelector()
-                            },
-                            showFilterBar = showFilterBar.observeAsState(false).value
-                        )
-                    }
+                    TaskingScreenWrapper()
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun TaskingScreenWrapper() {
+        //  FORCE: Observe loading state with key to force recomposition
+        val loading by viewModel.loading.collectAsState()
+
+        Log.d("TaskingFragment", "TaskingScreenWrapper recomposed - loading: $loading")
+
+        if (loading) {
+            //  FORCE: Show loading animation using DHIS2 ProgressIndicator (same as Programs tab)
+            Log.d("TaskingFragment", "SHOWING LOADING INDICATOR")
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                ProgressIndicator(type = ProgressIndicatorType.CIRCULAR_SMALL)
+            }
+        } else {
+            //  Show tasks list when loading complete
+            Log.d("TaskingFragment", "SHOWING TASKS LIST")
+            Scaffold(
+                snackbarHost = { SnackbarHostComposable() }
+            ) { paddingValues ->
+                TaskingUi(
+                    onTaskClick = {
+                        onTaskClicked(it)
+                    },
+                    viewModel = viewModel,
+                    filterState = viewModel.filterState,
+                    onOrgUnitFilterSelected = {
+                        openOrgUnitTreeSelector()
+                    },
+                    showFilterBar = showFilterBar.observeAsState(false).value
+                )
             }
         }
     }
@@ -136,6 +169,7 @@ class TaskingFragment(
                         task.sourceProgramUid,
                         task.sourceEnrollmentUid
                     )
+                    //  When user returns, onResume() triggers refreshTaskList()
                 }
             } else {
                 val message = "Task cannot be opened"
@@ -149,7 +183,15 @@ class TaskingFragment(
 
     override fun onResume() {
         super.onResume()
-        viewModel.reloadTasks()
+        //  Trigger reload with loading animation
+        refreshTaskList()
+    }
+
+    private fun refreshTaskList() {
+        lifecycleScope.launch {
+            android.util.Log.d("TaskingFragment", "Refreshing task list...")
+            viewModel.reloadTasks()
+        }
     }
 
     override fun onDestroy() {

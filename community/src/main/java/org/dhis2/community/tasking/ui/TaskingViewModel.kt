@@ -5,9 +5,13 @@ import android.util.Log
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.filters.TaskFilterState
@@ -21,6 +25,7 @@ import java.util.Calendar
 import javax.inject.Inject
 
 interface TaskingViewModelContract {
+    val loading: StateFlow<Boolean>
     val filteredTasks: StateFlow<List<TaskingUiModel>>
     val programs: List<CheckBoxData>
     val priorities: List<CheckBoxData>
@@ -38,7 +43,12 @@ class TaskingViewModel @Inject constructor(
     private val filterRepository: TaskFilterRepository,
 ) : ViewModel(), TaskingViewModelContract {
     val filterState = TaskFilterState()
-    private var allTasks: List<TaskingUiModel> = emptyList()
+
+    private val _loading = MutableStateFlow(false)
+    override val loading = _loading.asStateFlow()
+
+    private val _allTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
+
     private val _filteredTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
     override val filteredTasks: StateFlow<List<TaskingUiModel>> = _filteredTasks
 
@@ -53,8 +63,10 @@ class TaskingViewModel @Inject constructor(
         private set
     override var orgUnits: List<OrgTreeItem> = emptyList()
         private set
+
+    // Return current tasks from StateFlow
     override val allTasksForProgress: List<TaskingUiModel>
-        get() = allTasks
+        get() = _allTasks.value
 
     init {
         loadInitialData()
@@ -68,11 +80,13 @@ class TaskingViewModel @Inject constructor(
                     repository.getTaskingConfig()
                     val orgUnits = repository.currentOrgUnits
 
-                    allTasks = orgUnits.flatMap { orgUnitUid ->
-                        val tasks = repository.getAllTasks()
+                    val tasks = orgUnits.flatMap { orgUnitUid ->
+                        val fetchedTasks = repository.getAllTasks()
 
-                        tasks.map { task -> TaskingUiModel(task, orgUnitUid, repository) }
+                        fetchedTasks.map { task -> TaskingUiModel(task, orgUnitUid, repository) }
                     }
+
+                    _allTasks.value = tasks
 
                     filterState.updateUiState()
                     updateFilterOptions()
@@ -90,7 +104,7 @@ class TaskingViewModel @Inject constructor(
     private fun updateFilterOptions() {
         Log.d("TaskingViewModel", "updateFilterOptions called")
         // Update program filters
-        programs = allTasks
+        programs = _allTasks.value
             .map { it.sourceProgramUid to it.sourceProgramName }
             .distinctBy { it.first }
             .map { (uid, name) ->
@@ -124,7 +138,7 @@ class TaskingViewModel @Inject constructor(
         }
 
         // Update organization unit filters
-        orgUnits = allTasks
+        orgUnits = _allTasks.value
             .mapNotNull { task ->
                 task.orgUnit?.takeIf { it.isNotEmpty() }?.let { orgUnitUid ->
                     OrgTreeItem(uid = orgUnitUid, label = orgUnitUid)
@@ -136,6 +150,7 @@ class TaskingViewModel @Inject constructor(
     private fun applyFilters() {
         Timber.tag("TaskingViewModel").d("applyFilters called")
         val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
         // Task list: filter by all filters including status
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
@@ -149,6 +164,7 @@ class TaskingViewModel @Inject constructor(
 
     private fun updateProgressTasks() {
         val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
         // Progress bar: filter by all filters except status
         val progressFiltered = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
@@ -257,6 +273,7 @@ class TaskingViewModel @Inject constructor(
 
     override fun tasksForProgressBar(): List<TaskingUiModel> {
         val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
         return allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
             (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
@@ -273,12 +290,14 @@ class TaskingViewModel @Inject constructor(
                 Log.d("TaskingViewModel", "Fetched ${updatedTasks.size} tasks")
 
                 // Map tasks to UI models
-                allTasks = updatedTasks.map { task ->
+                val tasks = updatedTasks.map { task ->
                     val orgUnit = repository.getOrgUnit(task.teiUid)
                     TaskingUiModel(task, orgUnit, repository).also { uiModel ->
                         Log.d("TaskingViewModel", "Task ${task.name} status: ${task.status} -> UI status: ${uiModel.status.label}")
                     }
                 }
+
+                _allTasks.value = tasks
 
                 // Update filters and UI
                 updateFilterOptions()
@@ -290,7 +309,7 @@ class TaskingViewModel @Inject constructor(
     }
 
     override fun updateTasks(tasks: List<TaskingUiModel>) {
-        allTasks = tasks
+        _allTasks.value = tasks
         updateFilterOptions()
         applyFilters()
         refreshProgressTasks()
@@ -301,7 +320,57 @@ class TaskingViewModel @Inject constructor(
     }
 
     fun reloadTasks() {
-        loadInitialData()
+        viewModelScope.launch {
+            try {
+                //  Clear current list and show loading
+                _loading.value = true
+                _allTasks.value = emptyList()
+                _filteredTasks.value = emptyList()
+                Log.d("TaskingViewModel", "LOADING STARTED: _loading.value = true")
+
+                //  Reset filters to default on every reload
+                filterState.resetToDefaultFilters()
+
+                //  Fetch fresh data from database
+                val freshTasks = withContext(Dispatchers.IO) {
+                    val orgUnits = repository.currentOrgUnits
+                    orgUnits.flatMap { orgUnitUid ->
+                        val tasks = repository.getAllTasks()
+                        tasks.map { task ->
+                            TaskingUiModel(
+                                task = task,
+                                orgUnit = orgUnitUid,
+                                repository = repository
+                            )
+                        }
+                    }
+                }
+
+                Log.d("TaskingViewModel", "Fetched ${freshTasks.size} fresh tasks from database")
+
+                //  Add minimum delay to ensure loading animation is visible (at least 500ms)
+                kotlinx.coroutines.delay(500)
+
+                //  Update tasks with fresh data
+                _allTasks.value = freshTasks
+                Log.d("TaskingViewModel", "Updated _allTasks with ${freshTasks.size} tasks")
+
+                //  Reapply filters
+                updateFilterOptions()
+                applyFilters()
+
+                Log.d("TaskingViewModel", "Tasks reloaded: ${freshTasks.size} tasks found")
+
+            } catch (e: Exception) {
+                Log.e("TaskingViewModel", "Error reloading tasks", e)
+                _allTasks.value = emptyList()
+                _filteredTasks.value = emptyList()
+            } finally {
+                //  FORCE: Hide loading animation
+                _loading.value = false
+                Log.d("TaskingViewModel", "LOADING FINISHED: _loading.value = false")
+            }
+        }
     }
 
     fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
