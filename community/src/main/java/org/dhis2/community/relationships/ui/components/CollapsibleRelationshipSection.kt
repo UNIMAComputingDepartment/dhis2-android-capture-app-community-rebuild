@@ -6,6 +6,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -45,6 +53,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -192,11 +205,44 @@ private fun CollapsibleRelationshipSectionContent(
                         )
                     }
 
+                    val childListState = rememberLazyListState()
+                    val childScope = rememberCoroutineScope()
+                    val childMaxHeight = 300.dp
+
+                    val interceptScrollModifier = Modifier.pointerInput(displayedRelationships, childListState) {
+                        awaitEachGesture {
+                            var pointerActive = true
+                            while (pointerActive) {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { change ->
+                                    val dy = change.positionChange().y
+                                    if ((!childListState.canScrollForward && dy < 0f) ||
+                                        (!childListState.canScrollBackward && dy > 0f)
+                                    ) {
+                                        // let parent consume the event
+                                        return@forEach
+                                    }
+                                    change.consume()
+                                    childScope.launch {
+                                        try {
+                                            childListState.scrollBy(-dy)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+
+                                // stop if all pointers are up
+                                pointerActive = event.changes.any { it.pressed }
+                            }
+                        }
+                    }
+
                     LazyColumn(
+                        state = childListState,
                         modifier = Modifier
-                            //.heightIn(max = 300.dp)
                             .fillMaxWidth()
                             .weight(1f)
+                            .heightIn(min = 0.dp, max = childMaxHeight)
+                            .then(interceptScrollModifier)
                     ) {
                         items(displayedRelationships) { rel ->
                             RelationshipItem(
