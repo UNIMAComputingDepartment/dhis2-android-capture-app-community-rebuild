@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.dhis2.bindings.dp
 import org.dhis2.databinding.ResultSearchListBinding
 import org.dhis2.usescases.searchTrackEntity.ui.SearchResultUi
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 
 class SearchResultHolder(
     val binding: ResultSearchListBinding,
@@ -27,7 +27,7 @@ class SearchResultHolder(
                 }
             }
         }.setContent {
-            DHIS2Theme {
+            IchisTheme {
                 SearchResultUi(
                     searchResult = item,
                     onSearchOutsideClick = onSearchOutsideProgram,

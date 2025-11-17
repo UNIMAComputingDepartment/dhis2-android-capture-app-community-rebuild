@@ -158,21 +158,21 @@ android {
 
     productFlavors {
         create("dhis") {
-            applicationId = "com.dhis2"
+            applicationId = "com.ichis"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
         }
 
         create("dhisPlayServices") {
-            applicationId = "com.dhis2"
+            applicationId = "com.ichis"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
         }
 
         create("dhisUITesting") {
-            applicationId = "com.dhis2"
+            applicationId = "com.ichis"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
@@ -222,12 +222,12 @@ android {
             variant.outputs.forEach { output ->
                 if (output is VariantOutputImpl) {
                     val suffix = when {
-                        buildType == "debug" && flavorName == "dhis" -> "-training"
-                        buildType == "release" && flavorName == "dhisPlayServices" -> "-googlePlay"
+                        buildType == "debug" && flavorName == "ichis" -> "-training"
+                        buildType == "release" && flavorName == "ichiPlayServices" -> "-googlePlay"
                         else -> ""
                     }
 
-                    output.outputFileName = "dhis2-v${libs.versions.vName.get()}$suffix.apk"
+                    output.outputFileName = "ichis-v${libs.versions.vName.get()}$suffix.apk"
                 }
             }
 

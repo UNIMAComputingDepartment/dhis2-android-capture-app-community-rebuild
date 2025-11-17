@@ -15,7 +15,7 @@ import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.main.MainActivity
 import org.dhis2.usescases.main.MainNavigator
 import org.dhis2.usescases.troubleshooting.ui.TroubleshootingScreen
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import javax.inject.Inject
 
 const val OPEN_LANGUAGE_SECTION = "OPEN_LANGUAGE_SECTION"
@@ -62,7 +62,7 @@ class TroubleshootingFragment : FragmentGlobalAbstract() {
                 setViewCompositionStrategy(
                     ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
                 )
-                DHIS2Theme {
+                IchisTheme {
                     TroubleshootingScreen(troubleshootingViewModel) {
                         refreshScreenLanguageChange()
                     }

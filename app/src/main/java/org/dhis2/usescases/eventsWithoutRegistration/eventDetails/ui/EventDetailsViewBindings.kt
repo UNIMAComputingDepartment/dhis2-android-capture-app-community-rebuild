@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.databinding.BindingAdapter
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 
 @ExperimentalAnimationApi
 @BindingAdapter("setReopen")
@@ -15,7 +15,7 @@ fun ComposeView.setReopenButton(viewModel: EventDetailsViewModel) {
         setViewCompositionStrategy(
             ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
         )
-        DHIS2Theme {
+        IchisTheme {
             val eventDetail by viewModel.eventDetails.collectAsState()
             ReopenButton(eventDetail.canReopen) { viewModel.onReopenClick() }
         }

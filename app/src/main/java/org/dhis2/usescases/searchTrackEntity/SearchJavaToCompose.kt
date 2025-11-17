@@ -8,7 +8,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import org.dhis2.usescases.searchTrackEntity.ui.WrappedSearchButton
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 
 @ExperimentalAnimationApi
 fun ComposeView?.setLandscapeOpenSearchButton(
@@ -16,7 +16,7 @@ fun ComposeView?.setLandscapeOpenSearchButton(
     onClick: () -> Unit,
 ) {
     this?.setContent {
-        DHIS2Theme {
+        IchisTheme {
             val screenState by searchTEIViewModel.screenState.observeAsState()
             val teTypeName by searchTEIViewModel.teTypeName.observeAsState()
 

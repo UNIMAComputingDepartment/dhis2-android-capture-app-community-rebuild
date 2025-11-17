@@ -73,7 +73,7 @@ import org.hisp.dhis.mobile.ui.designsystem.component.menu.MenuItemData
 import org.hisp.dhis.mobile.ui.designsystem.component.menu.MenuItemStyle
 import org.hisp.dhis.mobile.ui.designsystem.component.menu.MenuLeadingElement
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import javax.inject.Inject
 
 class EventCaptureActivity :
@@ -189,7 +189,7 @@ class EventCaptureActivity :
             },
         )
         binding.navigationBar.setContent {
-            DHIS2Theme {
+            IchisTheme {
                 val uiState by presenter.observeNavigationBarUIState()
                 val selectedItemIndex by remember(uiState) {
                     mutableIntStateOf(

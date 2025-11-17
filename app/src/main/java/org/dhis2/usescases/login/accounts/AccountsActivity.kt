@@ -14,7 +14,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.dhis2.usescases.login.LoginActivity
 import org.dhis2.usescases.login.accounts.ui.AccountsScreen
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -63,7 +63,7 @@ class AccountsActivity : ActivityGlobalAbstract() {
         app().serverComponent()?.plus(AccountsModule())?.inject(this)
 
         setContent {
-            DHIS2Theme {
+            IchisTheme {
                 val accounts = viewModel.accounts.observeAsState(listOf())
                 AccountsScreen(
                     accounts = accounts.value,

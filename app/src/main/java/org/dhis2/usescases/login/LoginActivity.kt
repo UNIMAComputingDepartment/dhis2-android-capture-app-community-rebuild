@@ -38,6 +38,7 @@ import org.dhis2.commons.Constants.SESSION_DIALOG_RQ
 import org.dhis2.commons.dialogs.CustomDialog
 import org.dhis2.commons.extensions.closeKeyboard
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.community.IchisTheme
 import org.dhis2.data.server.OpenIdSession
 import org.dhis2.data.server.UserManager
 import org.dhis2.databinding.ActivityLoginBinding
@@ -63,7 +64,7 @@ import org.dhis2.utils.analytics.FORGOT_CODE
 import org.dhis2.utils.session.PIN_DIALOG_TAG
 import org.dhis2.utils.session.PinDialog
 import org.hisp.dhis.android.core.user.openid.IntentWithRequestCode
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+
 import timber.log.Timber
 import java.io.BufferedReader
 import java.io.File
@@ -202,7 +203,7 @@ class LoginActivity : ActivityGlobalAbstract(), LoginContracts.View {
 
         binding.topbar.setContent {
             val displayMoreActions by presenter.displayMoreActions().observeAsState(true)
-            DHIS2Theme {
+            IchisTheme {
                 LoginTopBar(
                     version = buildInfo(),
                     displayMoreActions = displayMoreActions,

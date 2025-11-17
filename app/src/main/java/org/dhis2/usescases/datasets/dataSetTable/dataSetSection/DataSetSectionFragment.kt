@@ -54,7 +54,7 @@ import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.ValueTypeRenderingType
 import org.hisp.dhis.android.core.dataelement.DataElement
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -106,7 +106,7 @@ class DataSetSectionFragment : FragmentGlobalAbstract(), DataValueContract.View 
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                DHIS2Theme {
+                IchisTheme {
                     val localDensity = LocalDensity.current
                     val conf = LocalConfiguration.current
                     val tableConfState by presenterFragment.currentTableConfState().collectAsState()
