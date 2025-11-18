@@ -68,6 +68,7 @@ import org.dhis2.community.R
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.Dhis2CmtTheme
+import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,6 +213,7 @@ private fun CollapsibleRelationshipSectionContent(
                     val interceptScrollModifier = Modifier.pointerInput(displayedRelationships, childListState) {
                         awaitEachGesture {
                             var pointerActive = true
+                            var eventsCount = 0
                             while (pointerActive) {
                                 val event = awaitPointerEvent()
                                 event.changes.forEach { change ->
@@ -222,7 +224,11 @@ private fun CollapsibleRelationshipSectionContent(
                                         // let parent consume the event
                                         return@forEach
                                     }
-                                    change.consume()
+                                    Timber.d("Intercepted scroll dy: $dy")
+                                    if (dy > 0.1f || eventsCount < 20000) {
+                                        change.consume()
+                                    }
+                                    eventsCount ++
                                     childScope.launch {
                                         try {
                                             childListState.scrollBy(-dy)

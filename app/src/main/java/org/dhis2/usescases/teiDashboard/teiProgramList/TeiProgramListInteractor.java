@@ -273,17 +273,21 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
         Collections.sort(programListToPrint, (program1, program2) -> program1.getTitle().compareToIgnoreCase(program2.getTitle()));
         compositeDisposable.add(
                 Single.fromCallable(() -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                List<String> uids = programListToPrint.stream().map(ProgramUiModel::getUid).collect(Collectors.toList());
-                                return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
+                            List<String> uids = new ArrayList<>();
+                            for (ProgramUiModel programUiModel : programListToPrint) {
+                                uids.add(programUiModel.getUid());
                             }
-                            return new ArrayList<>();
+                            return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
                         }).subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(programUid ->{
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                view.setPrograms(programListToPrint.stream().filter(e -> programUid.contains(e.getUid())).collect(Collectors.toList()));
+                        .subscribe(programUid -> {
+                            List<ProgramUiModel> filteredPrograms = new ArrayList<>();
+                            for (ProgramUiModel programUiModel : programListToPrint) {
+                                if (programUid.contains(programUiModel.getUid())) {
+                                    filteredPrograms.add(programUiModel);
+                                }
                             }
+                            view.setPrograms(filteredPrograms);
                         },Timber ::d)
         );
     }
