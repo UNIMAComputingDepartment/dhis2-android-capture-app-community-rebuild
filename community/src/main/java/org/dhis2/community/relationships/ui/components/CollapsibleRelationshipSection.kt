@@ -190,7 +190,7 @@ private fun CollapsibleRelationshipSectionContent(
                         .heightIn(max = 300.dp)
                 ) {
 
-                    if (existingRelationships.size > 10) {
+                    if (existingRelationships.size > 5) {
                         TextField(
                             value = listSearch,
                             onValueChange = { listSearch = it },
