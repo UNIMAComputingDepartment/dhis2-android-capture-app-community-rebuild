@@ -197,11 +197,19 @@ class TaskingRepository(
     }
 
 
-    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String?, taskTieUid: String) {
-        if (taskAttrUid != null)
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(taskAttrUid, taskTieUid)
-                .blockingSet(newTaskAttrValue ?: "")
+    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String?, taskTieUid: String, retries: Int = 0) {
+        try {
+            if (taskAttrUid != null)
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(taskAttrUid, taskTieUid)
+                    .blockingSet(newTaskAttrValue ?: "")
+        } catch (ex: Exception) {
+            Timber.tag("TaskingRepository").e(ex, "Error updating task attribute value")
+            if (retries < 3) {
+                updateTaskAttrValue(taskAttrUid, newTaskAttrValue, taskTieUid, retries+1)
+            }
+        }
+
     }
 
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(

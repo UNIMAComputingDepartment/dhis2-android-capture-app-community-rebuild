@@ -187,7 +187,7 @@ private fun CollapsibleRelationshipSectionContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp)
+                        .heightIn(max = 400.dp)
                 ) {
 
                     if (existingRelationships.size > 5) {
@@ -208,7 +208,7 @@ private fun CollapsibleRelationshipSectionContent(
 
                     val childListState = rememberLazyListState()
                     val childScope = rememberCoroutineScope()
-                    val childMaxHeight = 300.dp
+                    val childMaxHeight = 400.dp
 
                     val interceptScrollModifier = Modifier.pointerInput(displayedRelationships, childListState) {
                         awaitEachGesture {

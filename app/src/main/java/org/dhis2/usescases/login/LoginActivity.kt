@@ -121,7 +121,7 @@ class LoginActivity : ActivityGlobalAbstract(), LoginContracts.View {
                         }
                     }
                 } catch (e: IOException) {
-                    Timber.e("Failed to load file: ", e.message.toString())
+                    Timber.e("Failed to load file: ", e.message)
                 }
                 if (file.exists()) {
                     presenter.onImportDataBase(file)
