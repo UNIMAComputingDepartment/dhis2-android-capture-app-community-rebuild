@@ -54,13 +54,21 @@ class RelationshipRepository(
         }
     }
 
-    fun deleteRelationship(relationshipUid: String): Result<Unit> {
+    fun deleteRelationship(relationshipType: String, teiUid: String, relatedTeiUid: String): Result<Unit> {
         return try {
-            d2.relationshipModule()
+            val uids = d2.relationshipModule()
                 .relationships()
-                .uid(relationshipUid)
-                .blockingDelete()
-            Result.success(Unit)
+                .byRelationshipType().eq(relationshipType)
+                .byItem(RelationshipHelper.teiItem(teiUid))
+                .byItem(RelationshipHelper.teiItem(relatedTeiUid))
+                .blockingGetUids()
+            if (uids.size != 1) {
+                throw IllegalStateException("Expected exactly one relationship to delete, found ${uids.size}")
+            } else {
+                Timber.d("Deleting relationship with UID: ${uids.first()}")
+                d2.relationshipModule().relationships().uid(uids.first()).blockingDelete()
+                Result.success(Unit)
+            }
         } catch (error: Exception) {
             Timber.e(error)
             Result.failure(error)

@@ -232,6 +232,7 @@ class TaskingRepository(
     }
 
 
+    @Synchronized
     fun createTask(
         task: Task,
         sourceTeiOrgUnitUid: String,
@@ -300,6 +301,10 @@ class TaskingRepository(
                     .organisationUnit(sourceTeiOrgUnitUid)
                     .build()
             )
+            if (enrollmentUid.isEmpty()) {
+                Timber.tag("CreationEvaluator").e("Enrollment creation failed: enrollmentUid is null")
+                return false
+            }
             val today = Date()
             d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(today)
             d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(today)
