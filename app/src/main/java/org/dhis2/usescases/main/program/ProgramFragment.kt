@@ -79,7 +79,8 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
                 }
                 ProgramList(
                     downLoadState = downloadState,
-                    programs = items,
+                    //TODO
+                    programs = items?.filter { it.uid !=  "mIn6hesS2yR"},
                     onItemClick = {
                         programViewModel.onItemClick(it)
                     },
