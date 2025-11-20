@@ -205,7 +205,7 @@ class TaskingRepository(
                     .blockingSet(newTaskAttrValue ?: "")
         } catch (ex: Exception) {
             Timber.tag("TaskingRepository").e(ex, "Error updating task attribute value")
-            if (retries < 3) {
+            if (retries < 3 && taskTieUid.isNotEmpty()) {
                 updateTaskAttrValue(taskAttrUid, newTaskAttrValue, taskTieUid, retries+1)
             }
         }

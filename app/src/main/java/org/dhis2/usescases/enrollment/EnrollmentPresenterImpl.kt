@@ -151,17 +151,25 @@ class EnrollmentPresenterImpl(
                                 it.second?.let { eventUid ->
                                     view.openEvent(eventUid)
                                 } ?: view.openDashboard(it.first)
-
+                                runTaskEngine()
                             },
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
             }
 
-            EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
+            EnrollmentActivity.EnrollmentMode.CHECK -> {
+                view.setResultAndFinish()
+                runTaskEngine()
+            }
 
         }
 
+
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun runTaskEngine() {
         taskingEngine.evaluateAsync(
             targetProgramUid = programRepository.blockingGet()?.uid()?: "",
             sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
