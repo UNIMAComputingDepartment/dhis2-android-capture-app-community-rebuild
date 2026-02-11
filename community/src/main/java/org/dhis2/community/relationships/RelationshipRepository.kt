@@ -19,15 +19,57 @@ class RelationshipRepository(
 ) {
 
     fun getRelationshipConfig(): RelationshipConfig {
-        val entries = d2.dataStoreModule()
-            .dataStore()
-            .byNamespace()
-            .eq("community_redesign")
-            .blockingGet()
+        Timber.d("getRelationshipConfig() called - START")
+        return try {
+            val entries = d2.dataStoreModule()
+                .dataStore()
+                .byNamespace()
+                .eq("community_redesign")
+                .blockingGet()
 
-        return entries.firstOrNull { it.key() == "relationships" }
-            ?.let { Gson().fromJson(it.value(), RelationshipConfig::class.java) }
-            ?: RelationshipConfig(emptyList())
+            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+
+            val relationshipEntry = entries.firstOrNull { it.key() == "relationships" }
+
+            if (relationshipEntry == null) {
+                Timber.w("No relationships entry found in dataStore")
+                return RelationshipConfig(emptyList())
+            }
+
+            Timber.d("Found relationships entry: ${relationshipEntry.key()}")
+
+            val rawValue = relationshipEntry.value()
+            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
+            Timber.d("Raw relationship config value (first 200 chars): ${rawValue?.take(200)}")
+
+            if (rawValue.isNullOrBlank()) {
+                Timber.w("Relationship config value is null or blank")
+                return RelationshipConfig(emptyList())
+            }
+
+            // Extract JSON from JsonWrapper format if needed
+            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
+                Timber.d("Detected JsonWrapper format, extracting JSON")
+                // Remove "JsonWrapper(json=" prefix and trailing ")"
+                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
+            } else {
+                rawValue
+            }
+
+            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
+
+            if (!value.trim().startsWith("{")) {
+                Timber.w("Relationship config value does not start with '{': ${value.take(100)}")
+                return RelationshipConfig(emptyList())
+            }
+
+            val config = Gson().fromJson(value, RelationshipConfig::class.java)
+            Timber.d("Successfully parsed relationship config: ${config.relationships.size} relationships")
+            config
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing relationship config")
+            RelationshipConfig(emptyList())
+        }
     }
 
     fun createAndAddRelationship(
