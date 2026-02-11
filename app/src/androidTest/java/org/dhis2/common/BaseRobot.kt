@@ -2,29 +2,24 @@ package org.dhis2.common
 
 import android.app.Activity
 import android.app.ActivityManager
+import android.content.Context
 import android.content.Context.ACTIVITY_SERVICE
 import android.view.View
-import android.widget.EditText
-import androidx.annotation.IdRes
+import android.view.inputmethod.InputMethodManager
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.NoMatchingViewException
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.ViewInteraction
-import androidx.test.espresso.action.ViewActions
-import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
-import androidx.test.espresso.matcher.ViewMatchers.hasFocus
-import androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
-import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.util.TreeIterables
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
-import androidx.test.rule.ActivityTestRule
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import androidx.test.uiautomator.UiDevice
-import org.dhis2.R
-import org.dhis2.usescases.main.MainActivity
-import org.hamcrest.CoreMatchers.allOf
 import org.hamcrest.Matcher
 import java.lang.Thread.sleep
 
@@ -35,39 +30,58 @@ open class BaseRobot {
         return this
     }
 
-    fun acceptGenericDialog() {
-        onView(withId(android.R.id.button1)).perform(ViewActions.click())
-    }
-
     fun closeKeyboard() {
-        onView(isRoot()).perform(closeSoftKeyboard())
-    }
+        try {
+            val instrumentation = getInstrumentation()
+            instrumentation.runOnMainSync {
+                // Try to find a resumed Activity to obtain a window token
+                val activity = try {
+                    ActivityLifecycleMonitorRegistry.getInstance()
+                        .getActivitiesInStage(
+                            Stage.RESUMED
+                        )
+                        .firstOrNull()
+                } catch (_: Throwable) {
+                    null
+                }
 
-    fun pressImeActionButton(@IdRes editTextId: Int? = null) {
-        if (editTextId != null) {
-            onView(withId(editTextId)).perform(ViewActions.pressImeActionButton())
-        } else {
-            onView(
-                allOf(
-                    isAssignableFrom(EditText::class.java),
-                    hasFocus()
-                )
-            ).perform(ViewActions.pressImeActionButton())
+                val context = activity ?: return@runOnMainSync
+                val view = context.currentFocus ?: context.window?.decorView
+                val imm =
+                    context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                if (view != null && imm != null) {
+                    imm.hideSoftInputFromWindow(view.windowToken, 0)
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore keyboard close failures during cleanup
+            // This can happen if the activity is already finishing or doesn't have focus
         }
     }
 
-    fun waitToDebounce(millis: Long) {
-        Thread.sleep(millis)
+    fun itemWithTextIsDisplayed(
+        text: String,
+        substring: Boolean,
+        composeTestRule: ComposeContentTestRule
+    ) {
+        composeTestRule.onNodeWithText(text, substring)
+            .assertIsDisplayed()
     }
+
+    fun waitToDebounce(millis: Long) {
+        sleep(millis)
+    }
+
+    fun getString(stringId: Int): String = getInstrumentation().targetContext.getString(stringId)
 
     inline fun <reified T : Activity> waitUntilActivityVisible() {
         val startTime = System.currentTimeMillis()
         while (!isVisible<T>()) {
-            Thread.sleep(CONDITION_CHECK_INTERVAL)
+            sleep(CONDITION_CHECK_INTERVAL)
             if (System.currentTimeMillis() - startTime >= TIMEOUT) {
                 throw AssertionError(
                     "Activity ${T::class.java.simpleName} " +
-                        "not visible after $TIMEOUT milliseconds"
+                            "not visible after $TIMEOUT milliseconds"
                 )
             }
         }
@@ -83,7 +97,7 @@ open class BaseRobot {
      */
     fun waitForView(
         viewMatcher: Matcher<View>,
-        waitMillis: Int = 5000,
+        waitMillis: Int = TIMEOUT.toInt(),
         waitMillisPerTry: Long = 100
     ): ViewInteraction {
 
@@ -153,15 +167,11 @@ open class BaseRobot {
     }
 
     inline fun <reified T : Activity> isVisible(): Boolean {
-        val am = InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(
+        val am = getInstrumentation().targetContext.getSystemService(
             ACTIVITY_SERVICE
         ) as ActivityManager
         val visibleActivityName = am.appTasks[0].taskInfo.baseActivity!!.className
         return visibleActivityName == T::class.java.name
-    }
-
-     fun <T : Activity> checkActivityIsFinishing(rule : ActivityTestRule<T>){
-        assert(rule.activity.isFinishing)
     }
 
     companion object {

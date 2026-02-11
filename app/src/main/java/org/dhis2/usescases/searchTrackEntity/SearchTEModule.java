@@ -18,9 +18,6 @@ import org.dhis2.commons.filters.workingLists.WorkingListViewModelFactory;
 import org.dhis2.commons.matomo.MatomoAnalyticsController;
 import org.dhis2.commons.network.NetworkUtils;
 import org.dhis2.commons.prefs.PreferenceProvider;
-import org.dhis2.commons.prefs.PreferenceProviderImpl;
-import org.dhis2.commons.reporting.CrashReportController;
-import org.dhis2.commons.reporting.CrashReportControllerImpl;
 import org.dhis2.commons.resources.ColorUtils;
 import org.dhis2.commons.resources.DhisPeriodUtils;
 import org.dhis2.commons.resources.MetadataIconProvider;
@@ -60,8 +57,12 @@ import org.dhis2.maps.geometry.mapper.featurecollection.MapTeisToFeatureCollecti
 import org.dhis2.maps.geometry.point.MapPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonToFeature;
+import org.dhis2.maps.model.MapScope;
 import org.dhis2.maps.usecases.MapStyleConfiguration;
 import org.dhis2.maps.utils.DhisMapUtils;
+import org.dhis2.mobile.commons.customintents.CustomIntentRepository;
+import org.dhis2.mobile.commons.customintents.CustomIntentRepositoryImpl;
+import org.dhis2.mobile.commons.reporting.CrashReportController;
 import org.dhis2.tracker.data.ProfilePictureProvider;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.events.EventInfoProvider;
@@ -70,6 +71,7 @@ import org.dhis2.usescases.tracker.TrackedEntityInstanceInfoProvider;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.hisp.dhis.android.core.D2;
 
+import java.util.List;
 import java.util.Map;
 
 import dagger.Module;
@@ -83,13 +85,13 @@ public class SearchTEModule {
     private final String teiType;
     private final String initialProgram;
     private final Context moduleContext;
-    private final Map<String, String> initialQuery;
+    private final Map<String, List<String>> initialQuery;
 
     public SearchTEModule(SearchTEContractsModule.View view,
                           String tEType,
                           String initialProgram,
                           Context context,
-                          Map<String, String> initialQuery) {
+                          Map<String, List<String>> initialQuery) {
         this.view = view;
         this.teiType = tEType;
         this.initialProgram = initialProgram;
@@ -155,7 +157,9 @@ public class SearchTEModule {
                                       NetworkUtils networkUtils,
                                       SearchTEIRepository searchTEIRepository,
                                       ThemeManager themeManager,
-                                      MetadataIconProvider metadataIconProvider) {
+                                      MetadataIconProvider metadataIconProvider,
+                                      DateUtils dateUtils,
+                                      CustomIntentRepository customIntentRepository) {
         ProfilePictureProvider profilePictureProvider = new ProfilePictureProvider(d2);
         return new SearchRepositoryImpl(teiType,
                 initialProgram,
@@ -170,7 +174,9 @@ public class SearchTEModule {
                 searchTEIRepository,
                 themeManager,
                 metadataIconProvider,
-                profilePictureProvider);
+                profilePictureProvider,
+                dateUtils,
+                customIntentRepository);
     }
 
     @Provides
@@ -182,7 +188,8 @@ public class SearchTEModule {
             FieldViewModelFactory fieldViewModelFactory,
             MetadataIconProvider metadataIconProvider,
             ColorUtils colorUtils,
-            DateUtils dateUtils
+            DateUtils dateUtils,
+            CustomIntentRepository customIntentRepository
     ) {
         ResourceManager resourceManager = new ResourceManager(moduleContext, colorUtils);
         DateLabelProvider dateLabelProvider = new DateLabelProvider(moduleContext, new ResourceManager(moduleContext, colorUtils));
@@ -207,14 +214,18 @@ public class SearchTEModule {
                         metadataIconProvider,
                         profilePictureProvider,
                         dateUtils
-                )
+                ),
+                customIntentRepository
         );
     }
 
     @Provides
     @PerActivity
-    SearchTEIRepository searchTEIRepository(D2 d2) {
-        return new SearchTEIRepositoryImpl(d2, new DhisEnrollmentUtils(d2), new CrashReportControllerImpl());
+    SearchTEIRepository searchTEIRepository(
+            D2 d2,
+            CrashReportController crashReportController
+    ) {
+        return new SearchTEIRepositoryImpl(d2, new DhisEnrollmentUtils(d2), crashReportController);
     }
 
     @Provides
@@ -223,7 +234,8 @@ public class SearchTEModule {
             Context context,
             D2 d2,
             ResourceManager resourceManager,
-            DhisPeriodUtils periodUtils
+            DhisPeriodUtils periodUtils,
+            PreferenceProvider preferenceProvider
     ) {
         return new FieldViewModelFactoryImpl(
                 new HintProviderImpl(context),
@@ -236,7 +248,7 @@ public class SearchTEModule {
                 new UiEventTypesProviderImpl(),
                 new KeyboardActionProviderImpl(),
                 new LegendValueProviderImpl(d2, resourceManager),
-                new AutoCompleteProviderImpl(new PreferenceProviderImpl(context))
+                new AutoCompleteProviderImpl(preferenceProvider)
         );
     }
 
@@ -244,6 +256,12 @@ public class SearchTEModule {
     @PerActivity
     MapCoordinateFieldToFeatureCollection provideMapDataElementToFeatureCollection(MapAttributeToFeature attributeToFeatureMapper, MapDataElementToFeature dataElementToFeatureMapper) {
         return new MapCoordinateFieldToFeatureCollection(dataElementToFeatureMapper, attributeToFeatureMapper);
+    }
+
+    @Provides
+    @PerActivity
+    CustomIntentRepository provideCustomIntentRepository(D2 d2) {
+        return new CustomIntentRepositoryImpl(d2);
     }
 
     @Provides
@@ -322,7 +340,12 @@ public class SearchTEModule {
                 mapDataRepository,
                 networkUtils,
                 new SearchDispatchers(),
-                new MapStyleConfiguration(d2, initialProgram, programConfigurationRepository),
+                new MapStyleConfiguration(
+                        d2,
+                        initialProgram,
+                        MapScope.PROGRAM,
+                        programConfigurationRepository
+                ),
                 resourceManager,
                 displayNameProvider,
                 filterManager,

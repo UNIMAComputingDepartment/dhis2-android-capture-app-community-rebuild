@@ -16,6 +16,7 @@ import org.dhis2.maps.geometry.line.MapLineRelationshipToFeature;
 import org.dhis2.maps.geometry.mapper.featurecollection.MapRelationshipsToFeatureCollection;
 import org.dhis2.maps.geometry.point.MapPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonToFeature;
+import org.dhis2.maps.model.MapScope;
 import org.dhis2.maps.usecases.MapStyleConfiguration;
 import org.dhis2.tracker.data.ProfilePictureProvider;
 import org.dhis2.tracker.relationships.data.EventRelationshipsRepository;
@@ -81,7 +82,12 @@ public class RelationshipModule {
                 relationshipMapsRepository,
                 analyticsHelper,
                 mapRelationshipsToFeatureCollection,
-                new MapStyleConfiguration(d2, programUid, programConfigurationRepository),
+                new MapStyleConfiguration(
+                        d2,
+                        programUid,
+                        MapScope.PROGRAM,
+                        programConfigurationRepository
+                ),
                 relationshipsRepository,
                 avatarProvider,
                 dateLabelProvider,
@@ -178,13 +184,9 @@ public class RelationshipModule {
     @Provides
     @PerFragment
     GetRelationshipsByType provideGetRelationshipsByType(
-            RelationshipsRepository relationshipsRepository,
-            DispatcherProvider dispatcherProvider
+            RelationshipsRepository relationshipsRepository
     ) {
-        return new GetRelationshipsByType(
-                relationshipsRepository,
-                dispatcherProvider
-        );
+        return new GetRelationshipsByType(relationshipsRepository);
     }
 
     @Provides
@@ -198,10 +200,9 @@ public class RelationshipModule {
     @Provides
     @PerFragment
     AddRelationship provideAddRelationship(
-            DispatcherProvider dispatcherProvider,
             RelationshipsRepository relationshipsRepository
     ) {
-        return new AddRelationship(dispatcherProvider, relationshipsRepository);
+        return new AddRelationship(relationshipsRepository);
     }
 
     @Provides

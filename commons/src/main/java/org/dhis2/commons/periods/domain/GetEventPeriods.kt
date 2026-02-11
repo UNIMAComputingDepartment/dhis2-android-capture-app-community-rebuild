@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.dhis2.commons.periods.data.EventPeriodRepository
 import org.dhis2.commons.periods.data.PeriodLabelProvider
-import org.dhis2.commons.periods.data.PeriodSource
 import org.dhis2.commons.periods.model.Period
 import org.hisp.dhis.android.core.period.PeriodType
 import org.hisp.dhis.android.core.program.ProgramStage
@@ -25,36 +24,41 @@ class GetEventPeriods(
         programStage: ProgramStage,
         isScheduling: Boolean,
         eventEnrollmentUid: String?,
-    ): Flow<PagingData<Period>> = Pager(
-        config = PagingConfig(pageSize = 20, maxSize = 100, initialLoadSize = 20),
-        pagingSourceFactory = {
-            PeriodSource(
-                eventPeriodRepository = eventPeriodRepository,
-                periodLabelProvider = periodLabelProvider,
-                periodType = periodType,
-                initialDate = eventPeriodRepository.getEventPeriodMinDate(
-                    programStage,
-                    isScheduling,
-                    eventEnrollmentUid,
-                ),
-                maxDate = eventPeriodRepository.getEventPeriodMaxDate(
-                    programStage,
-                    isScheduling,
-                    eventEnrollmentUid,
-                ),
-                selectedDate = selectedDate,
-            )
-        },
-    ).flow
-        .map { paging ->
-            paging.map { period ->
-                period.copy(
-                    enabled = eventPeriodRepository.getEventUnavailableDates(
-                        programStageUid = programStage.uid(),
-                        enrollmentUid = eventEnrollmentUid,
-                        currentEventUid = eventUid,
-                    ).contains(period.startDate).not(),
+    ): Flow<PagingData<Period>> =
+        Pager(
+            config = PagingConfig(pageSize = 20, maxSize = 100, initialLoadSize = 20),
+            pagingSourceFactory = {
+                eventPeriodRepository.getPeriodSource(
+                    periodLabelProvider = periodLabelProvider,
+                    periodType = periodType,
+                    initialDate =
+                        eventPeriodRepository.getEventPeriodMinDate(
+                            programStage,
+                            isScheduling,
+                            eventEnrollmentUid,
+                        ),
+                    maxDate =
+                        eventPeriodRepository.getEventPeriodMaxDate(
+                            programStage,
+                            isScheduling,
+                            eventEnrollmentUid,
+                        ),
+                    selectedDate = selectedDate,
                 )
+            },
+        ).flow
+            .map { paging ->
+                paging.map { period ->
+                    period.copy(
+                        enabled =
+                            eventPeriodRepository
+                                .getEventUnavailableDates(
+                                    programStageUid = programStage.uid(),
+                                    enrollmentUid = eventEnrollmentUid,
+                                    currentEventUid = eventUid,
+                                ).contains(period.startDate)
+                                .not(),
+                    )
+                }
             }
-        }
 }

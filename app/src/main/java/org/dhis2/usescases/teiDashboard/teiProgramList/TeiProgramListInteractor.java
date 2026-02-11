@@ -12,6 +12,7 @@ import org.dhis2.commons.dialogs.calendarpicker.OnDatePickerListener;
 import org.dhis2.commons.orgunitselector.OUTreeFragment;
 import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope;
 import org.dhis2.community.workflow.WorkflowRepository;
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.usescases.main.program.ProgramDownloadState;
 import org.dhis2.usescases.main.program.ProgramUiModel;
@@ -34,10 +35,6 @@ import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import kotlin.Unit;
 import timber.log.Timber;
-
-/**
- * QUADRAM. Created by Cristian on 06/03/2018.
- */
 
 public class TeiProgramListInteractor implements TeiProgramListContract.Interactor {
 
@@ -184,7 +181,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
-                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
+                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.getProgramName().compareToIgnoreCase(enrollment2.getProgramName()));
                             view.setActiveEnrollments(enrollments);
                         },
                         Timber::d)
@@ -196,7 +193,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
-                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
+                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.getProgramName().compareToIgnoreCase(enrollment2.getProgramName()));
                             view.setOtherEnrollments(enrollments);
                         },
                         Timber::d)

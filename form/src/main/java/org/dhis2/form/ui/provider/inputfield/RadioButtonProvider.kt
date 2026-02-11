@@ -22,22 +22,23 @@ internal fun ProvideRadioButtonInput(
     fieldUiModel: FieldUiModel,
     intentHandler: (FormIntent) -> Unit,
 ) {
-    val dataMap = buildMap {
-        fieldUiModel.optionSetConfiguration?.optionFlow?.collectAsLazyPagingItems()?.let { paging ->
-            repeat(paging.itemCount) { index ->
-                val optionData = paging[index]
-                put(
-                    optionData?.option?.code() ?: "",
-                    RadioButtonData(
-                        uid = optionData?.option?.uid() ?: "",
-                        selected = fieldUiModel.displayName == optionData?.option?.displayName(),
-                        enabled = true,
-                        textInput = optionData?.option?.displayName() ?: "",
-                    ),
-                )
+    val dataMap =
+        buildMap {
+            fieldUiModel.optionSetConfiguration?.optionFlow?.collectAsLazyPagingItems()?.let { paging ->
+                repeat(paging.itemCount) { index ->
+                    val optionData = paging[index]
+                    put(
+                        optionData?.option?.code() ?: "",
+                        RadioButtonData(
+                            uid = optionData?.option?.uid() ?: "",
+                            selected = fieldUiModel.displayName == optionData?.option?.displayName(),
+                            enabled = true,
+                            textInput = optionData?.option?.displayName() ?: "",
+                        ),
+                    )
+                }
             }
         }
-    }
 
     val (codeList, data) = dataMap.toList().unzip()
 
@@ -53,14 +54,18 @@ internal fun ProvideRadioButtonInput(
         isRequired = fieldUiModel.mandatory,
         itemSelected = data.find { it.selected },
         onItemChange = { item ->
-            val selectedIndex = data.indexOf(item)
-            intentHandler(
-                FormIntent.OnSave(
-                    fieldUiModel.uid,
-                    codeList[selectedIndex],
-                    fieldUiModel.valueType,
-                ),
-            )
+            if (item != null) {
+                val selectedIndex = data.indexOf(item)
+                intentHandler(
+                    FormIntent.OnSave(
+                        fieldUiModel.uid,
+                        codeList[selectedIndex],
+                        fieldUiModel.valueType,
+                    ),
+                )
+            } else {
+                intentHandler(FormIntent.ClearValue(fieldUiModel.uid))
+            }
         },
     )
 }
@@ -73,20 +78,21 @@ internal fun ProvideYesNoRadioButtonInput(
     intentHandler: (FormIntent) -> Unit,
     resources: ResourceManager,
 ) {
-    val data = listOf(
-        RadioButtonData(
-            uid = "true",
-            selected = fieldUiModel.isAffirmativeChecked,
-            enabled = true,
-            textInput = resources.getString(R.string.yes),
-        ),
-        RadioButtonData(
-            uid = "false",
-            selected = fieldUiModel.isNegativeChecked,
-            enabled = true,
-            textInput = resources.getString(R.string.no),
-        ),
-    )
+    val data =
+        listOf(
+            RadioButtonData(
+                uid = "true",
+                selected = fieldUiModel.isAffirmativeChecked,
+                enabled = true,
+                textInput = resources.getString(R.string.yes),
+            ),
+            RadioButtonData(
+                uid = "false",
+                selected = fieldUiModel.isNegativeChecked,
+                enabled = true,
+                textInput = resources.getString(R.string.no),
+            ),
+        )
 
     InputRadioButton(
         modifier = modifier,

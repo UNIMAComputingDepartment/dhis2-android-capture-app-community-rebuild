@@ -1,12 +1,16 @@
 package org.dhis2.usescases.settings
 
+import android.content.Intent
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.rule.ActivityTestRule
-import org.dhis2.common.rules.DataBindingIdlingResourceRule
+import org.dhis2.commons.featureconfig.model.Feature
+import org.dhis2.lazyActivityScenarioRule
 import org.dhis2.usescases.BaseTest
+import org.dhis2.usescases.main.AVOID_SYNC
 import org.dhis2.usescases.main.MainActivity
 import org.dhis2.usescases.main.homeRobot
-import org.junit.Ignore
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,15 +18,17 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SettingsTest : BaseTest() {
 
-    val KEY_GATEWAY = "gateway"
-    val GATEWAY_NUMER = "+34923030005"
+    @get:Rule
+    val rule = lazyActivityScenarioRule<MainActivity>(launchActivity = false)
 
     @get:Rule
-    val rule = ActivityTestRule(MainActivity::class.java, false, false)
+    val composeTestRule = createComposeRule()
 
-    @Rule
-    @JvmField
-    val dataBindingIdlingResourceRule = DataBindingIdlingResourceRule(rule)
+    @Before
+    override fun setUp() {
+        super.setUp()
+        enableIntents()
+    }
 
     @Test
     fun shouldFindEditPeriodDisabledWhenClickOnSyncData() {
@@ -33,7 +39,7 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
+        settingsRobot(composeTestRule) {
             clickOnSyncData()
             checkEditPeriodIsDisableForData()
         }
@@ -48,7 +54,7 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
+        settingsRobot(composeTestRule) {
             clickOnSyncConfiguration()
             checkEditPeriodIsDisableForConfiguration()
         }
@@ -63,7 +69,7 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
+        settingsRobot(composeTestRule) {
             clickOnSyncParameters()
             checkEditPeriodIsDisableForParameters()
         }
@@ -78,7 +84,7 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
+        settingsRobot(composeTestRule) {
             clickOnReservedValues()
             clickOnManageReservedValues()
         }
@@ -93,15 +99,17 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
+        settingsRobot(composeTestRule) {
             clickOnOpenSyncErrorLog()
             checkLogViewIsDisplayed()
         }
     }
 
-    @Ignore("Adding composeTestRule makes all tests in this file not execute")
+    //This test covers test case ANDROAPP-7139
     @Test
-    fun shouldSuccessfullyDeleteLocalData() {
+    fun shouldNotShowTwoFAOption() {
+        disableFeatureConfigValue(Feature.TWO_FACTOR_AUTHENTICATION)
+
         startActivity()
 
         homeRobot {
@@ -109,19 +117,16 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
-            clickOnDeleteLocalData()
-            clickOnAcceptDelete()
-            clickOnAcceptDialog()
-            checkSnackBarIsShown()
+        settingsRobot(composeTestRule) {
+            checkTwoFAOptionIsNotDisplayed()
         }
-        cleanLocalDatabase()
     }
 
-    @Ignore("SDK related")
+    //This test covers test case ANDROAPP-7139 and ANDROAPP-7140
     @Test
-    fun shouldShowGatewayNumberDisableWhenClickOnSMSSettings() {
-        preferencesRobot.saveValueToSDKPreferences(KEY_GATEWAY, GATEWAY_NUMER)
+    fun shouldShowTwoFAOption() {
+        enableFeatureConfigValue(Feature.TWO_FACTOR_AUTHENTICATION)
+
         startActivity()
 
         homeRobot {
@@ -129,14 +134,18 @@ class SettingsTest : BaseTest() {
             clickOnSettings()
         }
 
-        settingsRobot {
-            clickOnSMSSettings()
-            checkGatewayNumberFieldIsNotEnabled()
-            checkGatewayNumberFieldIs(GATEWAY_NUMER)
+        settingsRobot(composeTestRule) {
+            checkTwoFAOptionIsDisplayed()
+            clickOnTwoFASettings()
+            checkTwoFAScreenIsDisplayed()
         }
     }
 
-    fun startActivity() {
-        rule.launchActivity(null)
+    private fun startActivity() {
+        val intent = Intent(
+            ApplicationProvider.getApplicationContext(),
+            MainActivity::class.java
+        ).putExtra(AVOID_SYNC, true)
+        rule.launch(intent)
     }
 }

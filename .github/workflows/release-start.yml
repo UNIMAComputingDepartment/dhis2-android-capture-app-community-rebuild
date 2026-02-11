@@ -15,6 +15,16 @@ on:
         required: true
         type: string
 
+      dev_sdk_version_name:
+        description: 'SDK version name to use in develop'
+        required: true
+        type: string
+
+      dev_design_system_version_name:
+        description: 'Design system version name to use in develop'
+        required: true
+        type: string
+
 jobs:
   create_branch:
     runs-on: ubuntu-latest
@@ -25,12 +35,12 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         token: ${{ secrets.DHIS2_BOT_GITHUB_TOKEN }}
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.12.1
 
@@ -47,7 +57,7 @@ jobs:
 
       # Uses the GH API to create the signed commit.
     - name: Commit and Push Changes to auxiliary branch
-      uses: flex-development/gh-commit@1.0.0
+      uses: flex-development/gh-commit@177be4b5bca1b102400ca7220932d9ff7980fddb
       with:
         message: 'Update version to ${{ env.RELEASE_VERSION }}'
         ref: ${{ env.TEMP_RELEASE_BRANCH }}
@@ -67,16 +77,18 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEVELOPMENT_VERSION: ${{ inputs.development_version_name }}
+      DEVELOPMENT_SDK_VERSION: ${{ inputs.dev_sdk_version_name }}
+      DEVELOPMENT_DESIGN_VERSION: ${{ inputs.dev_design_system_version_name }}
       DEVELOPMENT_BRANCH: 'update_version_to${{ inputs.development_version_name }}'
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.DHIS2_BOT_GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12.1
 
@@ -88,8 +100,11 @@ jobs:
       - name: Run Python script to update base branch version
         run: python scripts/updateVersionName.py ${{ env.DEVELOPMENT_VERSION }}
 
+      - name: Run Python script to update sdk and design system version name
+        run: python scripts/updateDependencyVersions.py ${{ env.DEVELOPMENT_SDK_VERSION }} ${{ env.DEVELOPMENT_DESIGN_VERSION }}
+
       - name: Commit and Push Changes
-        uses: flex-development/gh-commit@1.0.0
+        uses: flex-development/gh-commit@177be4b5bca1b102400ca7220932d9ff7980fddb
         with:
           message: 'Update version to ${{ env.DEVELOPMENT_VERSION }}'
           ref: ${{ env.DEVELOPMENT_BRANCH }}

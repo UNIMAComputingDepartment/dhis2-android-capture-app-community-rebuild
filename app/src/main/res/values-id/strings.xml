@@ -31,11 +31,7 @@
 
     <string name="sync_error_title">Sync error</string>
     <string name="sync_error_text">Terjadi kesalahan saat sinkronisasi. Silakan coba kembali.</string>
-    <string name="metadata_sync_error">GAGAL: Terjadi kesalahan saat sinkronisasi. Jika Anda memiliki koneksi silakan coba kembali. Jika kesalahan tetap terjadi, hubungi administrator Anda.</string>
-    <string name="data_sync_warning">PERINGATAN: Sebagian besar data telah tersinkronisasi tapi terdapat beberapa konflik. Sinkronisasi konfigurasi Anda dan coba kembali. Periksa kembali status sinkronisasi: program, TEI, dan event yang berkonflik ditandai sebagai @.</string>
     <string name="data_sync_warning_program">PERINGATAN: Sebagian besar data telah tersinkronisasi tapi terdapat beberapa konflik. Sinkronisasi konfigurasi Anda dan coba kembali. Jika status sinkronisasi: program, TEI, dan event yang berkonflik ditandai sebagai @.</string>
-    <string name="data_sync_error">ERROR: Beberapa data gagal disinkronkan. Silahkan cek status sinkronisasi: program yang error ditandai sebagai @, TEI dan even sebagai $\"</string>
-    <string name="data_sync_error_program">KESALAHAN: Beberapa data gagal disinkronkan. Silahkan cek status sinkronisasi: TEI dan even dengan konflik ditandai dengan $\"</string>
     <string name="server_sync_error">Terjadi kesalahan dan server tidak merespon. Hubungi administrator anda.</string>
 
     <string name="search_result_text">%s hasil ditemukan</string>
@@ -87,6 +83,7 @@
     <string name="program_inactive">Program tidak aktif</string>
 
     <string name="event_open">Buka</string>
+    <string name="event_completed">Even selesai</string>
     <string name="read_only">Baca saja</string>
     <string name="finish_and_complete">Selesai dan lengkap</string>
     <string name="completed">Selesai</string>
@@ -145,12 +142,15 @@
     <!--TEI DASHBOARD-->
     <string name="see_details">Lihat rincian</string>
     <string name="view_more">LIHAT LAINNYA</string>
+    <string name="edit">Sunting</string>
     <string name="follow_up">Tindak lanjut</string>
     <string name="follow_up_enabled">Tindak lanjut diterapkan</string>
     <string name="follow_up_disabled">Tindak lanjut ditutup</string>
     <string name="deactivate">Deaktivasi</string>
     <string name="program_not_allow_events">Program ini tidak diperbolehkan menambah even</string>
 
+    <!--DONE TASKS-->
+    <string name="events_no_data">Tidak ada data</string>
     <string name="events">Even</string>
     <string name="done_task">Beranda</string>
     <string name="app_info">Informasi App</string>
@@ -190,7 +190,6 @@
     <plurals name="settings_specific_programs">
         <item quantity="other">Terdapat %s program dengan pengaturan khusus</item>
     </plurals>
-    <string name="settings_sync_period">Periode sinkronisasi</string>
     <string name="settings_limit_scope">pengaturan terbatas</string>
     <string name="settings_limit_globally">Secara global</string>
     <string name="settings_limit_program">berdasarkan program</string>
@@ -212,6 +211,7 @@
     <string name="settingsReset_descr">Konfigurasi dan aplikasi penyimpan data pada perangkat Anda akan dihapus. Anda akan diminta untuk masuk kembali dan data yang belum disinkronkan pada server akan hilang.</string>
     <string name="settingsSms">Pengaturan SMS</string>
     <string name="settingsSms_descr">Periksa dan edit parameter yang terkait dengan SMS gateway</string>
+    <string name="settingsTwoFAStatus">Status</string>
     <!--endregion-->
 
     <string name="enrollmment_date">Tanggal pendaftaran</string>
@@ -355,6 +355,7 @@
     <string name="date_dialog_tigle">Pilih tanggal untuk difilter</string>
     <string name="select_option">Pilih opsi</string>
     <string name="issue_reported">Masalah dilaporkan</string>
+    <string name="dialog_generate_new_event">Buat even baru</string>
     <string name="message_generate_new_event">Apakah Anda ingin membuat even lain?</string>
     <string name="event_completed_title">Even Selesai</string>
     <string name="event_completed_message">Semua even dalam program ini selesai. Apakah Anda ingin menutup program?</string>
@@ -454,7 +455,6 @@
     <string name="action_agree">Setuju</string>
     <string name="action_continue">Terus</string>
     <string name="login_server_info_title">URL server</string>
-    <string name="login_server_info_message">Masukkan url server DHIS 2 untuk organisasi Anda seperti yang disediakan oleh administrator sistem Anda.\n\nAtau, Anda dapat memindai kode QR yang berisi URL server Anda</string>
     <string name="forgot_your_code">Lupa kode Anda?</string>
     <string name="event_form_end_options_title">Apa yang ingin Anda lakukan untuk even ini?</string>
     <string name="sectionSelectorEnd">AKHIR</string>
@@ -770,6 +770,7 @@
     <string name="download_tei_error">%s yang dipilih tidak dapat diunduh.</string>
     <string name="completed_by">Diselesaikan oleh %s: %s</string>
     <string name="updated_time">Diperbarui: %s</string>
+    <string name="action_done">Selesai</string>
     <string name="validation_internal_error_datasets">Kami tidak dapat memeriksa kualitas data. Hubungi administrator Anda</string>
     <string name="are_you_sure">Anda yakin?</string>
     <string name="reopen_question">Apakah Anda ingin membuka kembali data set?</string>
@@ -796,10 +797,13 @@
     <string name="error_init_session">Kami tidak dapat memulai sesi dengan pengguna Anda</string>
     <string name="enrollment_date_edition_warning">Ada even yang direncanakan yang tidak akan dijadwalkan ulang</string>
     <string name="section_charts">Grafik</string>
+    <string name="navigation_list_view">Daftar</string>
     <string name="navigation_table_view">Tampilan tabel</string>
+    <string name="navigation_map_view">Peta</string>
     <string name="navigation_analytics">Analitik</string>
     <string name="navigation_tasks">Tugas</string>
     <string name="navigation_programs">Program-program</string>
+    <string name="navigation_charts">Grafik</string>
     <string name="navigation_notes">Catatan</string>
     <string name="navigation_data_entry">Data entri</string>
     <string name="navigation_tei_data">Rincian</string>
@@ -854,4 +858,20 @@
     <string name="available">Tersedia</string>
     <string name="troubleshooting_language_title">Bahasa</string>
     <string name="search_too_many_results">Hasil terlalu banyak</string>
+    <string name="sync_dialog_title_synced">Tersinkronisasi</string>
+    <string name="sync_dialog_action_send">Kirim</string>
+    <string name="skipped">Dilewati</string>
+    <string name="programs">Program-program</string>
+    <string name="sync_error">Kesalahan sinkronisasi</string>
+    <string name="mark_follow_up">Tandai untuk follow up</string>
+    <string name="coordinates">Koordinat</string>
+    <string name="schedule">Jadwal</string>
+    <string name="refer">Merujuk</string>
+    <string name="scheduled_enter_event">Terjadwal</string>
+    <string name="program_stage">Tahapan program</string>
+    <string name="event">acara/peristiwa</string>
+    <string name="show_more">Tampilkan lebih</string>
+    <string name="show_less">Tampilkan kurang</string>
+    <string name="sync">Sinkronkan</string>
+    <string name="show_description">Tampilkan keterangan</string>
     </resources>

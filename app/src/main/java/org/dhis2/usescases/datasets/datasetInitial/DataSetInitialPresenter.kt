@@ -3,10 +3,10 @@ package org.dhis2.usescases.datasets.datasetInitial
 import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.BiFunction
-import org.dhis2.commons.data.tuples.Pair
 import org.dhis2.commons.extensions.inDateRange
 import org.dhis2.commons.extensions.inOrgUnit
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.mobile.commons.coroutine.CoroutineTracker
 import org.hisp.dhis.android.core.category.CategoryOption
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.period.PeriodType
@@ -17,7 +17,6 @@ class DataSetInitialPresenter(
     private val dataSetInitialRepository: DataSetInitialRepository,
     private val schedulerProvider: SchedulerProvider,
 ) : DataSetInitialContract.Presenter {
-
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
     private var catCombo: String? = null
     private var openFuturePeriods: Int? = 0
@@ -26,7 +25,8 @@ class DataSetInitialPresenter(
 
     override fun init() {
         compositeDisposable.add(
-            dataSetInitialRepository.orgUnits()
+            dataSetInitialRepository
+                .orgUnits()
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
@@ -38,13 +38,14 @@ class DataSetInitialPresenter(
                 ),
         )
         compositeDisposable.add(
-            dataSetInitialRepository.dataSet()
+            dataSetInitialRepository
+                .dataSet()
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
                     { dataSetInitialModel: DataSetInitialModel ->
-                        catCombo = dataSetInitialModel.categoryCombo()
-                        openFuturePeriods = dataSetInitialModel.openFuturePeriods()
+                        catCombo = dataSetInitialModel.categoryCombo
+                        openFuturePeriods = dataSetInitialModel.openFuturePeriods
                         view.setData(dataSetInitialModel)
                     },
                     Timber::d,
@@ -61,26 +62,14 @@ class DataSetInitialPresenter(
     }
 
     override fun onReportPeriodClick(periodType: PeriodType) {
-        compositeDisposable.add(
-            dataSetInitialRepository.dataInputPeriod
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { data: List<DateRangeInputPeriodModel?>? ->
-                        view.showPeriodSelector(
-                            periodType,
-                            data,
-                            openFuturePeriods,
-                        )
-                    },
-                    Timber::d,
-                ),
-        )
+        view.showPeriodSelector(periodType, openFuturePeriods)
     }
 
     override fun onCatOptionClick(catOptionUid: String) {
+        CoroutineTracker.increment()
         compositeDisposable.add(
-            dataSetInitialRepository.catCombo(catOptionUid)
+            dataSetInitialRepository
+                .catCombo(catOptionUid)
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
@@ -93,6 +82,7 @@ class DataSetInitialPresenter(
                                     it.inOrgUnit(view.selectedOrgUnit?.uid())
                             },
                         )
+                        CoroutineTracker.decrement()
                     },
                     Timber::d,
                 ),
@@ -101,26 +91,26 @@ class DataSetInitialPresenter(
 
     override fun onActionButtonClick(periodType: PeriodType) {
         compositeDisposable.add(
-            Flowable.zip(
-                dataSetInitialRepository.getCategoryOptionCombo(
-                    view.selectedCatOptions,
-                    catCombo,
-                ),
-                dataSetInitialRepository.getPeriodId(periodType, view.selectedPeriod),
-                BiFunction { val0: String?, val1: String? ->
-                    Pair.create(
-                        val0!!,
-                        val1!!,
-                    )
-                },
-            )
-                .subscribeOn(schedulerProvider.io())
+            Flowable
+                .zip(
+                    dataSetInitialRepository.getCategoryOptionCombo(
+                        view.selectedCatOptions,
+                        catCombo,
+                    ),
+                    dataSetInitialRepository.getPeriodId(periodType, view.selectedPeriod),
+                    BiFunction { val0: String?, val1: String? ->
+                        Pair(
+                            val0!!,
+                            val1!!,
+                        )
+                    },
+                ).subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
                     { response: Pair<String, String> ->
                         view.navigateToDataSetTable(
-                            response.val0(),
-                            response.val1(),
+                            response.first,
+                            response.second,
                         )
                     },
                     Timber::d,
@@ -128,9 +118,7 @@ class DataSetInitialPresenter(
         )
     }
 
-    override fun getCatOption(selectedOption: String): CategoryOption {
-        return dataSetInitialRepository.getCategoryOption(selectedOption)
-    }
+    override fun getCatOption(selectedOption: String): CategoryOption = dataSetInitialRepository.getCategoryOption(selectedOption)
 
     override fun onDettach() {
         compositeDisposable.clear()

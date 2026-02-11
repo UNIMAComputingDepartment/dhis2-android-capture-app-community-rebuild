@@ -1,12 +1,13 @@
 package org.dhis2.android.rtsm.ui.managestock
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.liveData
 import com.github.javafaker.Faker
 import io.reactivex.disposables.CompositeDisposable
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.dhis2.android.rtsm.MainDispatcherRule
-import org.dhis2.android.rtsm.data.AppConfig
 import org.dhis2.android.rtsm.data.DestinationFactory
 import org.dhis2.android.rtsm.data.FacilityFactory
 import org.dhis2.android.rtsm.data.TransactionType
@@ -25,6 +26,7 @@ import org.dhis2.android.rtsm.ui.base.OnQuantityValidated
 import org.dhis2.android.rtsm.utils.ParcelUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.hisp.dhis.android.core.usecase.stock.StockUseCase
 import org.hisp.dhis.rules.models.RuleEffect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -56,7 +58,9 @@ class ManageStockViewModelTest {
     private val faker = Faker()
 
     private lateinit var schedulerProvider: BaseSchedulerProvider
-    private lateinit var appConfig: AppConfig
+
+    @Mock
+    private lateinit var stockUseCase: StockUseCase
 
     @Mock
     private lateinit var ruleValidationHelperImpl: RuleValidationHelper
@@ -72,28 +76,39 @@ class ManageStockViewModelTest {
     private val dispatcherProvider: DispatcherProvider = mock()
     private val stockTableDimensionStore: StockTableDimensionStore = mock()
 
-    private fun getModel() = ManageStockViewModel(
-        disposable,
-        schedulerProvider,
-        stockManager,
-        ruleValidationHelperImpl,
-        speechRecognitionManagerImpl,
-        resourceManager,
-        tableModelMapper,
-        dispatcherProvider,
-        stockTableDimensionStore,
-    )
+    private fun getModel() =
+        ManageStockViewModel(
+            disposable,
+            schedulerProvider,
+            stockManager,
+            ruleValidationHelperImpl,
+            speechRecognitionManagerImpl,
+            resourceManager,
+            tableModelMapper,
+            dispatcherProvider,
+            stockTableDimensionStore,
+            getStateHandle(),
+        )
+
+    private fun getStateHandle(): SavedStateHandle {
+        val state =
+            hashMapOf<String, Any>(
+                org.dhis2.commons.Constants.PROGRAM_UID to "F5ijs28K4s8",
+            )
+        return SavedStateHandle(state)
+    }
 
     private fun createStockEntry(
         uid: String,
         viewModel: ManageStockViewModel,
         qty: String?,
     ): StockItem {
-        val stockItem = StockItem(
-            uid,
-            faker.name().name(),
-            faker.number().numberBetween(1, 800).toString(),
-        )
+        val stockItem =
+            StockItem(
+                uid,
+                faker.name().name(),
+                faker.number().numberBetween(1, 800).toString(),
+            )
 
         viewModel.addItem(stockItem, qty, stockItem.stockOnHand, null)
 
@@ -102,123 +117,139 @@ class ManageStockViewModelTest {
 
     @Before
     fun setUp() {
-        appConfig = AppConfig(
-            "F5ijs28K4s8",
-            "wBr4wccNBj1",
-            "sLMTQUHAZnk",
-            "RghnAkDBDI4",
-            "yfsEseIcEXr",
-            "lpGYJoVUudr",
-            "ej1YwWaYGmm",
-            "I7cmT3iXT0y",
-        )
+        stockUseCase =
+            StockUseCase(
+                programUid = "F5ijs28K4s8",
+                description = "Paracetamol",
+                itemDescription = "sLMTQUHAZnk",
+                itemCode = "wBr4wccNBj1",
+                programType = "LMIS",
+                stockOnHand = "RghnAkDBDI4",
+                transactions = emptyList(),
+            )
 
-        facility = ParcelUtils.facilityToIdentifiableModelParcel(
-            FacilityFactory.create(57L),
-        )
-        distributedTo = ParcelUtils.distributedTo_ToIdentifiableModelParcel(
-            DestinationFactory.create(23L),
-        )
+        facility =
+            ParcelUtils.facilityToIdentifiableModelParcel(
+                FacilityFactory.create(57L),
+            )
+        distributedTo =
+            ParcelUtils.distributedTo_ToIdentifiableModelParcel(
+                DestinationFactory.create(23L),
+            )
         transactionDate = "2021-08-05"
 
         schedulerProvider = TrampolineSchedulerProvider()
-    }
 
-    @Test
-    fun init_shouldSetFacilityDateAndDistributedToForDistribution() = runTest {
-        whenever(
-            stockManager.search(
-                query = SearchParametersModel(
-                    null,
-                    null,
-                    facility.uid,
-                ),
-                ou = facility.uid,
-                config = appConfig,
-            ),
-        ) doReturn SearchResult(liveData { emptyList<StockItem>() })
-
-        val transaction = Transaction(
-            transactionType = TransactionType.DISTRIBUTION,
-            facility = facility,
-            transactionDate = transactionDate,
-            distributedTo = distributedTo,
-        )
-        val viewModel = getModel()
-        viewModel.setConfig(appConfig)
-        viewModel.setup(transaction)
-
-        viewModel.transaction.let {
-            assertNotNull(it.value?.facility)
-            assertEquals(it.value?.facility?.displayName, facility.displayName)
-            assertEquals(it.value?.distributedTo!!.displayName, distributedTo.displayName)
-            assertEquals(it.value?.transactionDate, transactionDate)
+        runBlocking {
+            whenever(stockManager.stockUseCase(stockUseCase.programUid))
+                .thenReturn(stockUseCase)
         }
     }
 
     @Test
-    fun init_shouldSetFacilityAndDateForDiscard() = runTest {
-        whenever(
-            stockManager.search(
-                query = SearchParametersModel(
-                    null,
-                    null,
-                    facility.uid,
+    fun init_shouldSetFacilityDateAndDistributedToForDistribution() =
+        runTest {
+            whenever(
+                stockManager.search(
+                    query =
+                        SearchParametersModel(
+                            null,
+                            null,
+                            facility.uid,
+                        ),
+                    ou = facility.uid,
+                    config = stockUseCase,
                 ),
-                ou = facility.uid,
-                config = appConfig,
-            ),
-        ) doReturn SearchResult(liveData { emptyList<StockItem>() })
+            ) doReturn SearchResult(liveData { emptyList<StockItem>() })
 
-        val transaction = Transaction(
-            transactionType = TransactionType.DISCARD,
-            facility = facility,
-            transactionDate = transactionDate,
-            distributedTo = null,
-        )
-        val viewModel = getModel()
-        viewModel.setConfig(appConfig)
-        viewModel.setup(transaction)
+            val transaction =
+                Transaction(
+                    transactionType = TransactionType.DISTRIBUTION,
+                    facility = facility,
+                    transactionDate = transactionDate,
+                    distributedTo = distributedTo,
+                )
+            val viewModel = getModel()
+            viewModel.setConfig(stockUseCase.programUid)
+            viewModel.setup(transaction)
 
-        viewModel.transaction.let {
-            assertNotNull(it.value?.facility)
-            assertNull(it.value?.distributedTo)
-            assertEquals(it.value?.facility?.displayName, facility.displayName)
-            assertEquals(it.value?.transactionDate, transactionDate)
+            viewModel.transaction.let {
+                assertNotNull(it.value?.facility)
+                assertEquals(it.value?.facility?.displayName, facility.displayName)
+                assertEquals(it.value?.distributedTo!!.displayName, distributedTo.displayName)
+                assertEquals(it.value?.transactionDate, transactionDate)
+            }
         }
-    }
 
     @Test
-    fun init_shouldSetFacilityAndDateForCorrection() = runTest {
-        whenever(
-            stockManager.search(
-                query = SearchParametersModel(
-                    null,
-                    null,
-                    facility.uid,
+    fun init_shouldSetFacilityAndDateForDiscard() =
+        runTest {
+            whenever(
+                stockManager.search(
+                    query =
+                        SearchParametersModel(
+                            null,
+                            null,
+                            facility.uid,
+                        ),
+                    ou = facility.uid,
+                    config = stockUseCase,
                 ),
-                ou = facility.uid,
-                config = appConfig,
-            ),
-        ) doReturn SearchResult(liveData { emptyList<StockItem>() })
+            ) doReturn SearchResult(liveData { emptyList<StockItem>() })
 
-        val transaction = Transaction(
-            transactionType = TransactionType.CORRECTION,
-            facility = facility,
-            transactionDate = transactionDate,
-            distributedTo = null,
-        )
-        val viewModel = getModel()
-        viewModel.setConfig(appConfig)
-        viewModel.setup(transaction)
+            val transaction =
+                Transaction(
+                    transactionType = TransactionType.DISCARD,
+                    facility = facility,
+                    transactionDate = transactionDate,
+                    distributedTo = null,
+                )
+            val viewModel = getModel()
+            viewModel.setConfig(stockUseCase.programUid)
+            viewModel.setup(transaction)
 
-        viewModel.transaction.let {
-            assertNotNull(it.value?.facility)
-            assertNull(it.value?.distributedTo)
-            assertEquals(it.value?.facility?.displayName, facility.displayName)
-            assertEquals(it.value?.transactionDate, transactionDate)
+            viewModel.transaction.let {
+                assertNotNull(it.value?.facility)
+                assertNull(it.value?.distributedTo)
+                assertEquals(it.value?.facility?.displayName, facility.displayName)
+                assertEquals(it.value?.transactionDate, transactionDate)
+            }
         }
-    }
+
+    @Test
+    fun init_shouldSetFacilityAndDateForCorrection() =
+        runTest {
+            whenever(
+                stockManager.search(
+                    query =
+                        SearchParametersModel(
+                            null,
+                            null,
+                            facility.uid,
+                        ),
+                    ou = facility.uid,
+                    config = stockUseCase,
+                ),
+            ) doReturn SearchResult(liveData { emptyList<StockItem>() })
+
+            val transaction =
+                Transaction(
+                    transactionType = TransactionType.CORRECTION,
+                    facility = facility,
+                    transactionDate = transactionDate,
+                    distributedTo = null,
+                )
+            val viewModel = getModel()
+            viewModel.setConfig(stockUseCase.programUid)
+            viewModel.setup(transaction)
+
+            viewModel.transaction.let {
+                assertNotNull(it.value?.facility)
+                assertNull(it.value?.distributedTo)
+                assertEquals(it.value?.facility?.displayName, facility.displayName)
+                assertEquals(it.value?.transactionDate, transactionDate)
+            }
+        }
 
     @Test
     fun canSetAndGetItemQuantityForSelectedItem() {
@@ -256,7 +287,7 @@ class ManageStockViewModelTest {
             qty.toString(),
             object : OnQuantityValidated {
                 override fun validationCompleted(ruleEffects: List<RuleEffect>) {
-                    println("$ruleEffects")
+                    // no-op
                 }
             },
         )

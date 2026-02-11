@@ -19,6 +19,8 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItem
 import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition
+import androidx.test.espresso.intent.Intents
+import androidx.test.espresso.intent.matcher.IntentMatchers
 import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.hasSibling
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
@@ -34,11 +36,13 @@ import org.dhis2.common.matchers.RecyclerviewMatchers.Companion.isNotEmpty
 import org.dhis2.usescases.event.entity.EventStatusUIModel
 import org.dhis2.usescases.event.entity.TEIProgramStagesUIModel
 import org.dhis2.usescases.flow.teiFlow.entity.DateRegistrationUIModel
+import org.dhis2.usescases.programStageSelection.ProgramStageSelectionActivity
 import org.dhis2.usescases.programStageSelection.ProgramStageSelectionViewHolder
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.teievents.EventViewHolder
-import org.dhis2.usescases.teiDashboard.ui.STATE_INFO_BAR_TEST_TAG
+import org.dhis2.usescases.teiDashboard.ui.INFO_BAR_TEST_TAG
 import org.dhis2.usescases.teiDashboard.ui.TEST_ADD_EVENT_BUTTON
 import org.dhis2.usescases.teiDashboard.ui.TEST_ADD_EVENT_BUTTON_IN_TIMELINE
+import org.dhis2.usescases.teiDashboard.ui.model.InfoBarType
 import org.dhis2.usescases.teidashboard.entity.EnrollmentUIModel
 import org.dhis2.usescases.teidashboard.entity.UpperEnrollmentUIModel
 import org.hamcrest.CoreMatchers.allOf
@@ -62,7 +66,7 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
                 R.string.navigation_notes
             )
         ).performClick()
-        Thread.sleep(500)
+        waitToDebounce(500)
     }
 
     fun goToRelationships() {
@@ -74,13 +78,17 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         Thread.sleep(500)
     }
 
+    @OptIn(ExperimentalTestApi::class)
     fun goToAnalytics() {
-        composeTestRule.onNodeWithText(
-            InstrumentationRegistry.getInstrumentation().targetContext.getString(
-                R.string.navigation_analytics
-            )
-        ).performClick()
-        Thread.sleep(500)
+        val analyticsText = InstrumentationRegistry.getInstrumentation().targetContext.getString(
+            R.string.navigation_analytics
+        )
+        composeTestRule.waitUntilExactlyOneExists(
+            hasText(analyticsText,true),
+            TIMEOUT
+        )
+        composeTestRule.onNodeWithText(analyticsText, useUnmergedTree = true).performClick()
+        composeTestRule.waitForIdle()
     }
 
     fun clickOnMenuMoreOptions() {
@@ -94,7 +102,8 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun checkCancelledStateInfoBarIsDisplay() {
-        composeTestRule.onNodeWithTag(STATE_INFO_BAR_TEST_TAG).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(INFO_BAR_TEST_TAG + InfoBarType.ENROLLMENT_STATUS.name)
+            .assertIsDisplayed()
         composeTestRule.onNodeWithText("Enrollment cancelled").assertIsDisplayed()
     }
 
@@ -121,10 +130,20 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun clickOnFirstReferralEvent() {
-        onView(withId(R.id.recycler_view))
-            .check(matches(allOf(atPosition(0, hasDescendant(withText("Lab monitoring"))))))
-            .perform(actionOnItemAtPosition<ProgramStageSelectionViewHolder>(0, click()))
+        waitForView(
+            allOf(
+                withId(R.id.recycler_view),
+                hasDescendant(withText("Lab monitoring"))
+            )
+        ).perform(
+            actionOnItemAtPosition<ProgramStageSelectionViewHolder>(0, click())
+        )
     }
+
+    fun checkProgramStageSelectionActivityIsLaunched() {
+        Intents.intended(allOf(IntentMatchers.hasComponent(ProgramStageSelectionActivity::class.java.name)))
+    }
+
 
     fun clickOnReferralOption(oneTime: String) {
         composeTestRule.onNodeWithText(oneTime).performClick()
@@ -135,7 +154,7 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun checkEventWasCreated(eventName: String) {
-        onView(withId(R.id.tei_recycler))
+        waitForView(withId(R.id.tei_recycler))
             .check(
                 matches(
                     allOf(
@@ -170,7 +189,8 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun checkCompleteStateInfoBarIsDisplay() {
-        composeTestRule.onNodeWithTag(STATE_INFO_BAR_TEST_TAG).assertIsDisplayed()
+        composeTestRule.onNodeWithTag(INFO_BAR_TEST_TAG + InfoBarType.ENROLLMENT_STATUS.name)
+            .assertIsDisplayed()
         composeTestRule.onNodeWithText("Enrollment completed").assertIsDisplayed()
     }
 
@@ -208,7 +228,8 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun clickOnSeeDetails() {
-        onView(withId(R.id.editButton)).perform(click())
+        waitForView(withId(R.id.editButton))
+            .perform(click())
     }
 
     fun checkFullDetails(enrollmentUIModel: EnrollmentUIModel) {
@@ -217,7 +238,7 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
                 hasText(
                     enrollmentUIModel.enrollmentDate,
                 ) and hasAnySibling(
-                    hasText("Date of enrollment *"),
+                    hasText("Enrollment date *"),
                 ),
                 useUnmergedTree = true,
             ).assertIsDisplayed()
@@ -348,6 +369,7 @@ class TeiDashboardRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun checkAllEventsCompleted(totalEvents: Int) {
+        composeTestRule.waitForIdle()
         var event = 0
         while (event < totalEvents) {
             checkEventIsCompleted(event)

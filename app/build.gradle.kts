@@ -1,7 +1,7 @@
+@file:Suppress("UnstableApiUsage")
+
 import com.android.build.api.variant.impl.VariantOutputImpl
-import com.android.build.gradle.internal.scope.ProjectInfo.Companion.getBaseName
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -9,17 +9,13 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    id("com.google.devtools.ksp")
     id("kotlin-parcelize")
-    id("kotlinx-serialization")
-    id("dagger.hilt.android.plugin")
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose.compiler)
+    alias(libs.plugins.sentry)
 }
 apply(from = "${project.rootDir}/jacoco/jacoco.gradle.kts")
-
-repositories {
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    mavenCentral()
-}
 
 android {
 
@@ -31,12 +27,15 @@ android {
 
     val getCommitHash by extra {
         fun(): String {
-            val stdout = ByteArrayOutputStream()
-            exec {
-                commandLine("git", "rev-parse", "--short", "HEAD")
-                standardOutput = stdout
+            return try {
+                val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+                    .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                    .redirectError(ProcessBuilder.Redirect.PIPE)
+                    .start()
+                process.inputStream.bufferedReader().readText().trim()
+            } catch (e: Exception) {
+                "unknown"
             }
-            return stdout.toString().trim()
         }
     }
 
@@ -48,6 +47,14 @@ android {
                 storeFile = file(path)
             }
             storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+        }
+        create("training") {
+            keyAlias = System.getenv("TRAINING_KEY_ALIAS")
+            keyPassword = System.getenv("TRAINING_KEY_PASSWORD")
+            System.getenv("TRAINING_STORE_FILE")?.let { path ->
+                storeFile = file(path)
+            }
+            storePassword = System.getenv("TRAINING_STORE_PASSWORD")
         }
     }
 
@@ -92,15 +99,6 @@ android {
         buildConfigField("long", "VERSION_CODE", "${defaultConfig.versionCode}")
         buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
         buildConfigField("String", "SENTRY_DSN", "\"${bitriseSentryDSN}\"")
-
-        manifestPlaceholders["appAuthRedirectScheme"] = ""
-
-        ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
-        }
-        javaCompileOptions
-            .annotationProcessorOptions.arguments["dagger.hilt.disableModulesHaveInstallInCheck"] =
-            "true"
     }
     packaging {
         jniLibs {
@@ -135,20 +133,18 @@ android {
             // install debug and release builds at the same time
             applicationIdSuffix = ".debug"
 
-            // Using dataentry.jks to sign debug build type.
-            signingConfig = signingConfigs.getByName("debug")
-
             buildConfigField("int", "MATOMO_ID", "2")
             buildConfigField("String", "BUILD_DATE", "\"" + getBuildDate() + "\"")
             buildConfigField("String", "GIT_SHA", "\"" + getCommitHash() + "\"")
         }
         getByName("release") {
-            isMinifyEnabled = false
+            isShrinkResources = true
+            isMinifyEnabled = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+
             buildConfigField("int", "MATOMO_ID", "1")
             buildConfigField("String", "BUILD_DATE", "\"" + getBuildDate() + "\"")
             buildConfigField("String", "GIT_SHA", "\"" + getCommitHash() + "\"")
@@ -157,25 +153,14 @@ android {
     flavorDimensions += listOf("default")
 
     productFlavors {
-        create("dhis") {
-            applicationId = "com.ichis"
-            dimension = "default"
-            versionCode = libs.versions.vCode.get().toInt()
-            versionName = libs.versions.vName.get()
+        create("dhis2") {
+            signingConfig = signingConfigs.getByName("release")
         }
-
-        create("dhisPlayServices") {
-            applicationId = "com.ichis"
-            dimension = "default"
-            versionCode = libs.versions.vCode.get().toInt()
-            versionName = libs.versions.vName.get()
+        create("dhis2PlayServices") {
+            signingConfig = signingConfigs.getByName("release")
         }
-
-        create("dhisUITesting") {
-            applicationId = "com.ichis"
-            dimension = "default"
-            versionCode = libs.versions.vCode.get().toInt()
-            versionName = libs.versions.vName.get()
+        create("dhis2Training") {
+            signingConfig = signingConfigs.getByName("training")
         }
     }
 
@@ -196,15 +181,15 @@ android {
         resolutionStrategy {
             preferProjectModules()
             force(
-                "junit:junit:4.12",
-                "com.squareup.okhttp3:okhttp:4.9.3",
-                "com.squareup.okhttp3:mockwebserver:4.9.3",
-                "com.squareup.okhttp3:logging-interceptor:4.9.3"
+                "junit:junit:4.13.2",
+                "com.squareup.okhttp3:okhttp:4.12.0",
+                "com.squareup.okhttp3:mockwebserver:4.12.0",
+                "com.squareup.okhttp3:logging-interceptor:4.12.0"
             )
             setForcedModules(
-                "com.squareup.okhttp3:okhttp:4.9.3",
-                "com.squareup.okhttp3:mockwebserver:4.9.3",
-                "com.squareup.okhttp3:logging-interceptor:4.9.3"
+                "com.squareup.okhttp3:okhttp:4.12.0",
+                "com.squareup.okhttp3:mockwebserver:4.12.0",
+                "com.squareup.okhttp3:logging-interceptor:4.12.0"
             )
             cacheDynamicVersionsFor(0, TimeUnit.SECONDS)
         }
@@ -219,11 +204,17 @@ android {
         onVariants { variant ->
             val buildType = variant.buildType
             val flavorName = variant.flavorName
+
+            // Apply suffix only for training flavor in release buildType
+            if (buildType == "release" && flavorName == "dhis2Training") {
+                variant.applicationId.set("${variant.applicationId.get()}.training")
+            }
+
             variant.outputs.forEach { output ->
                 if (output is VariantOutputImpl) {
                     val suffix = when {
-                        buildType == "debug" && flavorName == "ichis" -> "-training"
-                        buildType == "release" && flavorName == "ichiPlayServices" -> "-googlePlay"
+                        buildType == "release" && flavorName == "dhis2Training" -> "-training"
+                        buildType == "release" && flavorName == "dhis2PlayServices" -> "-googlePlay"
                         else -> ""
                     }
 
@@ -233,17 +224,26 @@ android {
 
         }
     }
+
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+        arg("room.incremental", "true")
+        arg("room.expandProjection", "true")
+        // Enable debug logs
+        arg("ksp.logging.level", "DEBUG")
+    }
 }
 
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xcontext-parameters")
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation(project(":viewpagerdotsindicator"))
     implementation(project(":dhis_android_analytics"))
     implementation(project(":form"))
     implementation(project(":commons"))
@@ -253,6 +253,9 @@ dependencies {
     implementation(project(":dhis2-mobile-program-rules"))
     implementation(project(":tracker"))
     implementation(project(":community"))
+    implementation(project(":aggregates"))
+    implementation(project(":commonskmm"))
+    implementation(project(":login"))
 
     implementation(libs.security.conscrypt)
     implementation(libs.security.rootbeer)
@@ -273,23 +276,20 @@ dependencies {
     implementation(libs.github.pinlock)
     implementation(libs.github.fancyshowcase)
     implementation(libs.lottie)
-    implementation(libs.dagger.hilt.android)
     implementation(libs.network.okhttp)
-    implementation(libs.dates.jodatime)
     implementation(libs.analytics.matomo)
     implementation(libs.analytics.rxlint)
     implementation(libs.analytics.customactivityoncrash)
-    implementation(platform(libs.dispatcher.dispatchBOM))
-    implementation(libs.dispatcher.dispatchCore)
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
+    implementation(libs.lottie.compose)
 
     coreLibraryDesugaring(libs.desugar)
 
-    "dhisPlayServicesImplementation"(libs.google.auth)
-    "dhisPlayServicesImplementation"(libs.google.auth.apiphone)
+    "dhis2PlayServicesImplementation"(libs.google.auth)
+    "dhis2PlayServicesImplementation"(libs.google.auth.apiphone)
 
-    kapt(libs.dagger.compiler)
-    kapt(libs.dagger.hilt.android.compiler)
-    kapt(libs.deprecated.autoValueParcel)
+    ksp(libs.dagger.compiler)
 
     testImplementation(libs.test.archCoreTesting)
     testImplementation(libs.test.testCore)
@@ -299,7 +299,7 @@ dependencies {
     testImplementation(libs.test.truth)
     testImplementation(libs.test.kotlinCoroutines)
     testImplementation(libs.test.turbine)
-
+    testImplementation(libs.test.androidx.paging)
     androidTestUtil(libs.test.orchestrator)
 
     androidTestImplementation(libs.test.testRunner)
@@ -317,5 +317,39 @@ dependencies {
     androidTestImplementation(libs.test.rx2.idler)
     androidTestImplementation(libs.test.compose.ui.test)
     androidTestImplementation(libs.test.hamcrest)
-    androidTestImplementation(libs.dispatcher.dispatchEspresso)
+}
+
+sentry {
+    org.set("dhis2")
+    projectName.set("dhis2-android-capture")
+
+    val sentryAuthToken = System.getenv("SENTRY_AUTH_TOKEN")
+    if (!sentryAuthToken.isNullOrBlank()) {
+        authToken.set(sentryAuthToken)
+
+        // Enable ProGuard/R8 mapping upload for deobfuscation, maps are available in the build folder
+        includeProguardMapping.set(true)
+        // Upload the mapping on every release build
+        autoUploadProguardMapping.set(true)
+    } else {
+        // When no auth token is available (e.g., local development), disable uploads
+        includeProguardMapping.set(false)
+        autoUploadProguardMapping.set(false)
+    }
+
+    // Disable native symbols upload (not needed for this project)
+    uploadNativeSymbols.set(false)
+    includeNativeSources.set(false)
+
+    // Enable auto-installation of Sentry components (sentry-android SDK and okhttp, timber, fragment and compose integrations).
+    autoInstallation {
+        enabled.set(false)
+        sentryVersion.set(libs.versions.sentry)
+    }
+
+    // Disabled to avoid uploading source code to Sentry; rely on ProGuard/R8 mappings instead.
+    includeSourceContext.set(false)
+
+    // Telemetry
+    telemetry.set(false)
 }

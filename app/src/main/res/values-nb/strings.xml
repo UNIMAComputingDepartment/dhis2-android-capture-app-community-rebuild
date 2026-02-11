@@ -32,11 +32,7 @@
 
     <string name="sync_error_title">Synkroniseringsfeil</string>
     <string name="sync_error_text">En feil har oppstått under synkronisering. Vennligst prøv på nytt</string>
-    <string name="metadata_sync_error">FEIL: Noe gikk galt i synkroniseringsprosessen. Hvis du er tilkoblet, vennligst prøv på nytt. Hvis feilen vedvarer, kontakt din administrator.</string>
-    <string name="data_sync_warning">ADVARSEL: Mesteparten av dine data er synkronisert men noen felter presenterte konflikter. Synkroniser konfigurasjonen og prøv igjen. Sjekk deres synkroniseringstatus: programmer, TEI\'s og hendelser med konflinkter er merket som @.</string>
     <string name="data_sync_warning_program">ADVARSEL: Mesteparten av dine data er synkroniserte men noen felter presenterte konflinkter. Synkroniser din konfigurasjon og prøv igjen. Hvis advarselen vedvarer, sjekk deres synkroniseringsstatus: programmer, TEI\'s og hendelser med konflikter er merket som @.</string>
-    <string name="data_sync_error">FEIL: Noe av dine data kunne ikke synkroniseres. Sjekk synkroniseringsstatusen deres: programmer med feil er merket som @, TEI\'s og hendelser som $\".</string>
-    <string name="data_sync_error_program">FEIL: Noe av dine data kunne ikke synkroniseres. Sjekk synkroniseringsstatusen deres: TEI\'s og hendelser med konflikter er merket som $\".</string>
     <string name="search_result_text">%sresultater funnet</string>
     <string name="add_new">Legg til ny</string>
     <string name="add">Legg til</string>
@@ -86,6 +82,7 @@
     <string name="program_inactive">Programmet er inaktivt</string>
 
     <string name="event_open">Åpne</string>
+    <string name="event_completed">Hendelse fullført</string>
     <string name="read_only">Skrivebeskyttet</string>
     <string name="finish_and_complete">Gjør ferdig og fullfør</string>
     <string name="completed">Fullført</string>
@@ -135,6 +132,8 @@
     <string name="delete">Slett</string>
     <string name="total">Totalt</string>
     <string name="most_recent_event_date">Siste hendelsesdato</string>
+    <string name="no_options">Ingen alternativer er tilgjengelige</string>
+
     <string name="active_programs">Aktive programmer</string>
     <string name="to_enroll_programs">Programmer å registrere</string>
     <string name="enroll">Registrere</string>
@@ -144,12 +143,15 @@
     <!--TEI DASHBOARD-->
     <string name="see_details">Se detaljer</string>
     <string name="view_more">VIS MER</string>
+    <string name="edit">Rediger</string>
     <string name="follow_up">Oppfølging</string>
     <string name="follow_up_enabled">Oppfølging er aktivert</string>
     <string name="follow_up_disabled">Oppfølging er deaktivert</string>
     <string name="deactivate">Deaktiver</string>
     <string name="program_not_allow_events">Dette programmet tillater ikke flere hendelser</string>
 
+    <!--DONE TASKS-->
+    <string name="events_no_data">Ingen data</string>
     <string name="events">hendelser</string>
     <string name="done_task">Hjem</string>
     <string name="app_info">App Info</string>
@@ -190,7 +192,6 @@
         <item quantity="one">Det er  %s program med spesifikke innstillinger</item>
         <item quantity="other">Det er  %s programmer med spesifikke innstillinger</item>
     </plurals>
-    <string name="settings_sync_period">Synkroniseringsperiode</string>
     <string name="settings_limit_scope">Begrensede innstillinger</string>
     <string name="settings_limit_globally">Globalt</string>
     <string name="settings_limit_program">etter program</string>
@@ -212,6 +213,7 @@
     <string name="settingsReset_descr">Din konfigurasjon og App data lagret på enheten vil bli slettet. Du vil bli bedt om å logge inn på nytt, og data som ikke er synkronisert til serveren vil bli borte.</string>
     <string name="settingsSms">SMS innstillinger</string>
     <string name="settingsSms_descr">Sjekk og rediger parametre relatert til SMS inngangsport</string>
+    <string name="settingsTwoFAStatus">Status</string>
     <!--endregion-->
 
     <string name="enrollmment_date">Registreringsdato</string>
@@ -355,6 +357,7 @@
     <string name="date_dialog_tigle">Velg datoer for å filtrere</string>
     <string name="select_option">Velg et alternativ</string>
     <string name="issue_reported">Problemer rapportert</string>
+    <string name="dialog_generate_new_event">Generer en ny hendelse</string>
     <string name="message_generate_new_event">Vil du opprette en ny hendelse?</string>
     <string name="event_completed_title">Hendelser er fullført</string>
     <string name="event_completed_message">Alle hendelser i dette programmet er fullført. Vil du lukke programmet også?</string>
@@ -455,7 +458,6 @@
     <string name="action_agree">Enig</string>
     <string name="action_continue">Fortsett</string>
     <string name="login_server_info_title">Server URL</string>
-    <string name="login_server_info_message">Angi DHIS 2 server URL for din organisasjons som er oppgitt av din systemadministrator.\n\nAlternativt, kan du skanne en QR kode som inneholder URL til din server</string>
     <string name="forgot_your_code">Har du glemt koden?</string>
     <string name="event_form_end_options_title">Hva vil du gjøre for denne hendelsen?</string>
     <string name="sectionSelectorEnd">SLUTT</string>
@@ -659,6 +661,7 @@
     <string name="download_tei_error">Den valgte %s kunne ikke lastes ned</string>
     <string name="completed_by">Fullført av %s: %s</string>
     <string name="updated_time">Oppdatert: %s</string>
+    <string name="action_done">Fullfør</string>
     <string name="validation_internal_error_datasets">Vi kunne ikke sjekke datakvaliteten. Kontakt administratoren din</string>
     <string name="are_you_sure">Er du sikker?</string>
     <string name="reopen_question">Vil du åpne datasettet på nytt?</string>
@@ -683,10 +686,13 @@
     <string name="customactivityoncrash_error_activity_error_details_clipboard_label">Informasjon om feil</string>
     <string name="enrollment_date_edition_warning">Det er planlagte arrangementer som ikke vil bli planlagt på nytt</string>
     <string name="section_charts">Diagrammer</string>
+    <string name="navigation_list_view">Vis</string>
     <string name="navigation_table_view">Tabellvisning</string>
+    <string name="navigation_map_view">Kart</string>
     <string name="navigation_analytics">Analyser</string>
     <string name="navigation_tasks">Oppgaver</string>
     <string name="navigation_programs">Programmer</string>
+    <string name="navigation_charts">Diagrammer</string>
     <string name="navigation_notes">Notater</string>
     <string name="navigation_data_entry">Dataregistrering</string>
     <string name="navigation_tei_data">Detaljer</string>
@@ -708,6 +714,7 @@
     <string name="section_indicators">Indikatorer</string>
     <string name="value">Verdi</string>
     <string name="data_set_quality_check_done">Fullført!</string>
+    <string name="break_glass_dialog_title">Dette programmet er beskyttet</string>
     <string name="login_error_bad_credentials">Feil opplysninger</string>
     <string name="invalid_integer">Verdien må være et heltall</string>
     <string name="dataset_column_default">Verdier</string>
@@ -717,4 +724,26 @@
     <string name="search_too_many_results">For mange resultat</string>
     <string name="search_create_new">Opprett ny</string>
     <string name="action_ok">Ok</string>
+    <string name="sync_dialog_title_synced">Synkronisert</string>
+    <string name="sync_dialog_title_syncing">Synkroniserer</string>
+    <string name="sync_dialog_action_send">Send</string>
+    <string name="sync_dialog_action_refresh">Oppdater</string>
+    <string name="skipped">Hoppet over</string>
+    <string name="programs">Programmer</string>
+    <string name="sync_error">Synkroniseringsfeil</string>
+    <string name="mark_follow_up">Merk for oppfølging</string>
+    <string name="coordinates">Koordinater</string>
+    <string name="schedule">Planlegg</string>
+    <string name="refer">Henvis</string>
+    <string name="scheduled_enter_event">Planlagt</string>
+    <string name="program_stage">Programfase</string>
+    <string name="event">hendelse</string>
+    <string name="timeline">Tidslinje</string>
+    <string name="optional">Valgfri</string>
+    <string name="show_more">Vis mer</string>
+    <string name="show_less">Vis mindre</string>
+    <string name="sync">Synk</string>
+    <string name="show_description">Vis beskrivelse</string>
+    <string name="hide_description">Skjul beskrivelse</string>
+    <string name="transfer">Overfør </string>
     </resources>

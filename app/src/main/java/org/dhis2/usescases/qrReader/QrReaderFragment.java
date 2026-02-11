@@ -21,13 +21,15 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 import com.google.zxing.BarcodeFormat;
-import com.google.zxing.Result;
+import com.google.zxing.ResultPoint;
+import com.journeyapps.barcodescanner.BarcodeCallback;
+import com.journeyapps.barcodescanner.BarcodeResult;
+import com.journeyapps.barcodescanner.DecoratedBarcodeView;
+import com.journeyapps.barcodescanner.DefaultDecoderFactory;
 
 import org.dhis2.Components;
 import org.dhis2.R;
 import org.dhis2.data.qr.QRjson;
-import org.dhis2.commons.data.tuples.Pair;
-import org.dhis2.commons.data.tuples.Trio;
 import org.dhis2.databinding.FragmentQrBinding;
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity;
 import org.dhis2.usescases.general.FragmentGlobalAbstract;
@@ -40,11 +42,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
 
-import me.dm7.barcodescanner.zxing.ZXingScannerView;
+import kotlin.Pair;
+import kotlin.Triple;
 import timber.log.Timber;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
@@ -55,9 +59,9 @@ import static org.dhis2.commons.Constants.PROGRAM_UID;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingScannerView.ResultHandler, QrReaderContracts.View {
+public class QrReaderFragment extends FragmentGlobalAbstract implements BarcodeCallback, QrReaderContracts.View {
 
-    private ZXingScannerView mScannerView;
+    private DecoratedBarcodeView mScannerView;
     private Context context;
     FragmentQrBinding binding;
     private boolean isPermissionRequested = false;
@@ -65,11 +69,11 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     @Inject
     QrReaderContracts.Presenter presenter;
     private String eventUid;
-    private List<Trio<TrackedEntityDataValue, String, Boolean>> eventData = new ArrayList<>();
-    private List<Trio<TrackedEntityDataValue, String, Boolean>> teiEventData = new ArrayList<>();
+    private List<Triple<TrackedEntityDataValue, String, Boolean>> eventData = new ArrayList<>();
+    private List<Triple<TrackedEntityDataValue, String, Boolean>> teiEventData = new ArrayList<>();
 
     private String teiUid;
-    private List<Trio<String, String, Boolean>> attributes = new ArrayList<>();
+    private List<Triple<String, String, Boolean>> attributes = new ArrayList<>();
     private List<Pair<String, Boolean>> enrollments = new ArrayList<>();
     private List<Pair<String, Boolean>> events = new ArrayList<>();
     private List<Pair<String, Boolean>> relationships = new ArrayList<>();
@@ -93,18 +97,24 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_qr, container, false);
         presenter.init(this);
         mScannerView = binding.scannerView;
-        mScannerView.setAutoFocus(true);
-        ArrayList<BarcodeFormat> formats = new ArrayList<>();
-        formats.add(BarcodeFormat.QR_CODE);
-        mScannerView.setFormats(formats);
+        mScannerView.setDecoderFactory(new DefaultDecoderFactory(Collections.singletonList(BarcodeFormat.QR_CODE)));
         return binding.getRoot();
     }
 
     @Override
-    public void handleResult(Result result) {
+    public void barcodeResult(BarcodeResult result) {
+        handleResult(result.getText());
+    }
+
+    @Override
+    public void possibleResultPoints(List<ResultPoint> resultPoints) {
+        // Not used
+    }
+
+    private void handleResult(String resultText) {
 
         try {
-            QRjson qRjson = new Gson().fromJson(result.getText(), QRjson.class);
+            QRjson qRjson = new Gson().fromJson(resultText, QRjson.class);
             switch (qRjson.getType()) {
                 case QRjson.EVENT_JSON:
                     presenter.handleEventWORegistrationInfo(new JSONObject(qRjson.getData()));
@@ -156,7 +166,13 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     @Override
     public void onPause() {
         super.onPause();
-        mScannerView.stopCamera();
+        mScannerView.pause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mScannerView.pause();
     }
 
     @Override
@@ -166,8 +182,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     }
 
     private void initScanner() {
-        mScannerView.setResultHandler(this);
-        mScannerView.startCamera();
+        mScannerView.decodeContinuous(this);
     }
 
 
@@ -242,7 +257,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.action_accept), (dialog, which) -> {
                     dialog.dismiss();
-                    mScannerView.resumeCameraPreview(this);
+                    mScannerView.decodeContinuous(this);
                 })
                 .setNegativeButton(getString(R.string.cancel), (dialog, which) -> dialog.dismiss())
                 .show();
@@ -250,9 +265,9 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
 
 
     @Override
-    public void renderEventDataInfo(@NonNull List<Trio<TrackedEntityDataValue, String, Boolean>> data) {
-        for (Trio<TrackedEntityDataValue, String, Boolean> dataValue : data) {
-            if (!dataValue.val2()) {
+    public void renderEventDataInfo(@NonNull List<Triple<TrackedEntityDataValue, String, Boolean>> data) {
+        for (Triple<TrackedEntityDataValue, String, Boolean> dataValue : data) {
+            if (!dataValue.getThird()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.eventData.contains(dataValue)) {
                 this.eventData.add(dataValue);
@@ -262,9 +277,9 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     }
 
     @Override
-    public void renderTeiEventDataInfo(@NonNull List<Trio<TrackedEntityDataValue, String, Boolean>> data) {
-        for (Trio<TrackedEntityDataValue, String, Boolean> dataValue : data) {
-            if (!dataValue.val2()) {
+    public void renderTeiEventDataInfo(@NonNull List<Triple<TrackedEntityDataValue, String, Boolean>> data) {
+        for (Triple<TrackedEntityDataValue, String, Boolean> dataValue : data) {
+            if (!dataValue.getThird()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.teiEventData.contains(dataValue)) {
                 this.teiEventData.add(dataValue);
@@ -274,9 +289,9 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     }
 
     @Override
-    public void renderAttrInfo(@NonNull List<Trio<String, String, Boolean>> attributes) {
-        for (Trio<String, String, Boolean> attribute : attributes) {
-            if (!attribute.val2()) {
+    public void renderAttrInfo(@NonNull List<Triple<String, String, Boolean>> attributes) {
+        for (Triple<String, String, Boolean> attribute : attributes) {
+            if (!attribute.getThird()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.attributes.contains(attribute)) {
                 this.attributes.add(attribute);
@@ -288,7 +303,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     @Override
     public void renderEnrollmentInfo(@NonNull List<Pair<String, Boolean>> enrollments) {
         for (Pair<String, Boolean> enrollment : enrollments) {
-            if (!enrollment.val1()) {
+            if (!enrollment.getSecond()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.enrollments.contains(enrollment)) {
                 this.enrollments.add(enrollment);
@@ -300,7 +315,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     @Override
     public void renderEventInfo(@NonNull List<Pair<String, Boolean>> events) {
         for (Pair<String, Boolean> event : events) {
-            if (!event.val1()) {
+            if (!event.getSecond()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.events.contains(event)) {
                 this.events.add(event);
@@ -312,7 +327,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
     @Override
     public void renderRelationship(@NonNull List<Pair<String, Boolean>> relationships) {
         for (Pair<String, Boolean> relationship : relationships) {
-            if (!relationship.val1()) {
+            if (!relationship.getSecond()) {
                 showError(getString(R.string.qr_error_attr));
             } else if (!this.relationships.contains(relationship)) {
                 this.relationships.add(relationship);
@@ -336,9 +351,9 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         message = message + getString(R.string.qr_attributes) + ":\n";
 
         if (attributes != null && !attributes.isEmpty()) {
-            for (Trio<String, String, Boolean> attribute : attributes) {
-                if (attribute.val2()) {
-                    message = message + attribute.val1() + "\n";
+            for (Triple<String, String, Boolean> attribute : attributes) {
+                if (attribute.getThird()) {
+                    message = message + attribute.getSecond() + "\n";
                 }
             }
             message = message + "\n";
@@ -351,8 +366,8 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
 
         if (enrollments != null && !enrollments.isEmpty()) {
             for (Pair<String, Boolean> enrollment : enrollments) {
-                if (enrollment.val1()) {
-                    message = message + enrollment.val0() + "\n";
+                if (enrollment.getSecond()) {
+                    message = message + enrollment.getFirst() + "\n";
                 }
             }
             message = message + "\n";
@@ -367,7 +382,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         if (events != null && !events.isEmpty()) {
             int count = 0;
             for (Pair<String, Boolean> event : events) {
-                if (event.val1()) {
+                if (event.getSecond()) {
                     count++;
                 }
             }
@@ -383,7 +398,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         if (relationships != null && !relationships.isEmpty()) {
             int count = 0;
             for (Pair<String, Boolean> relationship : relationships) {
-                if (relationship.val1()) {
+                if (relationship.getSecond()) {
                     count++;
                 }
             }
@@ -396,8 +411,8 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         message = message + getString(R.string.qr_data_values) + ":\n";
 
         if (teiEventData != null && !teiEventData.isEmpty()) {
-            for (Trio<TrackedEntityDataValue, String, Boolean> attribute : teiEventData) {
-                message = message + attribute.val1() + ":\n" + attribute.val0().value() + "\n\n";
+            for (Triple<TrackedEntityDataValue, String, Boolean> attribute : teiEventData) {
+                message = message + attribute.getSecond() + ":\n" + attribute.getFirst().value() + "\n\n";
             }
             message = message + "\n";
         } else {
@@ -412,7 +427,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.action_accept), (dialog, which) -> {
                     dialog.dismiss();
-                    mScannerView.resumeCameraPreview(this);
+                    mScannerView.decodeSingle(this);
                 })
                 .setNegativeButton(getString(R.string.save_qr), (dialog, which) -> {
                     presenter.download();
@@ -441,8 +456,8 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
         message = message + getString(R.string.qr_data_values) + ":\n";
 
         if (eventData != null && !eventData.isEmpty()) {
-            for (Trio<TrackedEntityDataValue, String, Boolean> attribute : eventData) {
-                message = message + attribute.val1() + ":\n" + attribute.val0().value() + "\n\n";
+            for (Triple<TrackedEntityDataValue, String, Boolean> attribute : eventData) {
+                message = message + attribute.getSecond() + ":\n" + attribute.getFirst().value() + "\n\n";
             }
             message = message + "\n";
         } else {
@@ -458,7 +473,7 @@ public class QrReaderFragment extends FragmentGlobalAbstract implements ZXingSca
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.action_accept), (dialog, which) -> {
                     dialog.dismiss();
-                    mScannerView.resumeCameraPreview(this);
+                    mScannerView.decodeContinuous(this);
                 })
                 .setNegativeButton(getString(R.string.save_qr), (dialog, which) -> {
                     presenter.downloadEventWORegistration();

@@ -12,7 +12,6 @@ class SearchResultHolder(
     val binding: ResultSearchListBinding,
     private val onSearchOutsideProgram: () -> Unit,
 ) : RecyclerView.ViewHolder(binding.root) {
-
     init {
         binding.composeView.setViewCompositionStrategy(
             ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,

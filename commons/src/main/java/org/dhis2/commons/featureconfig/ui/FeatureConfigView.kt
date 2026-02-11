@@ -12,15 +12,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Switch
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -28,24 +30,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.R
 import org.dhis2.commons.featureconfig.di.FeatureConfigComponentProvider
 import org.dhis2.commons.featureconfig.model.FeatureOptions
+import org.dhis2.commons.ui.extensions.handleInsets
+import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 import javax.inject.Inject
 
 class FeatureConfigView : AppCompatActivity() {
-
     @Inject
     lateinit var viewModelFactory: FeatureConfigViewModelFactory
 
     private val viewModel: FeatureConfigViewModel by viewModels { viewModelFactory }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        handleInsets()
         (applicationContext as FeatureConfigComponentProvider)
             .provideFeatureConfigActivityComponent()
             ?.inject(this)
@@ -55,6 +61,12 @@ class FeatureConfigView : AppCompatActivity() {
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     TopAppBar(
+                        colors =
+                            TopAppBarDefaults.topAppBarColors(
+                                containerColor = colorResource(id = R.color.colorPrimary),
+                                titleContentColor = Color.White,
+                                navigationIconContentColor = Color.White,
+                            ),
                         title = { Text(text = stringResource(id = R.string.feature_configuration)) },
                         navigationIcon = {
                             IconButton(onClick = { onBackPressedDispatcher.onBackPressed() }) {
@@ -79,11 +91,16 @@ class FeatureConfigView : AppCompatActivity() {
                         }
 
                         Row(
-                            Modifier.fillMaxWidth(),
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(Spacing.Spacing16),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = spacedBy(8.dp),
                         ) {
-                            Text(modifier = Modifier.weight(1f), text = currentFeature.feature.description)
+                            Text(
+                                modifier = Modifier.weight(1f),
+                                text = currentFeature.feature.description,
+                            )
                             currentFeature.extras?.let { options ->
                                 when (options) {
                                     is FeatureOptions.ResponsiveHome -> {
@@ -96,10 +113,11 @@ class FeatureConfigView : AppCompatActivity() {
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                             onValueChange = { value ->
                                                 currentValue = value
-                                                currentFeature = currentFeature.copy(
-                                                    extras = options.copy(totalItems = value.toIntOrNull()),
-                                                    canBeEnabled = value.toIntOrNull() != null,
-                                                )
+                                                currentFeature =
+                                                    currentFeature.copy(
+                                                        extras = options.copy(totalItems = value.toIntOrNull()),
+                                                        canBeEnabled = value.toIntOrNull() != null,
+                                                    )
                                             },
                                         )
                                     }
