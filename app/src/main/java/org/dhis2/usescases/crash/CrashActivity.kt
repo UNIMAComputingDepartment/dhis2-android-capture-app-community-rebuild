@@ -45,7 +45,7 @@ import org.dhis2.R
 import org.hisp.dhis.mobile.ui.designsystem.component.Button
 import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
 import org.hisp.dhis.mobile.ui.designsystem.component.ColorStyle
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -61,7 +61,7 @@ class CrashActivity : AppCompatActivity() {
             return
         }
         setContent {
-            DHIS2Theme {
+            IchisTheme {
                 Scaffold(
                     floatingActionButton = {
                         CrashGoBackButton {

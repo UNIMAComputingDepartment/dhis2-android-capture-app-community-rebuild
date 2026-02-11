@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import org.dhis2.R
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 
 @Composable
@@ -153,7 +153,7 @@ fun LoginTopBar(
 @Preview
 @Composable
 private fun PreviewLoginTopBar() {
-    DHIS2Theme {
+    IchisTheme {
         LoginTopBar(version = "v2.9") {}
     }
 }

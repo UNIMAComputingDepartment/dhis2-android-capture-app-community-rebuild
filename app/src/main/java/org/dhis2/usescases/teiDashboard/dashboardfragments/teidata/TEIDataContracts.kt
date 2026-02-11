@@ -45,5 +45,9 @@ class TEIDataContracts {
         )
 
         fun goToEnrollment(programUid: String, enrollmentUid: String,)
+        fun confirmRelationshipRemove(
+            type: String,
+            teiUid: String
+        )
     }
 }

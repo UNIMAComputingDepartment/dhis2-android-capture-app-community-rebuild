@@ -13,7 +13,6 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.components.CollapsibleRelationshipSection
-import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
@@ -37,6 +36,7 @@ fun TeiDetailDashboard(
     onSearchTEIs: (String, String) -> Unit,
     onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
     onCreateEntity: (String, String) -> Unit,
+    onRemoveRelationship: (String, String) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -116,7 +116,8 @@ fun TeiDetailDashboard(
                 onRelationshipClick = { onRelationshipClick(it.uid, it.programUid, it.enrollmentUid) } ,
                 onSearchTEIs = onSearchTEIs,
                 onEntitySelect = onEntitySelected,
-                onCreateEntity = onCreateEntity
+                onCreateEntity = onCreateEntity,
+                removeRelationship = onRemoveRelationship
             )
         }
 

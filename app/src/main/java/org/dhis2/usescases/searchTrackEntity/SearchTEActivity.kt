@@ -77,7 +77,7 @@ import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.period.DatePeriod
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import timber.log.Timber
 import java.io.Serializable
 import java.util.Date
@@ -371,7 +371,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     private fun setupBottomNavigation() {
         binding.navigationBar.setContent {
-            DHIS2Theme {
+            IchisTheme {
                 val uiState by viewModel.navigationBarUIState
                 val isBackdropActive by viewModel.backdropActive.observeAsState(false)
                 var selectedItemIndex by remember(uiState) {

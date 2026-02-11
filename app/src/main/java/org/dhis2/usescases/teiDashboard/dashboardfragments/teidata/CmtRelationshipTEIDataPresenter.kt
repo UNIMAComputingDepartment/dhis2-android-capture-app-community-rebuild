@@ -261,4 +261,28 @@ class CmtRelationshipTEIDataPresenter(
                     Consumer { t: Throwable? -> Timber.d(t) })
         )
     }
+
+    fun onRemoveRelationship(type: String, uid: String) {
+        view.confirmRelationshipRemove(type, uid)
+    }
+
+    fun removeRelationship(type: String, uid: String) {
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.deleteRelationship(
+                    relationshipType = type,
+                    relatedTeiUid = uid,
+                    teiUid = teiUid
+                )
+            }.subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    {
+                        Timber.d("Removed Relationship $uid")
+                        retrieveRelationships()
+                    },
+                    { Timber.e(it) }
+                )
+        )
+    }
 }

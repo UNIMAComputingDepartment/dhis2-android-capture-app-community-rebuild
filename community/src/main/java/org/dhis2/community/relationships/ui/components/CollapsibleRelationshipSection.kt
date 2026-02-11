@@ -6,7 +6,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -18,10 +25,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.BottomSheetDefaults
@@ -29,6 +39,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -45,16 +57,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.consumePositionChange
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.community.IchisTheme
 import org.dhis2.community.R
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.Dhis2CmtTheme
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +85,7 @@ fun CollapsibleRelationshipSection(
     availableEntities: CmtRelationshipTypeViewModel?,
     onRelationshipClick: (CmtRelationshipViewModel) -> Unit = { },
     onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
+    removeRelationship: (String, String) -> Unit = {_,_ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> }
 ) {
@@ -74,6 +95,7 @@ fun CollapsibleRelationshipSection(
             availableEntities = availableEntities,
             onRelationshipClick = onRelationshipClick,
             onEntitySelect = onEntitySelect,
+            removeRelationship = removeRelationship,
             onCreateEntity = onCreateEntity,
             onSearchTEIs = onSearchTEIs
         )
@@ -90,6 +112,7 @@ private fun CollapsibleRelationshipSectionContent(
     availableEntities: CmtRelationshipTypeViewModel?,
     onRelationshipClick: (CmtRelationshipViewModel) -> Unit = { },
     onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
+    removeRelationship: (String, String) -> Unit = {_, _ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> }
 ) {
@@ -173,10 +196,10 @@ private fun CollapsibleRelationshipSectionContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp)
+                        .heightIn(max = 400.dp)
                 ) {
 
-                    if (existingRelationships.size > 10) {
+                    if (existingRelationships.size > 5) {
                         TextField(
                             value = listSearch,
                             onValueChange = { listSearch = it },
@@ -192,16 +215,55 @@ private fun CollapsibleRelationshipSectionContent(
                         )
                     }
 
+                    val childListState = rememberLazyListState()
+                    val childScope = rememberCoroutineScope()
+                    val childMaxHeight = 400.dp
+
+                    val interceptScrollModifier = Modifier.pointerInput(displayedRelationships, childListState) {
+                        awaitEachGesture {
+                            var pointerActive = true
+                            var eventsCount = 0
+                            while (pointerActive) {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { change ->
+                                    val dy = change.positionChange().y
+                                    if ((!childListState.canScrollForward && dy < 0f) ||
+                                        (!childListState.canScrollBackward && dy > 0f)
+                                    ) {
+                                        // let parent consume the event
+                                        return@forEach
+                                    }
+                                    Timber.d("Intercepted scroll dy: $dy")
+                                    if (dy > 0.1f || eventsCount < 20000) {
+                                        change.consume()
+                                    }
+                                    eventsCount ++
+                                    childScope.launch {
+                                        try {
+                                            childListState.scrollBy(-dy)
+                                        } catch (_: Exception) {}
+                                    }
+                                }
+
+                                // stop if all pointers are up
+                                pointerActive = event.changes.any { it.pressed }
+                            }
+                        }
+                    }
+
                     LazyColumn(
+                        state = childListState,
                         modifier = Modifier
-                            //.heightIn(max = 300.dp)
                             .fillMaxWidth()
                             .weight(1f)
+                            .heightIn(min = 0.dp, max = childMaxHeight)
+                            .then(interceptScrollModifier)
                     ) {
                         items(displayedRelationships) { rel ->
                             RelationshipItem(
                                 item = rel,
-                                onClick = { onRelationshipClick(rel) }
+                                onClick = { onRelationshipClick(rel) },
+                                removeRelationship = { removeRelationship(relationshipTypeView.uid, rel.uid) }
                             )
                             Divider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
@@ -298,8 +360,8 @@ private fun RelationshipItem(
     res: ResourceManager = ResourceManager(context,colorUtils),
     item: CmtRelationshipViewModel,
     onClick: () -> Unit,
-    isSelection: Boolean = false
-
+    isSelection: Boolean = false,
+    removeRelationship: () -> Unit = {}
 ) {
     val tieTypeIcon = res.getObjectStyleDrawableResource(item.iconName, R.drawable.ic_tei_default)
 
@@ -340,12 +402,43 @@ private fun RelationshipItem(
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Icon(
-            painter = painterResource(
-                if (isSelection) R.drawable.ic_add_primary else R.drawable.ic_navigate_next
-            ),
-            contentDescription = if (isSelection) "Select" else "Navigate",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (isSelection) {
+            Icon(
+                painter = painterResource(R.drawable.ic_add_primary),
+                contentDescription = "Select",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Box {
+                var showMenu by remember { mutableStateOf(false) }
+
+                IconButton(onClick = { showMenu = !showMenu }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Menu",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Remove",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            removeRelationship()
+                        }
+                    )
+                }
+            }
+        }
     }
 }

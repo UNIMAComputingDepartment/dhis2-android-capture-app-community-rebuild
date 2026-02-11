@@ -1,60 +1,86 @@
 package org.dhis2.community.tasking.engine
 
+import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.event.EventStatus
+import timber.log.Timber
+import java.util.Date
 
 class CompletionEvaluator(
-    private val d2: D2,
     private val repository: TaskingRepository
-) : TaskingEvaluator(d2,repository) {
+) : TaskingEvaluator(repository) {
 
-    fun completeTaskIfFollowupDone(
-        taskTeiUid: String,
-        programUid: String,
-        stageUid: String,
-        completionDataElement: String? = null,  // optional DE
-        completionValue: String? = null         // optional expected value
-    ): Boolean {
+    fun taskCompletion(
+        tasks: List<Task>,
+        sourceProgramEnrollmentUid: String,
+        sourceProgramUid: String,
+        sourceTeiUid: String?
+    ) {
+        val taskConf = repository.getTaskingConfig()
+        require(taskConf.programTasks.isNotEmpty()) { "Task Config is Empty" }
 
-        val enrollments = d2.enrollmentModule().enrollments()
-            .byTrackedEntityInstance().eq(taskTeiUid)
-            .byProgram().eq(programUid)
-            .blockingGet()
+        val configForPg = taskConf.programTasks
+            .filter { it.programUid == sourceProgramUid }
+            .flatMap { it.taskConfigs }
 
-        if (enrollments.isEmpty()) return false
+        if (configForPg.isEmpty()) return
 
-        val followupEvents = enrollments.flatMap { enrollment ->
-            d2.eventModule().events()
-                .byEnrollmentUid().eq(enrollment.uid())
-                .byProgramStageUid().eq(stageUid)
-                .withTrackedEntityDataValues()
-                .blockingGet()
-        }
+        val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
 
-        val completed = if (completionDataElement != null && completionValue != null) {
-            followupEvents.any { event ->
-                event.trackedEntityDataValues()
-                    ?.any { it.dataElement() == completionDataElement && it.value() == completionValue } == true
+
+        tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == "open"}
+            .forEach { task ->
+
+                val taskConfig = configForPg.firstOrNull { it.name == task.name }
+                if (taskConfig == null){
+                    return@forEach
+                }
+
+                if (
+                    task.sourceEnrollmentUid == sourceProgramEnrollmentUid &&
+                    task.status != "defaulted" &&
+                    task.status != "completed"
+                    ){
+                    val conditions = evaluateConditions(
+                        conditions = taskConfig.completion,
+                        teiUid = sourceTeiUid!!,
+                        programUid = sourceProgramUid
+                    )
+
+                    val progress = if (conditions.isNotEmpty()) {
+                        conditions.filter { it }.size.toFloat() / conditions.size.toFloat()
+                    } else 0f
+
+                    repository.updateTaskAttrValue(
+                        repository.taskProgressAttributeUid,
+                        progress.toString(),
+                        task.teiUid
+                    )
+
+                    if(conditions.all{it}) {
+                        repository.updateTaskAttrValue(
+                            repository.taskStatusAttributeUid,
+                            "completed",
+                            task.teiUid
+                        )
+
+                        val taskTeiEnrollmentUid = repository.d2.enrollmentModule().enrollments()
+                            .byTrackedEntityInstance().eq(task.teiUid)
+                            .byProgram().eq(taskProgramUid)
+                            .byStatus().eq(EnrollmentStatus.ACTIVE)
+                            .one().blockingGet()?.uid()
+
+                        if (taskTeiEnrollmentUid != null) {
+                            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                                .setStatus(EnrollmentStatus.COMPLETED)
+                            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                                .setCompletedDate(Date())
+                        }   else{
+                            Timber.d("No active enrollment")
+                        }
+                    }
+
+                } else null
             }
-        } else {
-            followupEvents.any { it.status() == EventStatus.COMPLETED }
-        }
-
-        if (completed) {
-            //repository.updateTaskStatus(taskTeiUid, "COMPLETED")
-            repository.updateTaskAttrValue(repository.taskStatusAttributeUid, "COMPLETE", taskTeiUid)
-
-            enrollments.forEach { enrollment ->
-                d2.enrollmentModule().enrollments()
-                    .uid(enrollment.uid())
-                    .setStatus(EnrollmentStatus.COMPLETED)
-                //.blockingUpdate()
-            }
-            return true
-        }
-
-        return false
     }
 }

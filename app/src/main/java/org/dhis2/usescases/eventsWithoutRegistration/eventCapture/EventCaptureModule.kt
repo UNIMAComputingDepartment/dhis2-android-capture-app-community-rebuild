@@ -14,7 +14,7 @@ import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.reporting.CrashReportControllerImpl
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
@@ -45,8 +45,7 @@ class EventCaptureModule(
         preferences: PreferenceProvider,
         pageConfigurator: NavigationPageConfigurator,
         resourceManager: ResourceManager,
-        taskingRepository: TaskingRepository,
-        createTaskEvaluator: CreationEvaluator,
+        taskingEngine: TaskingEngine
     ): EventCaptureContract.Presenter {
         return EventCapturePresenterImpl(
             view,
@@ -56,10 +55,8 @@ class EventCaptureModule(
             preferences,
             pageConfigurator,
             resourceManager,
-            createTaskEvaluator,
-            taskingRepository,
-
-            )
+            taskingEngine
+        )
     }
 
     @Provides
@@ -137,10 +134,10 @@ class EventCaptureModule(
 
     @Provides
     @PerActivity
-    fun provideCreateTaskEvaluator(
+    fun provideTaskingEngine(
         repository: TaskingRepository,
         d2: D2,
-    ): CreationEvaluator {
-        return CreationEvaluator(repository, d2)
+    ): TaskingEngine {
+        return TaskingEngine(repository)
     }
 }

@@ -84,7 +84,7 @@ import org.dhis2.utils.isLandscape
 import org.dhis2.utils.isPortrait
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import javax.inject.Inject
 
 class TeiDashboardMobileActivity :
@@ -335,7 +335,7 @@ class TeiDashboardMobileActivity :
 
     private fun setUpNavigationBar() {
         binding.navigationBar.setContent {
-            DHIS2Theme {
+            IchisTheme {
                 val uiState by dashboardViewModel.navigationBarUIState.collectAsStateWithLifecycle()
                 var selectedHomeItemIndex by remember(uiState) {
                     mutableIntStateOf(

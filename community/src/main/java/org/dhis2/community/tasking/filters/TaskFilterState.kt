@@ -11,17 +11,19 @@ import timber.log.Timber
 
 class TaskFilterState {
     var uiState by mutableStateOf(FilterUiState())
-    // Default status filter
-    var currentFilter by mutableStateOf(
-        TaskFilterModel(
-            statusFilters = setOf(
-                org.dhis2.community.tasking.ui.TaskingStatus.OPEN,
-                org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
-                org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
-                org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE
-            )
-        )
+
+    // Default status and due date filter
+    private val defaultFilter = TaskFilterModel(
+        statusFilters = setOf(
+            org.dhis2.community.tasking.ui.TaskingStatus.OPEN,
+            org.dhis2.community.tasking.ui.TaskingStatus.DUE_TODAY,
+            org.dhis2.community.tasking.ui.TaskingStatus.DUE_SOON,
+            org.dhis2.community.tasking.ui.TaskingStatus.OVERDUE
+        ),
+        dueDateRange = DateRangeFilter.ThisWeek
     )
+
+    var currentFilter by mutableStateOf(defaultFilter)
         private set
 
     init {
@@ -35,9 +37,9 @@ class TaskFilterState {
         updateUiState()
     }
 
-    fun updateOrgUnitFilters(selectedOrgUnits: Set<String>) {
+    fun updateOrgUnitFilters(selectedOrgUnits: List<String>) {
         Timber.d("updateOrgUnitFilters called with: $selectedOrgUnits")
-        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits)
+        currentFilter = currentFilter.copy(orgUnitFilters = selectedOrgUnits.toSet())
         updateUiState()
     }
 
@@ -69,6 +71,19 @@ class TaskFilterState {
     fun clearAllFilters() {
         Timber.d("clearAllFilters called")
         currentFilter = TaskFilterModel(dueDateRange = null)
+        updateUiState()
+    }
+
+    fun clearDueDateFilter() {
+        Timber.d("clearDueDateFilter called")
+        currentFilter = currentFilter.copy(dueDateRange = null)
+        updateUiState()
+    }
+
+    // ✓ NEW: Reset to default filters
+    fun resetToDefaultFilters() {
+        Timber.d("resetToDefaultFilters called")
+        currentFilter = defaultFilter
         updateUiState()
     }
 

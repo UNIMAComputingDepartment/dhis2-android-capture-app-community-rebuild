@@ -1,23 +1,42 @@
 package org.dhis2.community.tasking.filters.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Tune
-import org.dhis2.community.tasking.filters.models.FilterUiState
-import org.hisp.dhis.mobile.ui.designsystem.component.*
-import org.hisp.dhis.mobile.ui.designsystem.theme.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import org.dhis2.community.tasking.filters.models.FilterUiState
+import org.dhis2.community.tasking.ui.TaskItemDefaults.programNameTextSize
+import org.hisp.dhis.mobile.ui.designsystem.component.Button
+import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
+import org.hisp.dhis.mobile.ui.designsystem.component.FilterChip
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2TextStyle
+import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
+import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
+import org.hisp.dhis.mobile.ui.designsystem.theme.getTextStyle
 import timber.log.Timber
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TaskFilterBar(
     filterState: FilterUiState,
@@ -26,28 +45,55 @@ fun TaskFilterBar(
     onPriorityFilterClick: () -> Unit,
     onStatusFilterClick: () -> Unit,
     onDueDateFilterClick: () -> Unit,
-    onClearAllFilters: () -> Unit
+    onClearAllFilters: () -> Unit,
+    fontSize: Float = 20f
 ) {
-    Timber.d("TaskFilterBar composable rendered with state: $filterState")
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 2.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
+            .padding(horizontal = 6.dp, vertical = 8.dp)
     ) {
-        // Static filter icon on the left
-        Icon(
-            imageVector = Icons.Filled.Tune,
-            contentDescription = "Filter Icon",
-            modifier = Modifier.padding(top = 12.dp)
-        )
-
-        // Scrollable row for chips only
         Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = "Filters",
+                    tint = SurfaceColor.Primary,
+                    modifier = Modifier.size(30.dp)
+                )
+                Text(
+                    text = "Filters",
+                    style = getTextStyle(DHIS2TextStyle.LABEL_LARGE).copy(fontSize = fontSize.sp),
+                    color = TextColor.OnSurface,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .wrapContentWidth()
+                )
+            }
+            Button(
+                modifier = Modifier.padding(start = 2.dp),
+                enabled = true,
+                style = ButtonStyle.FILLED,
+                onClick = onClearAllFilters,
+                text = "Clear All",
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.ClearAll,
+                        contentDescription = "Clear Filters"
+                    )
+                },
+            )
+        }
+        FlowRow(
             modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8)
+                .fillMaxWidth()
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing10),
+            verticalArrangement = Arrangement.spacedBy(-Spacing.Spacing4)
         ) {
             FilterChip(
                 label = "Program",
@@ -80,15 +126,12 @@ fun TaskFilterBar(
                 badge = if (filterState.dueDateFilterCount > 0) filterState.dueDateFilterCount.toString() else null
             )
         }
-        Button(
+        HorizontalDivider(
             modifier = Modifier
-                .padding(start = 2.dp)
-                .padding(horizontal = 2.dp),
-            enabled = true,
-            style = ButtonStyle.FILLED,
-            colorStyle = ColorStyle.DEFAULT,
-            text = "Clear",
-            onClick = onClearAllFilters
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            thickness = 0.5.dp,
+            color = TextColor.OnSurface.copy(alpha = 0.190f)
         )
     }
 }

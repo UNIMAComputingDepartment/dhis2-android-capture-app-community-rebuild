@@ -17,7 +17,10 @@ data class TaskingConfig(
         val taskSecondaryAttrUid: String,
         val taskTertiaryAttrUid: String,
         val taskSourceProgramUid: String,
-        val taskSourceEnrollmentUid: String
+        val taskSourceEnrollmentUid: String,
+        val taskSourceTeiUid: String,
+        val taskSourceEventUid: String?,
+        val taskProgressUid: String?
     )
 
     data class ProgramTasks(
@@ -37,7 +40,7 @@ data class TaskingConfig(
             val description: String,
             val trigger: Trigger,
             val period: Period,
-            val priority: String,
+            val priority: String = "medium",
             val completion: Completion,
             val singleIncomplete: Boolean,
             val anchorDate: String

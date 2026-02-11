@@ -51,7 +51,7 @@ import org.dhis2.utils.granularsync.SyncStatusDialog
 import org.dhis2.utils.granularsync.shouldLaunchSyncDialog
 import org.hisp.dhis.android.core.period.DatePeriod
 import org.hisp.dhis.android.core.program.Program
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import timber.log.Timber
 import java.util.Date
 import javax.inject.Inject
@@ -97,7 +97,7 @@ class ProgramEventDetailActivity :
         super.onCreate(savedInstanceState)
 
         setContent {
-            DHIS2Theme {
+            IchisTheme {
                 ProgramEventDetailScreen(
                     programEventsViewModel,
                     presenter,

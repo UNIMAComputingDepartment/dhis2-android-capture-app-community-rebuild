@@ -33,6 +33,7 @@ import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.StageSection
 import org.dhis2.commons.date.DateUtils
+import org.dhis2.commons.dialogs.AlertBottomDialog
 import org.dhis2.commons.dialogs.CustomDialog
 import org.dhis2.commons.dialogs.DialogClickListener
 import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity
@@ -46,6 +47,11 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext.EnrollmentEvent
 import org.dhis2.databinding.FragmentTeiDataBinding
 import org.dhis2.form.model.EventMode
+import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialog
+import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
+import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
+import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.DiscardButton
+import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.MainButton
 import org.dhis2.usescases.enrollment.EnrollmentActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
@@ -349,6 +355,9 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     onCreateEntity = { program, relationshipType ->
                         cmtPresenter.enroll(program, relationshipType)
                     },
+                    onRemoveRelationship = { type, uid ->
+                        cmtPresenter.onRemoveRelationship(type, uid)
+                    }
                 )
             }
         }
@@ -701,6 +710,26 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                 true,
             ),
         )
+    }
+
+    override fun confirmRelationshipRemove(
+        type: String,
+        teiUid: String
+    ) {
+        val bottomSheetDialogUiModel = BottomSheetDialogUiModel(
+            title = "Confirm Remove",
+            message = "Are you sure you want to remove this relationship? You can always restore it by clicking the + button and search for the entity.",
+            iconResource = R.drawable.ic_question_positive,
+            mainButton = MainButton(R.string.yes),
+            secondaryButton = DialogButtonStyle.SecondaryButton(R.string.no),
+        )
+        val dialog = BottomSheetDialog(
+            bottomSheetDialogUiModel,
+            { cmtPresenter.removeRelationship(type, teiUid) },
+            { /*Unused*/ },
+
+        )
+        dialog.show(parentFragmentManager, AlertBottomDialog::class.java.simpleName)
     }
 
     companion object {

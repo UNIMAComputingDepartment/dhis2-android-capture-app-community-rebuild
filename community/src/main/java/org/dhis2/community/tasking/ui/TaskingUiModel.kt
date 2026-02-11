@@ -1,25 +1,21 @@
 package org.dhis2.community.tasking.ui
 
-import android.util.Log
 import androidx.compose.ui.graphics.Color
 import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.ImageCardData
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.graphics.toColorInt
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 data class TaskingUiModel(
     val task: Task,
     val orgUnit: String?,
-    val repository: org.dhis2.community.tasking.repositories.TaskingRepository
+    val repository: org.dhis2.community.tasking.repositories.TaskingRepository? = null
 ) {
-    init {
-        Log.d("TaskingUiModel", "TaskingUiModel created: teiUid=${task.teiUid}, sourceProgramUid=${task.sourceProgramUid}, sourceEnrollmentUid=${task.sourceEnrollmentUid}, sourceProgramName=${task.sourceProgramName}, dueDate=${task.dueDate}, priority=${task.priority}, status=${task.status}")
-    }
-
     // Delegate properties from Task
     val taskName: String get() = task.name
-    val taskDescription: String get() = task.description
     val sourceProgramUid: String get() = task.sourceProgramUid
     val sourceProgramName: String get() = task.sourceProgramName
     val sourceEnrollmentUid: String get() = task.sourceEnrollmentUid
@@ -30,14 +26,15 @@ data class TaskingUiModel(
     val dueDate: Date? get() = parseDueDate(task.dueDate)
     val priority: TaskingPriority get() = TaskingPriority.fromLabel(task.priority)
     val status: TaskingStatus get() = calculateStatus(task.status, dueDate)
+    val progress: Float get() = task.progress.toFloat()
     val metadataIconData: MetadataIconData
         get() {
             val iconName = task.iconNane?.takeIf { it.isNotBlank() }
             val iconRes = iconName?.let { "dhis2_" + it } ?: "dhis2_default"
-            val colorString = repository.getSourceProgramColor(task.sourceProgramUid)
+            val colorString = repository?.getSourceProgramColor(task.sourceProgramUid)
             val color = colorString?.takeIf { it.isNotBlank() }?.let {
                 try {
-                    Color(android.graphics.Color.parseColor(it))
+                    Color(it.toColorInt())
                 } catch (e: Exception) {
                     SurfaceColor.Primary
                 }
@@ -53,39 +50,33 @@ data class TaskingUiModel(
             )
         }
 
-    val displayProgramName: String get() = repository.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
-    val isNavigable: Boolean get() = repository.isValidTeiEnrollment(teiUid, sourceProgramUid, sourceEnrollmentUid)
+    val displayProgramName: String get() = repository?.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
+    val sourceTeiUid: String get() = task.sourceTeiUid
 
     private fun parseDueDate(dueDate: String?): Date? {
-        Log.d("TaskingUiModel", "parseDueDate called with: '$dueDate'")
 
         if (dueDate.isNullOrBlank()) {
-            Log.d("TaskingUiModel", "Due date is null or blank")
             return null
         }
 
         // Check if this looks like an attribute ID (starts with letter)
         if (dueDate.matches(Regex("[a-zA-Z].*"))) {
-            Log.e("TaskingUiModel", "ERROR: This looks like an attribute ID, not a date: $dueDate")
             return null
         }
 
         val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
         if (!dateRegex.matches(dueDate)) {
-            Log.e("TaskingUiModel", "DueDate value is not a valid date format: $dueDate")
             return null
         }
 
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dueDate)
         } catch (e: Exception) {
-            Log.e("TaskingUiModel", "Error parsing dueDate: $dueDate", e)
             null
         }
     }
 
     private fun calculateStatus(apiStatus: String, dueDate: Date?): TaskingStatus {
-        Log.d("TaskingUiModel", "calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
         val statusLower = apiStatus.trim().lowercase(Locale.US)
         return when (statusLower) {
             "completed" -> TaskingStatus.COMPLETED
@@ -106,16 +97,12 @@ data class TaskingUiModel(
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
                 }
-                val daysPastDue = today.get(Calendar.DAY_OF_YEAR) - due.get(Calendar.DAY_OF_YEAR) +
-                    (today.get(Calendar.YEAR) - due.get(Calendar.YEAR)) * 365
                 return when {
-                    daysPastDue > 7 -> TaskingStatus.DEFAULTED
                     due.before(today) -> TaskingStatus.OVERDUE
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                            due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 &&
-                            due.get(Calendar.DAY_OF_YEAR) > today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_SOON
+                            due.get(Calendar.DAY_OF_YEAR) in (today.get(Calendar.DAY_OF_YEAR) + 1)..(today.get(Calendar.DAY_OF_YEAR) + 3) -> TaskingStatus.DUE_SOON
                     else -> TaskingStatus.OPEN
                 }
             }
@@ -163,7 +150,7 @@ enum class TaskingStatus(
 ) {
     OPEN(
         "Open",
-        SurfaceColor.Primary
+        TextColor.OnPrimaryContainer
     ),
     DUE_TODAY(
         "Due Today",
@@ -183,7 +170,7 @@ enum class TaskingStatus(
     ),
     DEFAULTED(
         "Defaulted",
-        SurfaceColor.Error
+        Color.Gray
     )
 }
 

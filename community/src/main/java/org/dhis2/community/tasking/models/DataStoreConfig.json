@@ -9,71 +9,36 @@
             "condition": [
               {
                 "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "COMPLETED"
-                }
-              },
-              {}
-            ]
-          },
-          "description": "Trigger a follow-up task if danger sign is YES",
-          "name": "Danger Sign Follow-up",
-          "period": {
-            "dueInDays": 2
-          },
-          "priority": "HIGH",
-          "trigger": {
-            "condition": [
-              {
-                "lhs": {
                   "ref": "eventData",
-                  "uid": "RhCWzvhIE6i"
+                  "uid": "IFLzAItumUj"
                 },
-                "op": "EQUALS",
+                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "She has danger signs"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "completion": {
-            "condition": [
-              {
-                "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "COMPLETED"
+                  "value": "Woman Visited Facility"
                 }
               }
             ]
           },
           "description": "Trigger a follow-up task if danger sign is YES",
-          "name": "Danger Sign Follow-up",
+          "name": "CBMNC Danger Sign Follow-up",
           "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
             "dueInDays": 2
           },
-          "priority": "HIGH",
+          "priority": "high",
           "trigger": {
             "condition": [
               {
                 "lhs": {
                   "ref": "eventData",
-                  "uid": "RhCWzvhIE6i"
+                  "uid": "QP43M2iqn5W"
                 },
                 "op": "EQUALS",
                 "rhs": {
-                  "value": "She has danger signs"
+                  "value": "true"
                 }
               }
             ]
@@ -82,7 +47,7 @@
       ],
       "teiView": {
         "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "p79QNVjFu45",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc",
         "teiTertiaryAttribute": "HYlWwg511tF"
       }
     },
@@ -95,29 +60,41 @@
             "condition": [
               {
                 "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
+                  "ref": "allEventsData",
+                  "uid": "pOmfBiixrBw"
                 },
-                "op": "EQUALS",
+                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "COMPLETED"
+                  "value": "Date OPV 0 Given"
                 }
               },
-              {}
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "BNidQ6DxZpz"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date BCG was given"
+                }
+              }
             ]
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "At Birth to Two Weeks",
+          "name": "Immunization at Birth to Two Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 14
           },
-          "priority": "HIGH",
+          "priority": "medium",
           "trigger": {
             "condition": [
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "pOmfBiixrBw"
                 },
                 "op": "NULL",
@@ -127,7 +104,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "BNidQ6DxZpz"
                 },
                 "op": "NULL",
@@ -143,29 +120,61 @@
             "condition": [
               {
                 "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
+                  "ref": "allEventsData",
+                  "uid": "ETmwrRaI25Y"
                 },
-                "op": "EQUALS",
+                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "COMPLETED"
+                  "value": "Date PCV 1 Given"
                 }
               },
-              {}
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "Fc3lDKsux3s"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date Penta 1 given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "aoALwwoX4IT"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date Rota 1 given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "KcyaDxZPnKa"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date OPV 1 Given"
+                }
+              }
             ]
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "6 Weeks",
+          "name": "Immunization at 6 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 42
           },
-          "priority": "HIGH",
+          "priority": "medium",
           "trigger": {
             "condition": [
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "ETmwrRaI25Y"
                 },
                 "op": "NULL",
@@ -175,7 +184,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "Fc3lDKsux3s"
                 },
                 "op": "NULL",
@@ -185,7 +194,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "aoALwwoX4IT"
                 },
                 "op": "NULL",
@@ -195,7 +204,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "KcyaDxZPnKa"
                 },
                 "op": "NULL",
@@ -211,29 +220,61 @@
             "condition": [
               {
                 "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
+                  "ref": "allEventsData",
+                  "uid": "IoL7gwKLKrl"
                 },
-                "op": "EQUALS",
+                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "COMPLETED"
+                  "value": "Date Rota 2 given"
                 }
               },
-              {}
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "r9atuH8eFeP"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date Penta 2 given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "ALmomDtQ5Tw"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date PCV 2 given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "Idw4YqjUCVD"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date OPV 2 given"
+                }
+              }
             ]
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "10 Weeks",
+          "name": "Immunization at 10 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 70
           },
-          "priority": "HIGH",
+          "priority": "medium",
           "trigger": {
             "condition": [
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "IoL7gwKLKrl"
                 },
                 "op": "NULL",
@@ -243,7 +284,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "r9atuH8eFeP"
                 },
                 "op": "NULL",
@@ -253,7 +294,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "ALmomDtQ5Tw"
                 },
                 "op": "NULL",
@@ -263,7 +304,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "Idw4YqjUCVD"
                 },
                 "op": "NULL",
@@ -279,29 +320,71 @@
             "condition": [
               {
                 "lhs": {
-                  "fn": "status",
-                  "ref": "teiAttribute",
-                  "uid": "STATUS_ATTR_UID"
+                  "ref": "allEventsData",
+                  "uid": "o8WZPSulzau"
                 },
-                "op": "EQUALS",
+                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "COMPLETED"
+                  "value": "Date IPV Given"
                 }
               },
-              {}
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "m6ifohqeKNN"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date PCV 3 Given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "nwfhpvw2BrA"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date Penta 3 Given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "YL1oJqV6cyt"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Whether BCG Scar is Visible"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "oAj9SehHnn1"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Date OPV 3 Given"
+                }
+              }
             ]
           },
           "description": "EPI Tasks, they need to be filled",
-          "name": "14 Weeks",
+          "name": "Immunization at 14 Weeks",
           "period": {
-            "dueInDays": 2
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 98
           },
-          "priority": "HIGH",
+          "priority": "medium",
           "trigger": {
             "condition": [
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "o8WZPSulzau"
                 },
                 "op": "NULL",
@@ -311,7 +394,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "m6ifohqeKNN"
                 },
                 "op": "NULL",
@@ -321,7 +404,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "nwfhpvw2BrA"
                 },
                 "op": "NULL",
@@ -331,7 +414,7 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "YL1oJqV6cyt"
                 },
                 "op": "NULL",
@@ -341,22 +424,392 @@
               },
               {
                 "lhs": {
-                  "ref": "eventData",
-                  "uid": "HhwCAHa6PGP"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "Date BCG Revaccinated"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
+                  "ref": "allEventsData",
                   "uid": "oAj9SehHnn1"
                 },
                 "op": "NULL",
                 "rhs": {
-                  "value": "Date PCV 3 Given"
+                  "value": "Date OPV 3 Given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "UN8BE26LmzD"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 1 Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 5 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 152
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "UN8BE26LmzD"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 1 Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "Rz8kbGyO438"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 2 Date given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "e3nRPmyFFVp"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 6 months Date give"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 6 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 182
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "Rz8kbGyO438"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 2 Date given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "e3nRPmyFFVp"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 6 months Date give"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "CmP9wn8GPpg"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 3 Date give"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 7 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 213
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "CmP9wn8GPpg"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 3 Date give"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "apKnu58M1vi"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MR 1 Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 9 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 274
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "apKnu58M1vi"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MR 1 Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "urJuUff7piT"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 12 months Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 12 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 365
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "urJuUff7piT"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 12 months Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "f71ZoAKdEFf"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MR 2 Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 15 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 456
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "f71ZoAKdEFf"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MR 2 Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "b0NyYDtKBm7"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 18 months Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 18 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 548
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "b0NyYDtKBm7"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 18 months Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SGekHjdRdCC"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 4 Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 22 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 670
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SGekHjdRdCC"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_MV 4 Date given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JmQ2j05Kqio"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 24 months Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled",
+          "name": "Immunization at 24 Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": "HYlWwg511tF"
+            },
+            "dueInDays": 730
+          },
+          "priority": "medium",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JmQ2j05Kqio"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 24 months Date given"
                 }
               }
             ]
@@ -365,7 +818,7 @@
       ],
       "teiView": {
         "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "p79QNVjFu45",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc",
         "teiTertiaryAttribute": "HYlWwg511tF"
       }
     }
@@ -379,9 +832,12 @@
       "statusUid": "UxERjzcCQgm",
       "taskNameUid": "t3k6ATKay0k",
       "taskPrimaryAttrUid": "ZNNgWoMBvZc",
+      "taskProgressUid": "wIu3HoZRXJ8",
       "taskSecondaryAttrUid": "IZOHOGZeBCD",
       "taskSourceEnrollmentUid": "nH0vQ5e744Q",
+      "taskSourceEventUid": "if37kHI2RSy",
       "taskSourceProgramUid": "ugRQf1GWFOj",
+      "taskSourceTeiUid": "cpkkGoT9N2M",
       "taskTertiaryAttrUid": "dnP7Qk7EaJL",
       "teiTypeUid": "fgyP4MJja3C"
     }
