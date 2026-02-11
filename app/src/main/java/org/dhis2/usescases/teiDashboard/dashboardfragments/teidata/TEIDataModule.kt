@@ -83,9 +83,7 @@ class TEIDataModule(
             createEventUseCase,
             d2ErrorUtils,
             preferences,
-            d2ErrorUtils
         )
-    }
 
     @Provides
     @PerFragment
@@ -104,6 +102,7 @@ class TEIDataModule(
             relationshipRepository,
             workflowRepository
         )
+    }
 
     @Provides
     @PerFragment

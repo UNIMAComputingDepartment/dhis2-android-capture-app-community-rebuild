@@ -211,7 +211,6 @@ class MainNavigator(
         } else {
             Pair(R.anim.fragment_enter_right, R.anim.fragment_exit_left)
         }
-    }
 
     private fun shouldShowFilter(screen: MainScreen): Boolean {
         return when (screen) {

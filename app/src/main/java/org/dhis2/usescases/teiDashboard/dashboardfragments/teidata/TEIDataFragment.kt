@@ -46,11 +46,10 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext.EnrollmentEvent
 import org.dhis2.databinding.FragmentTeiDataBinding
 import org.dhis2.form.model.EventMode
-import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialog
-import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.DiscardButton
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.MainButton
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialog
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle.MainButton
 import org.dhis2.usescases.enrollment.EnrollmentActivity
 import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
@@ -59,7 +58,6 @@ import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.searchTrackEntity.EnrollmentContract
 import org.dhis2.usescases.searchTrackEntity.EnrollmentInput
 import org.dhis2.usescases.searchTrackEntity.EnrollmentResult
-import org.dhis2.usescases.searchTrackEntity.registerActivityResultLauncher
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardTEIModel
 import org.dhis2.usescases.teiDashboard.DashboardViewModel
@@ -135,18 +133,16 @@ class TEIDataFragment :
 
     private var programUid: String? = null
 
-    private val enrollmentLauncher: ActivityResultLauncher<EnrollmentInput>
-        get() = requireActivity().registerActivityResultLauncher(contract = EnrollmentContract()) {
-            when (it) {
-                is EnrollmentResult.RelationshipResult -> {
-                    cmtPresenter.addRelationship(teiUid = it.teiUid)
-                }
-                is EnrollmentResult.Success -> {
-                    cmtPresenter.retrieveRelationships()
-                }
+    private val enrollmentLauncher = registerForActivityResult(EnrollmentContract()) { result ->
+        when (result) {
+            is EnrollmentResult.RelationshipResult -> {
+                cmtPresenter.addRelationship(teiUid = result.teiUid)
             }
-            enrollmentLauncher.unregister()
+            is EnrollmentResult.Success -> {
+                cmtPresenter.retrieveRelationships()
+            }
         }
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)

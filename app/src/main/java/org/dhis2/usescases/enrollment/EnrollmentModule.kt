@@ -36,6 +36,8 @@ import org.dhis2.form.ui.FieldViewModelFactoryImpl
 import org.dhis2.form.ui.provider.AutoCompleteProviderImpl
 import org.dhis2.form.ui.provider.DisplayNameProviderImpl
 import org.dhis2.form.ui.provider.EnrollmentFormLabelsProvider
+import org.dhis2.form.ui.provider.FormResultDialogProvider
+import org.dhis2.form.ui.provider.FormResultDialogResourcesProvider
 import org.dhis2.form.ui.provider.HintProviderImpl
 import org.dhis2.form.ui.provider.KeyboardActionProviderImpl
 import org.dhis2.form.ui.provider.LegendValueProviderImpl
@@ -237,6 +239,9 @@ class EnrollmentModule(
     @Provides
     @PerActivity
     fun providesTeiAttributesProvider(d2: D2): TeiAttributesProvider = TeiAttributesProvider(d2)
+
+    @Provides
+    @PerActivity
     fun provideResultDialogProvider(
         resourceManager: ResourceManager,
     ): FormResultDialogProvider {
@@ -253,11 +258,6 @@ class EnrollmentModule(
         return FormResultDialogResourcesProvider(resourceManager)
     }
 
-    @Provides
-    @PerActivity
-    fun providesTeiAttributesProvider(d2: D2): TeiAttributesProvider {
-        return TeiAttributesProvider(d2)
-    }
 
     @Provides
     @PerActivity
