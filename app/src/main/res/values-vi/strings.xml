@@ -31,12 +31,8 @@
 
     <string name="sync_error_title">Lỗi đồng bộ</string>
     <string name="sync_error_text">Xảy ra lỗi trong quá trình đồng bộ. Vui lòng thử lại.</string>
-    <string name="sync_incomplete_error_text">Đồng bộ đã hoàn tất nhưng chúng tôi không nhận được xác nhận cho tất cả dữ liệu. Đó là các dữ liệu vẫn được đánh dấu là \"Ngoại tuyến\" trong Ứng dụng. Chúng tôi khuyên bạn thử đồng bộ lại.</string>
-    <string name="metadata_sync_error">LỖI: Đã xảy ra lỗi trong quá trình đồng bộ hóa. Nếu bạn có kết nối, vui lòng thử lại. Nếu lỗi vẫn tiếp diễn, hãy liên hệ với quản trị viên của bạn.</string>
-    <string name="data_sync_warning">CẢNH BÁO: Hầu hết dữ liệu của bạn đã được đồng bộ nhưng một số dữ liệu có xung đột. Hãy Đồng bộ cấu hình và thử lại. Kiểm tra trạng thái đồng bộ của: các chương trình, Đối Tượng Theo Dõi và các sự kiện có xung đột được đánh dấu tại @.</string>
+    <string name="sync_incomplete_error_text">Đồng bộ đã hoàn tất nhưng chúng tôi không nhận được xác nhận máy chủ cho tất cả dữ liệu. Các dữ liệu vẫn được đánh dấu là \"Ngoại tuyến\" trong Ứng dụng. Chúng tôi khuyên bạn thử đồng bộ lại.</string>
     <string name="data_sync_warning_program">CẢNH BÁO: Hầu hết dữ liệu của bạn đã được đồng bộ nhưng một vài dữ liệu vẫn bị xung đột. Hãy thử đồng bộ cấu hình và thử lại. Nếu cảnh báo vẫn tiếp diễn, kiểm tra trạng thái đồng bộ của chương trình, các Đối Tượng Theo Dõi và các sự kiện với các dấu hiệu xung đột là @.</string>
-    <string name="data_sync_error">LỖI: Một số dữ liệu không thể đồng bộ. Hãy kiểm tra trạng thái đồng bộ của: các chương trình với các lỗi được đánh dấu là @, các Đối Tượng Theo Dõi và các sự kiện đánh dấu là $\".</string>
-    <string name="data_sync_error_program">LỖI: Một số dữ liệu của bạn không thể đồng bộ. Hãy kiểm tra trạng thái đồng bộ của Đối Tượng Theo Dõi và các sự kiện với các xung đột được đánh dấu là $\".</string>
     <string name="server_sync_error">Có lỗi và máy chủ không phản hồi. Liên hệ quản trị viên của bạn.</string>
 
     <string name="search_result_text">Tìm thấy %s kết quả</string>
@@ -214,7 +210,6 @@
     <plurals name="settings_specific_programs">
         <item quantity="other">Có %s chương trình với các cài đặt riêng</item>
     </plurals>
-    <string name="settings_sync_period">Đang đồng bộ</string>
     <string name="settings_limit_scope">Cài đặt bị giới hạn</string>
     <string name="settings_limit_globally">Toàn cầu</string>
     <string name="settings_limit_program">theo chương trình</string>
@@ -240,6 +235,8 @@
     <string name="settingsCheckVersionMessage">Phần mềm</string>
     <string name="settingsExportDB">Xuất cơ sở dữ liệu</string>
     <string name="settingsExportDBMessage">Xuất cơ sở dữ liệu và chia sẻ nó với quản trị của bạn</string>
+    <string name="settingTwoFA">Xác thực hai yếu tố</string>
+    <string name="settingsTwoFAStatus">Trạng thái</string>
     <!--endregion-->
 
     <string name="enrollmment_date">Ngày đăng ký</string>
@@ -494,7 +491,6 @@
     <string name="action_agree">Đồng ý</string>
     <string name="action_continue">Tiếp tục</string>
     <string name="login_server_info_title">Đường dẫn đến máy chủ</string>
-    <string name="login_server_info_message">Nhập đường dẫn liên kết đến máy chủ DHIS 2 với đơn vị được cung cấp bởi quản lý của bạn.\n\n Hoặc bạn có thể quét mã QR có chứa đường dẫn liên kết đến máy chủ.</string>
     <string name="forgot_your_code">Bạn đã quên mã của bạn phải không?</string>
     <string name="event_form_end_options_title">Bạn muốn làm gì với sự kiện này?</string>
     <string name="sectionSelectorEnd">KẾT THÚC</string>
@@ -816,7 +812,6 @@
     <string name="unknown_date">Không rõ</string>
     <string name="granular_sync_refresh_title">Làm mới lại tất cả dữ liệu</string>
     <string name="max_accounts_text">Bạn đã đạt số lượng tài khoản tối đa (%d). Để tạo thêm tài khoản, hãy đăng nhập và xóa một trong những tài khoản của bạn.</string>
-    <string name="add_accout">Thêm Tài khoản</string>
     <string name="delete_account">Xóa Tài khoản</string>
     <string name="manage_accounts">Quản lý Tài Khoản</string>
     <string name="main_menu_troubleshooting">Xử lý sự cố cấu hình</string>
@@ -953,7 +948,6 @@
     <string name="optional">Không bắt buộc</string>
     <string name="database_export_downloaded">Cơ sở dữ liệu đã được tải về</string>
     <string name="importing_database">Đang nhập cơ sở dữ liệu</string>
-    <string name="re_open_to_edit">Mở lại form để chỉnh sửa</string>
     <string name="empty_search_attributes_message">Không có các trường tìm kiếm được cấu hình để sử dụng.\nXin vui lòng liên lạc với quản trị của bạn.</string>
     <string name="show_more">Hiện thêm</string>
     <string name="show_less">Ẩn bớt</string>
@@ -975,4 +969,4 @@
     <string name="successfully_transferred">Đã chuyển thành công</string>
     <string name="event_cancelled">%1$s đã hủy</string>
     <string name="due_date_updated">Ngày đến hạn đã được cập nhật</string>
-</resources>
+    </resources>

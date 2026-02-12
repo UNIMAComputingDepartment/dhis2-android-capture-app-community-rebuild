@@ -15,9 +15,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.dhis2.commons.date.DateUtils
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
+import org.dhis2.commons.dialogs.bottomsheet.FieldWithIssue
 import org.dhis2.commons.periods.model.Period
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.form.R
@@ -25,10 +29,15 @@ import org.dhis2.form.data.DataIntegrityCheckResult
 import org.dhis2.form.data.EventRepository.Companion.EVENT_COORDINATE_UID
 import org.dhis2.form.data.EventRepository.Companion.EVENT_ORG_UNIT_UID
 import org.dhis2.form.data.EventRepository.Companion.EVENT_REPORT_DATE_UID
+import org.dhis2.form.data.FieldsWithErrorResult
+import org.dhis2.form.data.FieldsWithWarningResult
 import org.dhis2.form.data.FormRepository
 import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
+import org.dhis2.form.data.MissingMandatoryResult
+import org.dhis2.form.data.NotSavedResult
 import org.dhis2.form.data.RulesUtilsProviderConfigurationError
+import org.dhis2.form.data.SuccessfulResult
 import org.dhis2.form.model.ActionType
 import org.dhis2.form.model.FieldListConfiguration
 import org.dhis2.form.model.FieldUiModel
@@ -38,14 +47,19 @@ import org.dhis2.form.model.StoreResult
 import org.dhis2.form.model.UiRenderType
 import org.dhis2.form.model.ValueStoreResult
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
+import org.dhis2.form.ui.idling.FormCountingIdlingResource
 import org.dhis2.form.ui.intent.FormIntent
-import org.dhis2.form.ui.validation.validators.FieldMaskValidator
+import org.dhis2.form.ui.provider.FormResultDialogProvider
+import org.dhis2.mobile.commons.model.CustomIntentRequestArgumentModel
+import org.dhis2.mobile.commons.providers.CustomIntentFailure
+import org.dhis2.mobile.commons.validation.validators.FieldMaskValidator
 import org.hisp.dhis.android.core.arch.helpers.Result
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.common.valuetype.validation.failures.DateFailure
 import org.hisp.dhis.android.core.common.valuetype.validation.failures.DateTimeFailure
 import org.hisp.dhis.android.core.common.valuetype.validation.failures.TimeFailure
+import org.hisp.dhis.android.core.event.EventStatus
 import timber.log.Timber
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -59,8 +73,8 @@ class FormViewModel(
     private val dispatcher: DispatcherProvider,
     private val geometryController: GeometryController = GeometryController(GeometryParserImpl()),
     private val openErrorLocation: Boolean = false,
+    private val resultDialogUiProvider: FormResultDialogProvider,
 ) : ViewModel() {
-
     val loading = MutableLiveData(true)
     val showToast = MutableLiveData<Int>()
     val focused = MutableLiveData<Boolean>()
@@ -78,50 +92,62 @@ class FormViewModel(
     private val _queryData = MutableLiveData<RowAction>()
     val queryData = _queryData
 
-    private val _dataIntegrityResult = MutableLiveData<DataIntegrityCheckResult>()
-    val dataIntegrityResult = _dataIntegrityResult
+    sealed interface FormActions {
+        data object OnFinish : FormActions
 
+        data class ShowResultDialog(
+            val model: BottomSheetDialogUiModel,
+            val allowDiscard: Boolean,
+            val fieldsWithIssues: List<FieldWithIssue>,
+        ) : FormActions
+    }
+
+    private val _actionsChannel = Channel<FormActions>()
+    val actionsChannel = _actionsChannel.receiveAsFlow()
     private val _completionPercentage = MutableLiveData<Float>()
     val completionPercentage = _completionPercentage
 
     private val _calculationLoop = MutableLiveData(false)
     val calculationLoop = _calculationLoop
 
-    private val _pendingIntents = MutableSharedFlow<FormIntent>()
+    private val pendingIntents = MutableSharedFlow<FormIntent>()
 
-    private val fieldListChannel = Channel<FieldListConfiguration>(
-        capacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val fieldListChannel =
+        Channel<FieldListConfiguration>(
+            capacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
 
     private val handler = Handler(Looper.getMainLooper())
 
     var filePath: String? = null
 
     init {
-        viewModelScope.launch {
-            _pendingIntents
-                .distinctUntilChanged { old, new ->
-                    if (old is FormIntent.OnFinish && new is FormIntent.OnFinish) {
-                        false
-                    } else {
-                        old == new
-                    }
+
+        pendingIntents
+            .distinctUntilChanged { old, new ->
+                if (old is FormIntent.OnFinish && new is FormIntent.OnFinish) {
+                    false
+                } else {
+                    old == new
                 }
-                .map { intent -> createRowActionStore(intent) }
-                .flowOn(dispatcher.io())
-                .collect { result -> displayResult(result) }
-        }
+            }.onEach { intent ->
+                FormCountingIdlingResource.increment()
+                val result = createRowActionStore(intent)
+                displayResult(result)
+                FormCountingIdlingResource.decrement()
+            }.flowOn(dispatcher.io())
+            .launchIn(viewModelScope)
 
         viewModelScope.launch(dispatcher.io()) {
             fieldListChannel.consumeEach { fieldListConfiguration ->
-                val result = async {
-                    repository.composeList(fieldListConfiguration.skipProgramRules)
-                }
-                _items.postValue(result.await())
+                FormCountingIdlingResource.increment()
+                val result = repository.composeList(fieldListConfiguration.skipProgramRules)
+                _items.postValue(result)
                 if (fieldListConfiguration.finish) {
                     runDataIntegrityCheck()
                 }
+                FormCountingIdlingResource.decrement()
             }
         }
 
@@ -133,27 +159,30 @@ class FormViewModel(
             when (it) {
                 ValueStoreResult.VALUE_CHANGED -> {
                     result.first.let {
-                        _savedValue.value = it
+                        _savedValue.postValue(it)
                     }
                     processCalculatedItems()
                 }
 
                 ValueStoreResult.ERROR_UPDATING_VALUE -> {
                     loading.postValue(false)
-                    showToast.value = R.string.update_field_error
+                    showToast.postValue(R.string.update_field_error)
                     processCalculatedItems(true)
                 }
 
                 ValueStoreResult.UID_IS_NOT_DE_OR_ATTR -> {
-                    Timber.tag(TAG)
+                    Timber
+                        .tag(TAG)
                         .d("${result.first.id} is not a data element or attribute")
                     processCalculatedItems()
                 }
 
                 ValueStoreResult.VALUE_NOT_UNIQUE -> {
-                    showInfo.value = InfoUiModel(
-                        R.string.error,
-                        R.string.unique_warning,
+                    showInfo.postValue(
+                        InfoUiModel(
+                            R.string.error,
+                            R.string.unique_warning,
+                        ),
                     )
                     processCalculatedItems()
                 }
@@ -165,7 +194,7 @@ class FormViewModel(
                 ValueStoreResult.TEXT_CHANGING -> {
                     result.first.let {
                         Timber.d("${result.first.id} is changing its value")
-                        _queryData.value = it
+                        _queryData.postValue(it)
                     }
                     if (repository.hasLegendSet(result.first.id)) {
                         handler.removeCallbacksAndMessages(null)
@@ -180,7 +209,7 @@ class FormViewModel(
                 }
 
                 ValueStoreResult.FILE_SAVED -> {
-                    /*Do nothing*/
+                    // Do nothing
                 }
             }
         }
@@ -188,11 +217,11 @@ class FormViewModel(
 
     fun submitIntent(intent: FormIntent) {
         viewModelScope.launch {
-            _pendingIntents.emit(intent)
+            pendingIntents.emit(intent)
         }
     }
 
-    private fun createRowActionStore(it: FormIntent): Pair<RowAction, StoreResult> {
+    private suspend fun createRowActionStore(it: FormIntent): Pair<RowAction, StoreResult> {
         val rowAction = rowActionFromIntent(it)
 
         if (rowAction.type == ActionType.ON_FOCUS) {
@@ -205,23 +234,23 @@ class FormViewModel(
         return Pair(rowAction, result)
     }
 
-    private fun processUserAction(action: RowAction): StoreResult {
-        return when (action.type) {
+    private suspend fun processUserAction(action: RowAction): StoreResult =
+        when (action.type) {
             ActionType.ON_SAVE -> handleOnSaveAction(action)
             ActionType.ON_FOCUS, ActionType.ON_NEXT -> handleFocusOrNextAction(action)
             ActionType.ON_TEXT_CHANGE -> handleOnTextChangeAction(action)
             ActionType.ON_SECTION_CHANGE -> handleOnSectionChangeAction(action)
             ActionType.ON_FINISH -> handleOnFinishAction(action)
-            ActionType.ON_REQUEST_COORDINATES -> handleOnRequestCoordinatesAction(action)
-            ActionType.ON_CANCEL_REQUEST_COORDINATES -> handleOnCancelRequestCoordinatesAction(
-                action,
-            )
+            ActionType.ON_FIELD_LOADING -> handleOnFieldLoadingAction(action)
+            ActionType.ON_FINISH_LOADING ->
+                handleOnFieldFinishedLoadingAction(
+                    action,
+                )
 
             ActionType.ON_ADD_IMAGE_FINISHED -> handleOnAddImageFinishedAction(action)
             ActionType.ON_STORE_FILE -> handleOnStoreFileAction(action)
             ActionType.ON_FETCH_OPTIONS -> handleFetchOptionsAction(action)
         }
-    }
 
     private fun handleFetchOptionsAction(action: RowAction): StoreResult {
         repository.fetchOptions(action.id, action.extraData!!)
@@ -231,9 +260,9 @@ class FormViewModel(
         )
     }
 
-    private fun handleOnSaveAction(action: RowAction): StoreResult {
+    private suspend fun handleOnSaveAction(action: RowAction): StoreResult {
         if (action.valueType == ValueType.COORDINATE) {
-            repository.setFieldRequestingCoordinates(action.id, false)
+            repository.setFieldLoading(action.id, false)
         }
 
         repository.updateErrorList(action)
@@ -295,16 +324,16 @@ class FormViewModel(
         )
     }
 
-    private fun handleOnRequestCoordinatesAction(action: RowAction): StoreResult {
-        repository.setFieldRequestingCoordinates(action.id, true)
+    private fun handleOnFieldLoadingAction(action: RowAction): StoreResult {
+        repository.setFieldLoading(action.id, true)
         return StoreResult(
             action.id,
             ValueStoreResult.VALUE_HAS_NOT_CHANGED,
         )
     }
 
-    private fun handleOnCancelRequestCoordinatesAction(action: RowAction): StoreResult {
-        repository.setFieldRequestingCoordinates(action.id, false)
+    private fun handleOnFieldFinishedLoadingAction(action: RowAction): StoreResult {
+        repository.setFieldLoading(action.id, false)
         return StoreResult(
             action.id,
             ValueStoreResult.VALUE_HAS_NOT_CHANGED,
@@ -319,7 +348,7 @@ class FormViewModel(
         )
     }
 
-    private fun handleOnStoreFileAction(action: RowAction): StoreResult {
+    private suspend fun handleOnStoreFileAction(action: RowAction): StoreResult {
         val saveResult = repository.storeFile(action.id, action.value)
         return when (saveResult?.valueStoreResult) {
             ValueStoreResult.FILE_SAVED -> {
@@ -334,58 +363,64 @@ class FormViewModel(
                 )
             }
 
-            null -> StoreResult(
-                action.id,
-                ValueStoreResult.VALUE_HAS_NOT_CHANGED,
-            )
+            null ->
+                StoreResult(
+                    action.id,
+                    ValueStoreResult.VALUE_HAS_NOT_CHANGED,
+                )
 
             else -> saveResult
         }
     }
 
-    private fun saveLastFocusedItem(rowAction: RowAction) = getLastFocusedTextItem()?.let {
-        if (previousActionItem == null) previousActionItem = rowAction
-        if (previousActionItem?.value != it.value && previousActionItem?.id == it.uid) {
-            val action = rowActionFromIntent(
-                FormIntent.OnSave(
-                    it.uid,
-                    it.value,
-                    it.valueType,
-                    it.fieldMask,
-                    it.allowFutureDates,
-                ),
-            )
-            if (action.error != null) {
-                repository.updateErrorList(action)
+    private fun saveLastFocusedItem(rowAction: RowAction) =
+        getLastFocusedTextItem()?.let {
+            if (previousActionItem == null) previousActionItem = rowAction
+            if (previousActionItem?.value != it.value && previousActionItem?.id == it.uid) {
+                val action =
+                    rowActionFromIntent(
+                        FormIntent.OnSave(
+                            it.uid,
+                            it.value,
+                            it.valueType,
+                            it.fieldMask,
+                            it.allowFutureDates,
+                        ),
+                    )
+                if (action.error != null) {
+                    repository.updateErrorList(action)
+                    StoreResult(
+                        rowAction.id,
+                        ValueStoreResult.VALUE_HAS_NOT_CHANGED,
+                    )
+                } else {
+                    checkAutoCompleteForLastFocusedItem(it)
+                    val result = repository.save(it.uid, it.value, action.extraData)
+                    repository.updateValueOnList(it.uid, it.value, it.valueType)
+                    repository.updateErrorList(action)
+                    result
+                }
+            } else {
                 StoreResult(
                     rowAction.id,
                     ValueStoreResult.VALUE_HAS_NOT_CHANGED,
                 )
-            } else {
-                checkAutoCompleteForLastFocusedItem(it)
-                val result = repository.save(it.uid, it.value, action.extraData)
-                repository.updateValueOnList(it.uid, it.value, it.valueType)
-                repository.updateErrorList(action)
-                result
             }
-        } else {
-            StoreResult(
-                rowAction.id,
-                ValueStoreResult.VALUE_HAS_NOT_CHANGED,
-            )
-        }
-    } ?: StoreResult(
-        rowAction.id,
-        ValueStoreResult.VALUE_HAS_NOT_CHANGED,
-    )
+        } ?: StoreResult(
+            rowAction.id,
+            ValueStoreResult.VALUE_HAS_NOT_CHANGED,
+        )
 
     private fun checkAutoCompleteForLastFocusedItem(fieldUidModel: FieldUiModel) =
         getLastFocusedTextItem()?.let {
             if (fieldUidModel.renderingType == UiRenderType.AUTOCOMPLETE &&
-                !fieldUidModel.value.isNullOrEmpty() && fieldUidModel.value?.trim()?.length != 0
+                !fieldUidModel.value.isNullOrEmpty() &&
+                fieldUidModel.value?.trim()?.length != 0
             ) {
                 val autoCompleteValues =
-                    repository.getListFromPreferences(fieldUidModel.uid)
+                    repository
+                        .getListFromPreferences(fieldUidModel.uid)
+                        .toMutableList()
                 if (!autoCompleteValues.contains(fieldUidModel.value)) {
                     autoCompleteValues.add(fieldUidModel.value.toString())
                     repository.saveListToPreferences(fieldUidModel.uid, autoCompleteValues)
@@ -393,39 +428,46 @@ class FormViewModel(
             }
         }
 
-    fun valueTypeIsTextField(valueType: ValueType?, renderType: UiRenderType? = null): Boolean {
-        return if (valueType == null) {
+    fun valueTypeIsTextField(
+        valueType: ValueType?,
+        renderType: UiRenderType? = null,
+    ): Boolean =
+        if (valueType == null) {
             false
         } else {
             valueType.isNumeric ||
-                valueType.isText && renderType?.isPolygon() != true ||
+                valueType.isText &&
+                renderType?.isPolygon() != true ||
                 valueType == ValueType.URL ||
                 valueType == ValueType.EMAIL ||
                 valueType == ValueType.PHONE_NUMBER
         }
-    }
 
-    private fun getLastFocusedTextItem() = repository.currentFocusedItem()?.takeIf {
-        it.optionSet == null && (
-            valueTypeIsTextField(
-                it.valueType,
-                it.renderingType,
-            ) || it.valueType == ValueType.AGE ||
-                it.valueType == ValueType.DATETIME ||
-                it.valueType == ValueType.DATE ||
-                it.valueType == ValueType.TIME
-            )
-    }
+    private fun getLastFocusedTextItem() =
+        repository.currentFocusedItem()?.takeIf {
+            it.optionSet == null &&
+                (
+                    valueTypeIsTextField(
+                        it.valueType,
+                        it.renderingType,
+                    ) ||
+                        it.valueType == ValueType.AGE ||
+                        it.valueType == ValueType.DATETIME ||
+                        it.valueType == ValueType.DATE ||
+                        it.valueType == ValueType.TIME
+                )
+        }
 
-    private fun rowActionFromIntent(intent: FormIntent): RowAction {
-        return when (intent) {
+    private fun rowActionFromIntent(intent: FormIntent): RowAction =
+        when (intent) {
             is FormIntent.ClearValue -> createRowAction(intent.uid, null)
             is FormIntent.SelectLocationFromCoordinates -> {
-                val error = checkFieldError(
-                    ValueType.COORDINATE,
-                    intent.coordinates,
-                    null,
-                )
+                val error =
+                    checkFieldError(
+                        ValueType.COORDINATE,
+                        intent.coordinates,
+                        null,
+                    )
                 createRowAction(
                     uid = intent.uid,
                     value = intent.coordinates,
@@ -435,18 +477,20 @@ class FormViewModel(
                 )
             }
 
-            is FormIntent.SelectLocationFromMap -> setCoordinateFieldValue(
-                fieldUid = intent.uid,
-                featureType = intent.featureType,
-                coordinates = intent.coordinates,
-            )
+            is FormIntent.SelectLocationFromMap ->
+                setCoordinateFieldValue(
+                    fieldUid = intent.uid,
+                    featureType = intent.featureType,
+                    coordinates = intent.coordinates,
+                )
 
             is FormIntent.SaveCurrentLocation -> {
-                val error = checkFieldError(
-                    ValueType.COORDINATE,
-                    intent.value,
-                    null,
-                )
+                val error =
+                    checkFieldError(
+                        ValueType.COORDINATE,
+                        intent.value,
+                        null,
+                    )
                 createRowAction(
                     uid = intent.uid,
                     value = intent.value,
@@ -456,33 +500,45 @@ class FormViewModel(
                 )
             }
 
-            is FormIntent.OnNext -> createRowAction(
-                uid = intent.uid,
-                value = intent.value,
-                actionType = ActionType.ON_NEXT,
-            )
+            is FormIntent.OnNext ->
+                createRowAction(
+                    uid = intent.uid,
+                    value = intent.value,
+                    actionType = ActionType.ON_NEXT,
+                )
 
             is FormIntent.OnSave -> {
-                val error = checkFieldError(
-                    intent.valueType,
-                    intent.value,
-                    intent.fieldMask,
-                    intent.allowFutureDates,
-                )
+                val error =
+                    checkFieldError(
+                        intent.valueType,
+                        intent.value,
+                        intent.fieldMask,
+                        intent.allowFutureDates,
+                    )
 
                 createRowAction(
                     uid = intent.uid,
                     value = intent.value,
                     error = error,
                     valueType = intent.valueType,
+                )
+            }
+
+            is FormIntent.OnSaveCustomIntent -> {
+                createRowAction(
+                    uid = intent.uid,
+                    value = intent.value,
+                    error = if (intent.error) CustomIntentFailure.CouldNotRetrieveCustomIntentData else null,
+                    valueType = ValueType.TEXT,
                 )
             }
 
             is FormIntent.OnQrCodeScanned -> {
-                val error = checkFieldError(
-                    intent.valueType,
-                    intent.value,
-                )
+                val error =
+                    checkFieldError(
+                        intent.valueType,
+                        intent.value,
+                    )
 
                 createRowAction(
                     uid = intent.uid,
@@ -492,43 +548,47 @@ class FormViewModel(
                 )
             }
 
-            is FormIntent.OnFocus -> createRowAction(
-                uid = intent.uid,
-                value = intent.value,
-                actionType = ActionType.ON_FOCUS,
-            )
-
-            is FormIntent.OnTextChange -> createRowAction(
-                uid = intent.uid,
-                value = intent.value,
-                actionType = ActionType.ON_TEXT_CHANGE,
-                valueType = intent.valueType,
-            )
-
-            is FormIntent.OnSection -> createRowAction(
-                uid = intent.sectionUid,
-                value = null,
-                actionType = ActionType.ON_SECTION_CHANGE,
-            )
-
-            is FormIntent.OnFinish -> createRowAction(
-                uid = "",
-                value = null,
-                actionType = ActionType.ON_FINISH,
-            )
-
-            is FormIntent.OnRequestCoordinates ->
+            is FormIntent.OnFocus ->
                 createRowAction(
                     uid = intent.uid,
-                    value = null,
-                    actionType = ActionType.ON_REQUEST_COORDINATES,
+                    value = intent.value,
+                    actionType = ActionType.ON_FOCUS,
                 )
 
-            is FormIntent.OnCancelRequestCoordinates ->
+            is FormIntent.OnTextChange ->
+                createRowAction(
+                    uid = intent.uid,
+                    value = intent.value,
+                    actionType = ActionType.ON_TEXT_CHANGE,
+                    valueType = intent.valueType,
+                )
+
+            is FormIntent.OnSection ->
+                createRowAction(
+                    uid = intent.sectionUid,
+                    value = null,
+                    actionType = ActionType.ON_SECTION_CHANGE,
+                )
+
+            is FormIntent.OnFinish ->
+                createRowAction(
+                    uid = "",
+                    value = null,
+                    actionType = ActionType.ON_FINISH,
+                )
+
+            is FormIntent.OnFieldLoadingData ->
                 createRowAction(
                     uid = intent.uid,
                     value = null,
-                    actionType = ActionType.ON_CANCEL_REQUEST_COORDINATES,
+                    actionType = ActionType.ON_FIELD_LOADING,
+                )
+
+            is FormIntent.OnFieldFinishedLoadingData ->
+                createRowAction(
+                    uid = intent.uid,
+                    value = null,
+                    actionType = ActionType.ON_FINISH_LOADING,
                 )
 
             is FormIntent.OnAddImageFinished ->
@@ -547,11 +607,12 @@ class FormViewModel(
                 )
 
             is FormIntent.OnSaveDate -> {
-                val error = checkFieldError(
-                    valueType = intent.valueType,
-                    fieldValue = intent.value,
-                    allowFutureDates = intent.allowFutureDates,
-                )
+                val error =
+                    checkFieldError(
+                        valueType = intent.valueType,
+                        fieldValue = intent.value,
+                        allowFutureDates = intent.allowFutureDates,
+                    )
 
                 createRowAction(
                     uid = intent.uid,
@@ -569,7 +630,6 @@ class FormViewModel(
                     actionType = ActionType.ON_FETCH_OPTIONS,
                 )
         }
-    }
 
     private fun checkFieldError(
         valueType: ValueType?,
@@ -582,37 +642,40 @@ class FormViewModel(
         }
 
         return fieldValue.let { value ->
-            val result = when (valueType) {
-                ValueType.DATE -> {
-                    validateDateFormats(fieldValue, valueType, allowFutureDates)
-                }
+            val result =
+                when (valueType) {
+                    ValueType.DATE -> {
+                        validateDateFormats(fieldValue, valueType, allowFutureDates)
+                    }
 
-                ValueType.TIME -> {
-                    validateTimeFormat(fieldValue, valueType)
-                }
+                    ValueType.TIME -> {
+                        validateTimeFormat(fieldValue, valueType)
+                    }
 
-                ValueType.DATETIME -> {
-                    validateDateTimeFormat(fieldValue, valueType, allowFutureDates)
-                }
+                    ValueType.DATETIME -> {
+                        validateDateTimeFormat(fieldValue, valueType, allowFutureDates)
+                    }
 
-                ValueType.AGE -> {
-                    validateDateFormats(fieldValue, valueType, allowFutureDates)
-                }
+                    ValueType.AGE -> {
+                        validateDateFormats(fieldValue, valueType, allowFutureDates)
+                    }
 
-                else -> {
-                    valueType?.validator?.validate(value)
+                    else -> {
+                        valueType?.validator?.validate(value)
+                    }
                 }
-            }
-            var error = when (result) {
-                is Result.Failure -> result.failure
-                else -> null
-            }
+            var error =
+                when (result) {
+                    is Result.Failure -> result.failure
+                    else -> null
+                }
 
             fieldMask?.let { mask ->
-                error = when (val validation = FieldMaskValidator(mask).validate(value)) {
-                    is Result.Failure -> validation.failure
-                    else -> error
-                }
+                error =
+                    when (val validation = FieldMaskValidator(mask).validate(value)) {
+                        is Result.Failure -> validation.failure
+                        else -> error
+                    }
             }
             error
         }
@@ -717,18 +780,21 @@ class FormViewModel(
         coordinates: String?,
     ): RowAction {
         val type = FeatureType.valueOf(featureType)
-        val geometryCoordinates = coordinates?.let {
-            geometryController.generateLocationFromCoordinates(
-                type,
-                coordinates,
-            )?.coordinates()
-        }
+        val geometryCoordinates =
+            coordinates?.let {
+                geometryController
+                    .generateLocationFromCoordinates(
+                        type,
+                        coordinates,
+                    )?.coordinates()
+            }
 
-        val error = if (type == FeatureType.POINT) {
-            checkFieldError(ValueType.COORDINATE, geometryCoordinates, null)
-        } else {
-            null
-        }
+        val error =
+            if (type == FeatureType.POINT) {
+                checkFieldError(ValueType.COORDINATE, geometryCoordinates, null)
+            } else {
+                null
+            }
 
         return createRowAction(
             uid = fieldUid,
@@ -739,14 +805,15 @@ class FormViewModel(
         )
     }
 
-    fun getFocusedItemUid(): String? {
-        return items.value?.firstOrNull { it.focused }?.uid
-    }
-
-    private fun processCalculatedItems(skipProgramRules: Boolean = false, finish: Boolean = false) {
-        fieldListChannel.trySend(
-            FieldListConfiguration(skipProgramRules, finish),
-        )
+    private fun processCalculatedItems(
+        skipProgramRules: Boolean = false,
+        finish: Boolean = false,
+    ) {
+        viewModelScope.launch {
+            fieldListChannel.send(
+                FieldListConfiguration(skipProgramRules, finish),
+            )
+        }
     }
 
     fun updateConfigurationErrors() {
@@ -755,25 +822,127 @@ class FormViewModel(
 
     fun runDataIntegrityCheck(backButtonPressed: Boolean? = null) {
         viewModelScope.launch {
-            val result = async(dispatcher.io()) {
-                repository.runDataIntegrityCheck(backPressed = backButtonPressed ?: false)
-            }
+            FormCountingIdlingResource.increment()
+            val result =
+                async(dispatcher.io()) {
+                    repository.runDataIntegrityCheck(backPressed = backButtonPressed ?: false)
+                }
             try {
-                _dataIntegrityResult.postValue(result.await())
+                handleDataIntegrityResult(result.await())
             } catch (e: Exception) {
                 Timber.e(e)
             } finally {
                 val list = repository.composeList()
                 _items.postValue(list)
+                FormCountingIdlingResource.decrement()
             }
         }
     }
 
+    private suspend fun handleDataIntegrityResult(result: DataIntegrityCheckResult) {
+        val isEvent = repository.isEvent()
+        val action =
+            when {
+                isEvent && repository.isEventEditable() == false -> FormActions.OnFinish
+                (result is SuccessfulResult) and (result.eventResultDetails.eventStatus == null) -> FormActions.OnFinish
+                result is NotSavedResult -> FormActions.OnFinish
+                else -> showDataEntryResultDialogDeprecated(result)
+            }
+        action?.let { _actionsChannel.send(it) }
+    }
+
+    private suspend fun showDataEntryResultDialogDeprecated(result: DataIntegrityCheckResult): FormActions? =
+        when (result.eventResultDetails.eventStatus) {
+            EventStatus.ACTIVE, null -> provideShowResultDialog(result)
+
+            EventStatus.COMPLETED -> {
+                val resultAction = provideShowResultDialog(result)
+                if (resultAction?.fieldsWithIssues?.isEmpty() == true) {
+                    FormActions.OnFinish
+                }
+                resultAction
+            }
+
+            EventStatus.SKIPPED -> {
+                val resultAction = provideShowResultDialog(result)
+                if (resultAction?.fieldsWithIssues?.isEmpty() == true) {
+                    activateEvent()
+                }
+                resultAction
+            }
+
+            EventStatus.SCHEDULE,
+            EventStatus.VISITED,
+            EventStatus.OVERDUE,
+            -> FormActions.OnFinish
+        }
+
+    private fun provideShowResultDialog(result: DataIntegrityCheckResult): FormActions.ShowResultDialog? =
+        when (result) {
+            is FieldsWithErrorResult -> {
+                resultDialogUiProvider(
+                    canComplete = result.canComplete,
+                    onCompleteMessage = result.onCompleteMessage,
+                    errorFields = result.fieldUidErrorList,
+                    emptyMandatoryFields = result.mandatoryFields,
+                    warningFields = result.warningFields,
+                    eventMode = result.eventResultDetails.eventMode,
+                    eventState = result.eventResultDetails.eventStatus,
+                    result = result,
+                )
+            }
+
+            is FieldsWithWarningResult ->
+                resultDialogUiProvider(
+                    canComplete = result.canComplete,
+                    onCompleteMessage = result.onCompleteMessage,
+                    errorFields = emptyList(),
+                    emptyMandatoryFields = emptyMap(),
+                    warningFields = result.fieldUidWarningList,
+                    eventMode = result.eventResultDetails.eventMode,
+                    eventState = result.eventResultDetails.eventStatus,
+                    result = result,
+                )
+
+            is MissingMandatoryResult ->
+                resultDialogUiProvider(
+                    canComplete = result.canComplete,
+                    onCompleteMessage = result.onCompleteMessage,
+                    errorFields = result.errorFields,
+                    emptyMandatoryFields = result.mandatoryFields,
+                    warningFields = result.warningFields,
+                    eventMode = result.eventResultDetails.eventMode,
+                    eventState = result.eventResultDetails.eventStatus,
+                    result = result,
+                )
+
+            is SuccessfulResult ->
+                resultDialogUiProvider(
+                    canComplete = result.canComplete,
+                    onCompleteMessage = result.onCompleteMessage,
+                    errorFields = emptyList(),
+                    emptyMandatoryFields = emptyMap(),
+                    warningFields = emptyList(),
+                    eventMode = result.eventResultDetails.eventMode,
+                    eventState = result.eventResultDetails.eventStatus,
+                    result = result,
+                )
+
+            NotSavedResult -> null
+        }?.let { (model, fieldsWithIssues) ->
+            FormActions.ShowResultDialog(
+                model,
+                result.allowDiscard,
+                fieldsWithIssues,
+            )
+        }
+
     fun calculateCompletedFields() {
         viewModelScope.launch {
-            val result = async(dispatcher.io()) {
-                repository.completedFieldsPercentage(_items.value ?: emptyList())
-            }
+            val result =
+                async(dispatcher.io()) {
+                    repository.completedFieldsPercentage(_items.value ?: emptyList())
+                }
             try {
                 _completionPercentage.postValue(result.await())
             } catch (e: Exception) {
@@ -802,9 +971,10 @@ class FormViewModel(
 
     fun displayLoopWarningIfNeeded() {
         viewModelScope.launch {
-            val result = async(dispatcher.io()) {
-                repository.calculationLoopOverLimit()
-            }
+            val result =
+                async(dispatcher.io()) {
+                    repository.calculationLoopOverLimit()
+                }
             try {
                 _calculationLoop.postValue(result.await())
             } catch (e: Exception) {
@@ -815,13 +985,29 @@ class FormViewModel(
 
     fun discardChanges() {
         repository.backupOfChangedItems().forEach {
-            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask, it.allowFutureDates))
+            submitIntent(
+                FormIntent.OnSave(
+                    it.uid,
+                    it.value,
+                    it.valueType,
+                    it.fieldMask,
+                    it.allowFutureDates,
+                ),
+            )
         }
     }
 
     fun saveDataEntry() {
         getLastFocusedTextItem()?.let {
-            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask, it.allowFutureDates))
+            submitIntent(
+                FormIntent.OnSave(
+                    it.uid,
+                    it.value,
+                    it.valueType,
+                    it.fieldMask,
+                    it.allowFutureDates,
+                ),
+            )
         }
         submitIntent(FormIntent.OnFinish())
     }
@@ -829,17 +1015,19 @@ class FormViewModel(
     fun loadData() {
         loading.postValue(true)
         viewModelScope.launch(dispatcher.io()) {
-            val result = async {
-                repository.fetchFormItems(openErrorLocation)
-            }
-            dateFormatConfig = async {
-                repository.getDateFormatConfiguration()
-            }.await()
+            FormCountingIdlingResource.increment()
+            val result = repository.fetchFormItems(openErrorLocation)
+            dateFormatConfig =
+                async {
+                    repository.getDateFormatConfiguration()
+                }.await()
             try {
-                _items.postValue(result.await())
+                _items.postValue(result)
             } catch (e: Exception) {
                 Timber.e(e)
                 _items.postValue(emptyList())
+            } finally {
+                FormCountingIdlingResource.decrement()
             }
         }
     }
@@ -851,26 +1039,39 @@ class FormViewModel(
     fun getUpdatedData(uiEvent: RecyclerViewUiEvents.OpenChooserIntent): RowAction {
         val currentField = queryData.value
         return when (currentField?.id) {
-            uiEvent.uid -> currentField.copy(
-                type = ActionType.ON_SAVE,
-                error = checkFieldError(
-                    currentField.valueType,
-                    currentField.value,
-                    null,
-                ),
-            )
+            uiEvent.uid ->
+                currentField.copy(
+                    type = ActionType.ON_SAVE,
+                    error =
+                        checkFieldError(
+                            currentField.valueType,
+                            currentField.value,
+                            null,
+                        ),
+                )
 
-            else -> RowAction(
-                id = uiEvent.uid,
-                value = uiEvent.value,
-                type = ActionType.ON_SAVE,
-            )
+            else ->
+                RowAction(
+                    id = uiEvent.uid,
+                    value = uiEvent.value,
+                    type = ActionType.ON_SAVE,
+                )
         }
     }
 
-    fun fetchPeriods(): Flow<PagingData<Period>> {
-        return repository.fetchPeriods().flowOn(dispatcher.io())
+    fun setFieldLoading(
+        fieldUid: String,
+        isLoading: Boolean,
+        value: String,
+    ) {
+        repository.setFieldLoading(fieldUid, isLoading)
+        repository.updateValueOnList(fieldUid, null, null)
     }
+
+    fun getCustomIntentRequestParams(customIntentUid: String): List<CustomIntentRequestArgumentModel> =
+        repository.reEvaluateRequestParams(customIntentUid)
+
+    fun fetchPeriods(): Flow<PagingData<Period>> = repository.fetchPeriods().flowOn(dispatcher.io())
 
     companion object {
         const val TAG = "FormViewModel"

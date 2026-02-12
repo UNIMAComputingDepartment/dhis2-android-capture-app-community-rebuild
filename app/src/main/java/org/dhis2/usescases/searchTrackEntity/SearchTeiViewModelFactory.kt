@@ -15,7 +15,7 @@ class SearchTeiViewModelFactory(
     private val searchRepositoryKt: SearchRepositoryKt,
     private val searchNavPageConfigurator: SearchPageConfigurator,
     private val initialProgramUid: String?,
-    private val initialQuery: MutableMap<String, String>?,
+    private val initialQuery: MutableMap<String, List<String>?>?,
     private val mapDataRepository: MapDataRepository,
     private val networkUtils: NetworkUtils,
     private val dispatchers: DispatcherProvider,
@@ -25,8 +25,8 @@ class SearchTeiViewModelFactory(
     private val filterManager: FilterManager,
     private val workflowRepository: WorkflowRepository
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return SearchTEIViewModel(
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        SearchTEIViewModel(
             initialProgramUid,
             initialQuery,
             searchRepository,
@@ -41,5 +41,4 @@ class SearchTeiViewModelFactory(
             filterManager,
             workflowRepository
         ) as T
-    }
 }

@@ -7,9 +7,11 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.ui.model.ListCardUiModel
@@ -25,7 +27,6 @@ class EventListViewModel(
     val mapper: ProgramEventMapper,
     val cardMapper: EventCardMapper,
 ) : ViewModel() {
-
     var onSyncClickedListener: (eventUid: String?) -> Unit = { _ -> }
 
     var onCardClickedListener: (eventUid: String, orgUnitUid: String) -> Unit = { _, _ -> }
@@ -35,10 +36,12 @@ class EventListViewModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private var _eventList: Flow<PagingData<ListCardUiModel>> =
-        filterManager.asFlow(viewModelScope)
+        filterManager
+            .asFlow(viewModelScope)
             .flatMapLatest {
                 EventListIdlingResourceSingleton.increment()
-                eventRepository.filteredProgramEvents()
+                eventRepository
+                    .filteredProgramEvents()
                     .map { pagingData ->
                         pagingData.map { event ->
                             withContext(dispatchers.io()) {
@@ -71,6 +74,11 @@ class EventListViewModel(
                         }
                     }.flowOn(dispatchers.io())
             }.flowOn(dispatchers.io())
+            .onEach {
+                EventListIdlingResourceSingleton.decrement()
+            }.catch {
+                EventListIdlingResourceSingleton.decrement()
+            }
 
     val eventList = _eventList
 

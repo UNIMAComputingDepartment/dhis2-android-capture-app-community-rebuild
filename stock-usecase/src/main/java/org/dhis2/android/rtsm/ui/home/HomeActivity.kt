@@ -7,7 +7,6 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.ScaffoldState
@@ -21,16 +20,14 @@ import androidx.compose.ui.res.colorResource
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanIntentResult
 import com.journeyapps.barcodescanner.ScanOptions
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.dhis2.android.rtsm.R
-import org.dhis2.android.rtsm.commons.Constants.INTENT_EXTRA_APP_CONFIG
-import org.dhis2.android.rtsm.data.AppConfig
 import org.dhis2.android.rtsm.data.TransactionType
 import org.dhis2.android.rtsm.ui.home.screens.HomeScreen
 import org.dhis2.android.rtsm.ui.managestock.ManageStockViewModel
 import org.dhis2.android.rtsm.utils.NetworkUtils
+import org.dhis2.commons.Constants
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.OnSyncNavigationListener
@@ -39,12 +36,11 @@ import org.dhis2.commons.sync.SyncDialog
 import org.dhis2.commons.sync.SyncStatusItem
 import org.dhis2.commons.ui.extensions.handleInsets
 import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
-@AndroidEntryPoint
 class HomeActivity : AppCompatActivity() {
-
-    private val viewModel: HomeViewModel by viewModels()
-    private val manageStockViewModel: ManageStockViewModel by viewModels()
+    private val viewModel: HomeViewModel by viewModel()
+    private val manageStockViewModel: ManageStockViewModel by viewModel()
     private var themeColor = R.color.colorPrimary
     private lateinit var filterManager: FilterManager
     private lateinit var barcodeLauncher: ActivityResultLauncher<ScanOptions>
@@ -58,7 +54,8 @@ class HomeActivity : AppCompatActivity() {
         }
 
         filterManager = FilterManager.getInstance()
-        intent.getParcelableExtra<AppConfig>(INTENT_EXTRA_APP_CONFIG)
+        intent
+            .getStringExtra(Constants.PROGRAM_UID)
             ?.let { manageStockViewModel.setConfig(it) }
 
         handleInsets()
@@ -104,10 +101,12 @@ class HomeActivity : AppCompatActivity() {
                 color = R.color.colorPrimary
                 theme = R.style.AppTheme
             }
+
             TransactionType.DISCARD -> {
                 color = R.color.discard_color
                 theme = R.style.discard
             }
+
             TransactionType.CORRECTION -> {
                 color = R.color.correction_color
                 theme = R.style.correction
@@ -144,24 +143,28 @@ class HomeActivity : AppCompatActivity() {
                 activity = this@HomeActivity,
                 recordUid = programUid,
                 syncContext = SyncContext.TrackerProgram(programUid),
-                dismissListener = object : OnDismissListener {
-                    override fun onDismiss(hasChanged: Boolean) {
-                        manageStockViewModel.refreshData()
-                    }
-                },
-                onSyncNavigationListener = object : OnSyncNavigationListener {
-                    override fun intercept(
-                        syncStatusItem: SyncStatusItem,
-                        intent: Intent,
-                    ): Intent? {
-                        return null
-                    }
-                },
+                dismissListener =
+                    object : OnDismissListener {
+                        override fun onDismiss(hasChanged: Boolean) {
+                            manageStockViewModel.refreshData()
+                        }
+                    },
+                onSyncNavigationListener =
+                    object : OnSyncNavigationListener {
+                        override fun intercept(
+                            syncStatusItem: SyncStatusItem,
+                            intent: Intent,
+                        ): Intent? = null
+                    },
             ).show()
         }
     }
 
-    private fun showSnackBar(scope: CoroutineScope, scaffoldState: ScaffoldState, message: String) {
+    private fun showSnackBar(
+        scope: CoroutineScope,
+        scaffoldState: ScaffoldState,
+        message: String,
+    ) {
         scope.launch {
             scaffoldState.snackbarHostState.showSnackbar(message)
         }

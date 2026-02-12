@@ -33,10 +33,9 @@
     <string name="sync_error_text">同步中发生错误，请重试</string>
     <string name="sync_incomplete_error_text">同步完成，但我们没有收到所有记录的服务器确认。这些记录在应用程序中仍被标记为“离线”状态。我们建议重试同步。</string>
     <string name="metadata_sync_error">失败：同步过程中出了问题。如果有连接，请重试。如果错误仍然存在，请联系您的管理员。</string>
-    <string name="data_sync_warning">警告：大部分数据已同步，但某些字段出现冲突。同步配置后再试一次。检查它们的同步状态：有冲突的程序、TEI 和事件会被标记为 @。</string>
+    <string name="data_sync_warning_v2">您的数据存在冲突。请同步您的配置，查看数据并尝试再次同步。</string>
     <string name="data_sync_warning_program">警告：你的大多数数据已经同步，但是有些字段存在冲突，同步你的配置再试。如果警告仍然存在，检查你的同步状态：项目、跟踪实体和事件如果有冲突会标记为@。</string>
-    <string name="data_sync_error">错误：你有些数据同步失败。检查你的同步状态：项目、跟踪实体和事件如果有冲突会标记为@。</string>
-    <string name="data_sync_error_program">错误：同步数据失败。检查同步状态：所有冲突的实体和事件标记为$\" 。</string>
+    <string name="data_sync_error_v2">您的部分数据未能同步。</string>
     <string name="server_sync_error">发生错误，服务器未响应。与您的管理员联系。</string>
 
     <string name="search_result_text">发现结果：1%s</string>
@@ -101,6 +100,7 @@
     <string name="finish_and_complete">完成</string>
     <string name="completed">已完成</string>
     <string name="cancelled">已取消</string>
+    <string name="re_open">重新打开</string>
     <string name="re_open_form">重新打开表单</string>
     <string name="activate">激活</string>
     <string name="active">活跃的</string>
@@ -141,6 +141,7 @@
     <string name="there_is_no_available_period">没有可用期间可选</string>
     <!--Event Detail-->
     <string name="due_date">到期日期</string>
+    <string name="next_event">下一页%1$s</string>
     <string name="cat_combo">分类选择框</string>
     <string name="date_default">DD/MM/YYYY</string>
     <string name="cancel">取消</string>
@@ -150,10 +151,10 @@
     <string name="no_options">无可用选项</string>
 
     <!--TEI Enrollment list-->
-    <string name="enrollment_list">注册清单</string>
+    <string name="enrollment_list">报名名单</string>
     <string name="active_programs">活动项目</string>
-    <string name="to_enroll_programs">注册的项目</string>
-    <string name="enroll">注册</string>
+    <string name="to_enroll_programs">加入的项目</string>
+    <string name="enroll">加入</string>
     <string name="last_visit">上次访问：</string>
     <string name="apply">应用</string>
 
@@ -198,6 +199,7 @@
     <string name="SYNC_META">现在同步配置</string>
     <string name="SYNC_MANAGER">设置</string>
     <string name="last_data_sync_date">上次同步：1%s</string>
+    <string name="last_data_sync">最后一次同步时间</string>
     <string name="last_metadata_sync_date">上次同步：%s</string>
     <string name="refill_reserved_values">重新填充</string>
     <string name="settings_sms_module_title">短信模块：</string>
@@ -212,7 +214,7 @@
     <plurals name="settings_specific_programs">
         <item quantity="other">这里有%s个项目有特定的设置</item>
     </plurals>
-    <string name="settings_sync_period">同步期间</string>
+    <string name="settings_sync_period_v2">同步周期</string>
     <string name="settings_limit_scope">设置限制</string>
     <string name="settings_limit_globally">全局</string>
     <string name="settings_limit_program">按项目</string>
@@ -238,9 +240,12 @@
     <string name="settingsCheckVersionMessage">软件</string>
     <string name="settingsExportDB">导出数据库</string>
     <string name="settingsExportDBMessage">导出数据库并与管理员共享</string>
+    <string name="settingTwoFA">双重身份验证</string>
+    <string name="settingsTwoFAStatus">状态</string>
+    <string name="settingTwoFADescr">分两步启用或禁用身份验证。</string>
     <!--endregion-->
 
-    <string name="enrollmment_date">注册日期</string>
+    <string name="enrollmment_date">加入日期</string>
 
     <!-- SEARCH OPTION SET -->
     <string name="search_optionset">搜索</string>
@@ -274,7 +279,7 @@
     <string name="hint_month">月</string>
     <string name="hint_year">岁</string>
     <string name="week">星期</string>
-    <string name="incident_date">事故日期</string>
+    <string name="incident_date">发生日期</string>
     <string name="local_results">本地结果</string>
     <string name="online_results">在线结果</string>
     <string name="past_programs">过去的项目</string>
@@ -300,7 +305,7 @@
     <string name="search_min_num_attr">你至少需要输入 %d个属性便于搜索</string>
     <string name="search_attr">你至少需要输入 一个属性便于搜索</string>
     <string name="search_max_tei_reached">有多余%d个结果，请再细化搜索条件</string>
-    <string name="search_criteria_not_met">你的搜索没有返回任何结果，修改你的条件或者注册一个新的 %s</string>
+    <string name="search_criteria_not_met">你的搜索没有返回任何结果，修改你的条件或者加入一个新的 %s</string>
     <string name="search_init">输入你的搜索条件</string>
 
     <!-- QR -->
@@ -309,7 +314,7 @@
     <string name="button_ok">好</string>
     <string name="qr_id">标识</string>
     <string name="qr_attributes">属性</string>
-    <string name="qr_enrollment">注册</string>
+    <string name="qr_enrollment">加入</string>
     <string name="qr_events">事件</string>
     <string name="qr_relationships">关系</string>
     <string name="read_more_qr">读取下一个二维码获取更多信息</string>
@@ -317,10 +322,10 @@
     <string name="qr_no_data">无数据</string>
     <string name="qr_error_id">无效的二维码</string>
     <string name="qr_error_attr">该属性不能被添加</string>
-    <string name="qr_error_enrollment">该注册不能添加</string>
+    <string name="qr_error_enrollment">该加入登记不能添加</string>
 
     <string name="about">关于</string>
-    <string name="programs_to_enroll">注册的项目</string>
+    <string name="programs_to_enroll">加入的项目</string>
     <string name="select_all">全选</string>
     <string name="clear_all">清除选择</string>
     <string name="empty_program_list">选择的过滤器没有相关信息，请尝试改变</string>
@@ -367,7 +372,7 @@
     <string name="online_search_parsing_error">解析结果发生错误</string>
     <string name="online_search_error">在线搜索返回错误。</string>
     <string name="online_search_response_error">服务器出现错误</string>
-    <string name="search_program_not_selected">选择一个项目开始注册</string>
+    <string name="search_program_not_selected">选择一个项目开始加入登记</string>
     <string name="search_access_error">你没有请求的权限</string>
     <string name="feature_unavaible">功能还没有实现。</string>
     <string name="relationship_label_error">获取关系标签发生错误</string>
@@ -386,7 +391,7 @@
     <string name="message_generate_new_event">你要创建另外的事件？</string>
     <string name="event_completed_title">完成的事件</string>
     <string name="event_completed_message">该项目的所有事件已经完成。你同时要关闭该项目吗？</string>
-    <string name="complete_enrollment_message">您还想完成注册吗？</string>
+    <string name="complete_enrollment_message">您还想同时完成加入登记吗？</string>
     <string name="complete_enrollment_message_V2">您也想完成%s吗？</string>
     <string name="check_event">检查</string>
 
@@ -412,7 +417,7 @@
     <string name="tuto_dashboard_5">点击创建或调度一个事件或流转到其它机构</string>
     <string name="tuto_dashboard_6">这里你将看到所有的事件。点击查看事件详情。</string>
     <string name="tuto_dashboard_7">通过菜单添加关系、查看指标或写笔记。</string>
-    <string name="tuto_dashboard_8">点击查看实体的所有注册数据或者创建一个新的</string>
+    <string name="tuto_dashboard_8">点击查看实体的所有登记数据或者创建一个新的</string>
     <string name="tuto_tei_event_1">点击删除该事件。该操作不能取消。</string>
     <string name="tuto_tei_event_2">完成事件</string>
     <string name="tuto_program_event_1">所有该项目的相关事件将列表在这里。</string>
@@ -443,7 +448,7 @@
     <string name="warnings_in_form">表格中有警告</string>
     <string name="what_to_do">你想做什么？</string>
     <string name="field_errors">有些字段有错误，请检查，才能完成项目</string>
-    <string name="unselect_enrollment">所有的注册</string>
+    <string name="unselect_enrollment">所有的加入登记</string>
     <string name="unselect_enrollment_description">显示所有活动项目的仪表盘</string>
     <string name="CHECK_SYNC_ERRORS">打开同步错误日志</string>
     <string name="error_dialog_title">同步错误日志</string>
@@ -492,7 +497,7 @@
     <string name="action_agree">同意</string>
     <string name="action_continue">继续</string>
     <string name="login_server_info_title">服务器URL</string>
-    <string name="login_server_info_message">输入系统管理员提供的贵组织的DHIS 2服务器URL。\n \n 或者，您可以扫描包含服务器URL的QR码。</string>
+    <string name="login_server_info_message">输入系统管理员为贵组织提供的 DHIS 2 服务器网址。\n\n或者，您也可以扫描包含服务器 URL 的 QR 代码</string>
     <string name="forgot_your_code">忘记你的数字口令</string>
     <string name="event_form_end_options_title">对该事件你想做什么？</string>
     <string name="sectionSelectorEnd">结束</string>
@@ -616,13 +621,14 @@
     <string name="filter_event_status_skipped">跳过的</string>
     <string name="event_tei_limits">事件：%s 最大：%s%s 当前：%s ，实体：%s 最大：%s%s 当前：%s</string>
     <string name="event_tei_limits_v2">设置限制：%s。\n 事件：%s/%s  实体：%s/%s</string>
+    <string name="limit_setting">设置限制%s</string>
     <string name="enrollment_data_hide">隐藏加入数据</string>
     <string name="enrollment_data_show">显示加入数据</string>
     <string name="sms_enabled">短信模块被激活</string>
     <string name="sms_disabled">短信模块被关闭</string>
     <string name="sms_downloading_data">下载短信模块，请等待。</string>
     <string name="sms_empty_gateway">短信网关不能为空</string>
-    <string name="granular_sync_enrollments_empty">没有注册可以上传</string>
+    <string name="granular_sync_enrollments_empty">没有登记可以上传</string>
     <string name="granular_sync_unsupported_task">转换任务不支持。</string>
     <string name="disable_pin_locked">不再显示锁屏</string>
     <string name="set_pin">设置PIN</string>
@@ -727,7 +733,9 @@
     <string name="error_init_session">我们无法与您的用户发起会话</string>
     <string name="enrollment_date_edition_warning">还有计划的事件，不能重新安排</string>
     <string name="section_charts">图表</string>
+    <string name="navigation_list_view">列表</string>
     <string name="navigation_table_view">表格显示</string>
+    <string name="navigation_map_view">地图</string>
     <string name="navigation_analytics">分析工具</string>
     <string name="navigation_tasks">任务</string>
     <string name="navigation_programs">项目</string>
@@ -735,6 +743,7 @@
     <string name="navigation_relationships">关系</string>
     <string name="navigation_notes">笔记</string>
     <string name="navigation_data_entry">数据输入</string>
+    <string name="navigation_form">表单</string>
     <string name="navigation_tei_data">详情</string>
     <string name="show_bar_graph">查看柱状图</string>
     <string name="show_line_graph">查看折线图</string>
@@ -811,7 +820,6 @@
     <string name="unknown_date">未知</string>
     <string name="granular_sync_refresh_title">刷新所有数据</string>
     <string name="max_accounts_text">您已达到最大帐户数 (%d)。要添加新帐户，请登录并删除您的一个帐户</string>
-    <string name="add_accout">新增帐户</string>
     <string name="delete_account">删除帐户</string>
     <string name="manage_accounts">管理帐户</string>
     <string name="main_menu_troubleshooting">配置疑难解答</string>
@@ -919,6 +927,8 @@
     <string name="overdue">逾期%s</string>
     <string name="registered_in">已登记</string>
     <string name="view_only">只读</string>
+    <string name="at_enroll_org_unit">在%s.</string>
+    <string name="no_access_to_it">你无法访问它。</string>
     <string name="scheduled">已安排：%s</string>
     <string name="scheduled_for">预定%s</string>
     <string name="skipped">跳过</string>
@@ -936,6 +946,11 @@
     <string name="remove_enrollment_dialog_message">%s 中的数据将被删除。此操作无法撤消。</string>
     <string name="schedule_next">安排下一个</string>
     <string name="schedule">调度</string>
+    <string name="enter">输入</string>
+    <string name="refer">流转</string>
+    <string name="scheduled_enter_event">已经调度</string>
+    <string name="enter_event">进入%1$s</string>
+    <string name="cancel_event">取消%1$s</string>
     <string name="program_stage">项目阶段</string>
     <string name="event">事件</string>
     <string name="timeline">时间线</string>
@@ -943,7 +958,6 @@
     <string name="optional">可选项描述</string>
     <string name="database_export_downloaded">数据库已下载</string>
     <string name="importing_database">导入数据库</string>
-    <string name="re_open_to_edit">重新打开表单进行编辑</string>
     <string name="empty_search_attributes_message">没有配置可用的搜索字段，请联系您的管理员。</string>
     <string name="show_more">更多</string>
     <string name="show_less">显示较少</string>
@@ -959,4 +973,13 @@
     <string name="hide_description">隐藏说明</string>
     <string name="biometric_title">确认是您</string>
     <string name="use_password">使用密码</string>
-    </resources>
+    <string name="transfer">流转</string>
+    <string name="transfer_tei_org_sheet_title">转到%s</string>
+    <string name="transfer_tei_org_sheet_description">从%s 到...</string>
+    <string name="successfully_transferred">成功流转</string>
+    <string name="event_cancelled">%1$s 已取消</string>
+    <string name="due_date_updated">更新到期日</string>
+    <string name="complete_enrollment_label">完整%s</string>
+    <string name="deactivate_enrollment_label">停用%s</string>
+    <string name="reopen_enrollment_label">重新打开%s</string>
+</resources>

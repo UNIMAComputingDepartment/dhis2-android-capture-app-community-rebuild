@@ -44,18 +44,72 @@ class TaskingRepository(
     }
 
     fun getTaskingConfig(): TaskingConfig {
-        cachedConfig?.let { return it }
+        Timber.d("getTaskingConfig() called - START")
+        cachedConfig?.let {
+            Timber.d("Returning cached tasking config")
+            return it
+        }
 
-        val entries = d2.dataStoreModule().dataStore()
-            .byNamespace().eq("community_redesign")
-            .blockingGet()
+        val config = try {
+            val entries = d2.dataStoreModule().dataStore()
+                .byNamespace().eq("community_redesign")
+                .blockingGet()
 
-        val config = entries.firstOrNull { it.key() == "tasking" }
-            ?.let { Gson().fromJson(it.value(), TaskingConfig::class.java) }
-            ?: TaskingConfig(
+            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+
+            val taskingEntry = entries.firstOrNull { it.key() == "tasking" }
+
+            if (taskingEntry == null) {
+                Timber.w("No tasking entry found in dataStore")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            Timber.d("Found tasking entry: ${taskingEntry.key()}")
+
+            val rawValue = taskingEntry.value()
+            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
+            Timber.d("Raw tasking config value (first 200 chars): ${rawValue?.take(200)}")
+
+            if (rawValue.isNullOrBlank()) {
+                Timber.w("Tasking config value is null or blank")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            // Extract JSON from JsonWrapper format if needed
+            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
+                Timber.d("Detected JsonWrapper format, extracting JSON")
+                // Remove "JsonWrapper(json=" prefix and trailing ")"
+                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
+            } else {
+                rawValue
+            }
+
+            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
+
+            if (!value.trim().startsWith("{")) {
+                Timber.w("Tasking config value does not start with '{': ${value.take(100)}")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            val config = Gson().fromJson(value, TaskingConfig::class.java)
+            Timber.d("Successfully parsed tasking config: ${config.taskProgramConfig.size} task programs")
+            config
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing tasking config")
+            TaskingConfig(
                 programTasks = emptyList(),
                 taskProgramConfig = emptyList()
             )
+        }
 
         cachedConfig = config
         return config

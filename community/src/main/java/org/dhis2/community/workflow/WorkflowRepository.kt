@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -14,15 +15,57 @@ class WorkflowRepository(
 ) {
 
     fun getWorkflowConfig(): WorkflowConfig {
-        val entries = d2.dataStoreModule()
-            .dataStore()
-            .byNamespace()
-            .eq("community_redesign")
-            .blockingGet()
+        Timber.d("getWorkflowConfig() called - START")
+        return try {
+            val entries = d2.dataStoreModule()
+                .dataStore()
+                .byNamespace()
+                .eq("community_redesign")
+                .blockingGet()
 
-        return entries.firstOrNull { it.key() == "workflow" }
-            ?.let { Gson().fromJson(it.value(), WorkflowConfig::class.java) }
-            ?: WorkflowConfig(emptyList())
+            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+
+            val workflowEntry = entries.firstOrNull { it.key() == "workflow" }
+
+            if (workflowEntry == null) {
+                Timber.w("No workflow entry found in dataStore")
+                return WorkflowConfig(emptyList())
+            }
+
+            Timber.d("Found workflow entry: ${workflowEntry.key()}")
+
+            val rawValue = workflowEntry.value()
+            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
+            Timber.d("Raw workflow config value (first 200 chars): ${rawValue?.take(200)}")
+
+            if (rawValue.isNullOrBlank()) {
+                Timber.w("Workflow config value is null or blank")
+                return WorkflowConfig(emptyList())
+            }
+
+            // Extract JSON from JsonWrapper format if needed
+            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
+                Timber.d("Detected JsonWrapper format, extracting JSON")
+                // Remove "JsonWrapper(json=" prefix and trailing ")"
+                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
+            } else {
+                rawValue
+            }
+
+            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
+
+            if (!value.trim().startsWith("{")) {
+                Timber.w("Workflow config value does not start with '{': ${value.take(100)}")
+                return WorkflowConfig(emptyList())
+            }
+
+            val config = Gson().fromJson(value, WorkflowConfig::class.java)
+            Timber.d("Successfully parsed workflow config: ${config.teiCreatablePrograms.size} creatable programs")
+            config
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing workflow config")
+            WorkflowConfig(emptyList())
+        }
     }
 
     fun autoCreateEntity(

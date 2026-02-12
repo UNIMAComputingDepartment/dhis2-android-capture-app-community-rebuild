@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="invalid_percentage">Фақат 0 дан 100 гача бўлган қийматларга рухсат берилади</string>
-    <string name="formatting_error">Форматлашда хатолик</string>
-    <string name="invalid_possitive">Фақат мусбат рақамларга рухсат берилади</string>
-    <string name="invalid_phone_number">Бу яроқли телефон рақами эмас</string>
-    <string name="invalid_email">Бу яроқли электрон почта манзили эмас</string>
-    <string name="invalid_negative_number">Фақат манфий рақамларга рухсат берилади</string>
-    <string name="invalid_possitive_zero">Фақат мусбат рақамлар ёки нолга рухсат берилади</string>
-    <string name="invalid_interval">Фақат 0 дан 1 гача бўлган қийматларга рухсат берилади</string>
-    <string name="validation_url">Бу ҳақиқий URL эмас</string>
-    <string name="invalid_integer">Қиймат бутун сон бўлиши лозим</string>
-    <string name="wrong_pattern">Бу тўғри формат эмас.</string>
     <string name="error">Хатолик</string>
     <string name="unique_warning">Қиймат ноёб бўлиши лозим, бир бирига ўхшаш топилди. У сақланмади. Илтимос, текшириб кўриш.</string>
     <string name="select_time">Вақтни танланг</string>
     <string name="choose_date">Санани танланг</string>
     <string name="choose_ou">Ташкилий бўлимни танланг</string>
     <string name="field_is_mandatory">Майдон тўлдирилиши мажбурий</string>
+    <string name="required">Мажбурий</string>
     <string name="date">Сана</string>
     <string name="hint_year">Йиллар</string>
     <string name="hint_month">Ойлар</string>
@@ -40,9 +30,12 @@
     <string name="enter_long_text">Узун матн киритинг</string>
     <string name="enter_text">Матн киритинг</string>
     <string name="due_date">Муддати</string>
+    <string name="review">Кўриб чиқиш</string>
     <string name="complete">Тўлдириш</string>
     <string name="discard_changes">Ўзгартиришлар бекор қилинсин</string>
     <string name="saved">Сақланди!</string>
+    <string name="not_now">Hozir emas</string>
+    <string name="save_anyway">Нима бўлганда ҳам сақлаш</string>
     <string name="keep_editing">Таҳрирни давом этинг</string>
     <string name="share">Улашиш</string>
     <string name="camera_permission_denied">Камерада фойдаланишга рухсат берилмаган. Ушбу функциядан фойдаланиш учун уни ёқишингиз керак.</string>
@@ -50,10 +43,17 @@
     <string name="copied_text">Нусха олинди</string>
     <string name="empty_description">Ушбу майдон учун маълумот йўқ</string>
     <string name="take_photo">Суратга олиш</string>
-    <string name="from_gallery">Галереядан танлаш</string>
     <string name="warning_error_on_complete_title">Буни текширинг!</string>
     <string name="enrollment_single_section_label">Атрибатлар - %s</string>
     <string name="tei_coordinates">Учун координаталар</string>
     <string name="no_reserved_values">Сақланган бошқа қийматлар йўқ. Тизим администраторига мурожаат қилинг.</string>
     <string name="incident_date">Ҳодиса санаси</string>
+    <string name="download">Юклаш</string>
+    <string name="qr_code">QR код</string>
+    <string name="add_location">Локация қўшинг</string>
+    <string name="org_unit">Ташкилий бўлим</string>
+    <string name="coordinates">Координаталар</string>
+    <string name="category_combo">Категория Комбо</string>
+    <string name="no_options">Вариантлар мавжуд эмас</string>
+    <string name="cat_combo">Категория комбинацияси</string>
     </resources>

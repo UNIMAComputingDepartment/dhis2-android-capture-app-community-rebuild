@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.dhis2.R
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.mobile.commons.coroutine.CoroutineTracker
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.tracker.TEIDashboardItems
 import org.dhis2.tracker.relationships.ui.state.RelationshipTopBarIconState
@@ -43,7 +44,6 @@ class DashboardViewModel(
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourcesManager: ResourceManager,
 ) : ViewModel() {
-
     private val eventUid = MutableLiveData<String>()
 
     private val selectedEventUid = MutableLiveData<String>()
@@ -89,9 +89,11 @@ class DashboardViewModel(
 
     private fun fetchDashboardModel() {
         viewModelScope.launch(dispatcher.io()) {
-            val result = async {
-                repository.getDashboardModel()
-            }
+            CoroutineTracker.increment()
+            val result =
+                async {
+                    repository.getDashboardModel()
+                }
             withContext(dispatcher.ui()) {
                 try {
                     val model = result.await()
@@ -111,6 +113,8 @@ class DashboardViewModel(
                     }
                 } catch (e: Exception) {
                     Timber.e(e)
+                } finally {
+                    CoroutineTracker.decrement()
                 }
             }
         }
@@ -124,7 +128,6 @@ class DashboardViewModel(
                 NavigationBarItem(
                     id = TEIDashboardItems.DETAILS,
                     icon = Icons.AutoMirrored.Outlined.Assignment,
-
                     selectedIcon = Icons.AutoMirrored.Filled.Assignment,
                     label = resourcesManager.getString(R.string.navigation_tei_data),
                 ),
@@ -165,15 +168,20 @@ class DashboardViewModel(
         _navigationBarUIState.value = _navigationBarUIState.value.copy(items = enrollmentItems)
 
         if (navigationBarUIState.value.items.none { it.id == navigationBarUIState.value.selectedItem }) {
-            onNavigationItemSelected(navigationBarUIState.value.items.first().id)
+            onNavigationItemSelected(
+                navigationBarUIState.value.items
+                    .first()
+                    .id,
+            )
         }
     }
 
     private fun fetchGrouping() {
         viewModelScope.launch(dispatcher.io()) {
-            val result = async {
-                repository.getGrouping()
-            }
+            val result =
+                async {
+                    repository.getGrouping()
+                }
             try {
                 _groupByStage.postValue(result.await())
             } catch (e: Exception) {
@@ -187,9 +195,7 @@ class DashboardViewModel(
         _groupByStage.value = groupEvents
     }
 
-    fun eventUid(): LiveData<String> {
-        return eventUid
-    }
+    fun eventUid(): LiveData<String> = eventUid
 
     fun updateDashboard() {
         fetchDashboardModel()
@@ -212,18 +218,17 @@ class DashboardViewModel(
         }
     }
 
-    fun updateEnrollmentStatus(
-        status: EnrollmentStatus,
-    ) {
+    fun updateEnrollmentStatus(status: EnrollmentStatus) {
         viewModelScope.launch(dispatcher.io()) {
             if (dashboardModel.value is DashboardEnrollmentModel) {
-                val result = repository.updateEnrollmentStatus(
-                    (dashboardModel.value as DashboardEnrollmentModel).currentEnrollment.uid(),
-                    status,
-                ).blockingFirst()
+                val result =
+                    repository
+                        .updateEnrollmentStatus(
+                            (dashboardModel.value as DashboardEnrollmentModel).currentEnrollment.uid(),
+                            status,
+                        ).blockingFirst()
 
                 if (result == StatusChangeResultCode.CHANGED) {
-                    _showStatusBar.value = status
                     _syncNeeded.value = true
                     _state.value = State.TO_UPDATE
                     fetchDashboardModel()
@@ -239,12 +244,14 @@ class DashboardViewModel(
         onAuthorityError: () -> Unit,
     ) {
         viewModelScope.launch(dispatcher.io()) {
-            val result = async {
-                dashboardModel.value.takeIf { it is DashboardEnrollmentModel }?.let {
-                    repository.deleteEnrollment((it as DashboardEnrollmentModel).currentEnrollment.uid())
-                        .blockingGet()
+            val result =
+                async {
+                    dashboardModel.value.takeIf { it is DashboardEnrollmentModel }?.let {
+                        repository
+                            .deleteEnrollment((it as DashboardEnrollmentModel).currentEnrollment.uid())
+                            .blockingGet()
+                    }
                 }
-            }
             try {
                 val hasMoreEnrollments = result.await()
                 onSuccess(hasMoreEnrollments)
@@ -256,9 +263,7 @@ class DashboardViewModel(
         }
     }
 
-    fun selectedEventUid(): LiveData<String> {
-        return selectedEventUid
-    }
+    fun selectedEventUid(): LiveData<String> = selectedEventUid
 
     fun updateSelectedEventUid(uid: String?) {
         if (selectedEventUid.value != uid) {
@@ -267,24 +272,24 @@ class DashboardViewModel(
     }
 
     fun updateNoteCounter(numberOfNotes: Int) {
-        _navigationBarUIState.value = _navigationBarUIState.value.copy(
-            items = _navigationBarUIState.value.items.map {
-                if (it.id == TEIDashboardItems.NOTES) {
-                    it.copy(showBadge = numberOfNotes > 0)
-                } else {
-                    it
-                }
-            },
-        )
+        _navigationBarUIState.value =
+            _navigationBarUIState.value.copy(
+                items =
+                    _navigationBarUIState.value.items.map {
+                        if (it.id == TEIDashboardItems.NOTES) {
+                            it.copy(showBadge = numberOfNotes > 0)
+                        } else {
+                            it
+                        }
+                    },
+            )
     }
 
     fun onNavigationItemSelected(itemId: TEIDashboardItems) {
         _navigationBarUIState.value = _navigationBarUIState.value.copy(selectedItem = itemId)
     }
 
-    fun checkIfTeiCanBeTransferred(): Boolean {
-        return repository.teiCanBeTransferred()
-    }
+    fun checkIfTeiCanBeTransferred(): Boolean = repository.teiCanBeTransferred()
 
     fun transferTei(
         newOrgUnitId: String,

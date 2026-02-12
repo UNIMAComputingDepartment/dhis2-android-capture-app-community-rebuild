@@ -20,23 +20,22 @@ import org.dhis2.bindings.clipWithRoundedCorners
 import org.dhis2.bindings.dp
 import org.dhis2.bindings.userComponent
 import org.dhis2.commons.Constants
-import org.dhis2.commons.date.DateUtils
-import org.dhis2.commons.date.DateUtils.OnFromToSelector
-import org.dhis2.commons.date.Period
 import org.dhis2.commons.filters.FilterItem
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.filters.FilterManager.PeriodRequest
+import org.dhis2.commons.filters.Filters
 import org.dhis2.commons.filters.FiltersAdapter
+import org.dhis2.commons.filters.periods.ui.FilterPeriodsDialog
+import org.dhis2.commons.filters.periods.ui.FilterPeriodsDialog.Companion.FILTER_DIALOG
 import org.dhis2.commons.matomo.Actions.Companion.CREATE_EVENT
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.orgunitselector.OURepositoryConfiguration
 import org.dhis2.commons.orgunitselector.OUTreeFragment
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope
-import org.dhis2.commons.prefs.Preference.Companion.CURRENT_ORG_UNIT
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.databinding.ActivityProgramEventDetailBinding
 import org.dhis2.form.model.EventMode
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.dhis2.ui.ThemeManager
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.general.ActivityGlobalAbstract
@@ -46,10 +45,8 @@ import org.dhis2.usescases.programEventDetail.eventMap.EventMapFragment
 import org.dhis2.utils.analytics.DATA_CREATION
 import org.dhis2.utils.category.CategoryDialog
 import org.dhis2.utils.category.CategoryDialog.Companion.TAG
-import org.dhis2.utils.customviews.RxDateDialog
 import org.dhis2.utils.granularsync.SyncStatusDialog
 import org.dhis2.utils.granularsync.shouldLaunchSyncDialog
-import org.hisp.dhis.android.core.period.DatePeriod
 import org.hisp.dhis.android.core.program.Program
 import org.dhis2.community.IchisTheme
 import timber.log.Timber
@@ -59,7 +56,6 @@ import javax.inject.Inject
 class ProgramEventDetailActivity :
     ActivityGlobalAbstract(),
     ProgramEventDetailView {
-
     private lateinit var binding: ActivityProgramEventDetailBinding
 
     @Inject
@@ -119,12 +115,13 @@ class ProgramEventDetailActivity :
         programEventsViewModel.viewModelScope.launch {
             programEventsViewModel.shouldNavigateToEventDetails.collectLatest { eventUid ->
                 analyticsHelper.setEvent(CREATE_EVENT, DATA_CREATION, CREATE_EVENT)
-                val intent = EventCaptureActivity.intent(
-                    context = context,
-                    eventUid = eventUid,
-                    programUid = programUid,
-                    eventMode = EventMode.NEW,
-                )
+                val intent =
+                    EventCaptureActivity.intent(
+                        context = context,
+                        eventUid = eventUid,
+                        programUid = programUid,
+                        eventMode = EventMode.NEW,
+                    )
                 startActivity(intent)
             }
         }
@@ -144,14 +141,16 @@ class ProgramEventDetailActivity :
     }
 
     private fun initInjection() {
-        component = userComponent()
-            ?.plus(
-                ProgramEventDetailModule(
-                    this,
-                    this, programUid,
-                    OrgUnitSelectorScope.ProgramCaptureScope(programUid),
-                ),
-            )
+        component =
+            userComponent()
+                ?.plus(
+                    ProgramEventDetailModule(
+                        this,
+                        this,
+                        programUid,
+                        OrgUnitSelectorScope.ProgramCaptureScope(programUid),
+                    ),
+                )
         component?.inject(this)
     }
 
@@ -194,20 +193,21 @@ class ProgramEventDetailActivity :
     }
 
     private fun showSyncDialogProgram() {
-        SyncStatusDialog.Builder()
+        SyncStatusDialog
+            .Builder()
             .withContext(this)
             .withSyncContext(SyncContext.EventProgram(programUid))
-            .onDismissListener(object : OnDismissListener {
-                override fun onDismiss(hasChanged: Boolean) {
-                    if (hasChanged) FilterManager.getInstance().publishData()
-                }
-            })
-            .onNoConnectionListener {
+            .onDismissListener(
+                object : OnDismissListener {
+                    override fun onDismiss(hasChanged: Boolean) {
+                        if (hasChanged) FilterManager.getInstance().publishData()
+                    }
+                },
+            ).onNoConnectionListener {
                 programEventsViewModel.displayMessage(
                     getString(R.string.sync_offline_check_connection),
                 )
-            }
-            .show("EVENT_SYNC")
+            }.show("EVENT_SYNC")
     }
 
     public override fun onPause() {
@@ -247,32 +247,34 @@ class ProgramEventDetailActivity :
 
     override fun showHideFilter() {
         val transition: Transition = ChangeBounds()
-        transition.addListener(object : Transition.TransitionListener {
-            override fun onTransitionStart(transition: Transition) {
-                programEventsViewModel.updateBackdrop(backDropActive)
-                if (!backDropActive) {
-                    binding.clearFilters.hide()
+        transition.addListener(
+            object : Transition.TransitionListener {
+                override fun onTransitionStart(transition: Transition) {
+                    programEventsViewModel.updateBackdrop(backDropActive)
+                    if (!backDropActive) {
+                        binding.clearFilters.hide()
+                    }
                 }
-            }
 
-            override fun onTransitionEnd(transition: Transition) {
-                if (backDropActive) {
-                    binding.clearFilters.show()
+                override fun onTransitionEnd(transition: Transition) {
+                    if (backDropActive) {
+                        binding.clearFilters.show()
+                    }
                 }
-            }
 
-            override fun onTransitionCancel(transition: Transition) {
-                /*No action needed*/
-            }
+                override fun onTransitionCancel(transition: Transition) {
+                    // No action needed
+                }
 
-            override fun onTransitionPause(transition: Transition) {
-                /*No action needed*/
-            }
+                override fun onTransitionPause(transition: Transition) {
+                    // No action needed
+                }
 
-            override fun onTransitionResume(transition: Transition) {
-                /*No action needed*/
-            }
-        })
+                override fun onTransitionResume(transition: Transition) {
+                    // No action needed
+                }
+            },
+        )
         backDropActive = !backDropActive
 
         transition.duration = 200
@@ -314,7 +316,7 @@ class ProgramEventDetailActivity :
         initSet.applyTo(binding.backdropLayout)
     }
 
-    override fun selectOrgUnitForNewEvent() {
+    override fun selectOrgUnitForNewEvent(preselectedOrgUnits: List<String>) {
         val orgUnitList = ouRepositoryConfiguration.orgUnitRepository(null)
         if (orgUnitList.size == 1) {
             presenter.stageUid?.let {
@@ -325,14 +327,11 @@ class ProgramEventDetailActivity :
                 )
             }
         } else {
-            OUTreeFragment.Builder()
+            OUTreeFragment
+                .Builder()
                 .singleSelection()
-                .withPreselectedOrgUnits(
-                    listOf(sharedPreferences.getString(CURRENT_ORG_UNIT, "") ?: ""),
-                )
-                .orgUnitScope(
-                    OrgUnitSelectorScope.ProgramCaptureScope(programUid),
-                )
+                .withPreselectedOrgUnits(preselectedOrgUnits)
+                .orgUnitScope(OrgUnitSelectorScope.ProgramCaptureScope(programUid))
                 .onSelection { selectedOrgUnits ->
                     if (selectedOrgUnits.isNotEmpty()) {
                         presenter.stageUid?.let {
@@ -343,8 +342,7 @@ class ProgramEventDetailActivity :
                             )
                         }
                     }
-                }
-                .build()
+                }.build()
                 .show(supportFragmentManager, "ORG_UNIT_DIALOG")
         }
     }
@@ -360,45 +358,23 @@ class ProgramEventDetailActivity :
 
     override fun showPeriodRequest(periodRequest: PeriodRequest) {
         if (periodRequest == PeriodRequest.FROM_TO) {
-            DateUtils.getInstance()
-                .fromCalendarSelector(this.context) { datePeriod: List<DatePeriod?>? ->
-                    FilterManager.getInstance().addPeriod(datePeriod)
-                }
+            FilterPeriodsDialog
+                .newPeriodsFilter(Filters.PERIOD, isFromToFilter = true)
+                .show(supportFragmentManager, FILTER_DIALOG)
         } else {
-            val onFromToSelector =
-                OnFromToSelector { datePeriods ->
-                    FilterManager.getInstance().addPeriod(datePeriods)
-                }
-
-            DateUtils.getInstance().showPeriodDialog(
-                this,
-                onFromToSelector,
-                true,
-            ) {
-                val disposable = RxDateDialog(activity, Period.WEEKLY)
-                    .createForFilter().show()
-                    .subscribe(
-                        { selectedDates: org.dhis2.commons.data.tuples.Pair<Period?, List<Date?>?> ->
-                            onFromToSelector.onFromToSelected(
-                                DateUtils.getInstance().getDatePeriodListFor(
-                                    selectedDates.val1(),
-                                    selectedDates.val0(),
-                                ),
-                            )
-                        },
-                        { t: Throwable? -> Timber.e(t) },
-                    )
-            }
+            FilterPeriodsDialog
+                .newPeriodsFilter(Filters.PERIOD)
+                .show(supportFragmentManager, FILTER_DIALOG)
         }
     }
 
     override fun openOrgUnitTreeSelector() {
-        OUTreeFragment.Builder()
+        OUTreeFragment
+            .Builder()
             .withPreselectedOrgUnits(FilterManager.getInstance().orgUnitUidsFilters)
             .onSelection { selectedOrgUnits ->
                 presenter.setOrgUnitFilters(selectedOrgUnits)
-            }
-            .build()
+            }.build()
             .show(supportFragmentManager, "OUTreeFragment")
     }
 
@@ -406,7 +382,10 @@ class ProgramEventDetailActivity :
         setTutorial()
     }
 
-    override fun navigateToEvent(eventId: String, orgUnit: String) {
+    override fun navigateToEvent(
+        eventId: String,
+        orgUnit: String,
+    ) {
         programEventsViewModel.updateEvent = eventId
         val bundle = Bundle()
         bundle.putString(Constants.PROGRAM_UID, programUid)
@@ -422,45 +401,52 @@ class ProgramEventDetailActivity :
     }
 
     override fun showSyncDialog(uid: String) {
-        SyncStatusDialog.Builder()
+        SyncStatusDialog
+            .Builder()
             .withContext(this)
             .withSyncContext(SyncContext.Event(uid))
-            .onDismissListener(object : OnDismissListener {
-                override fun onDismiss(hasChanged: Boolean) {
-                    if (hasChanged) FilterManager.getInstance().publishData()
-                }
-            })
-            .onNoConnectionListener {
+            .onDismissListener(
+                object : OnDismissListener {
+                    override fun onDismiss(hasChanged: Boolean) {
+                        if (hasChanged) FilterManager.getInstance().publishData()
+                    }
+                },
+            ).onNoConnectionListener {
                 programEventsViewModel.displayMessage(
                     getString(R.string.sync_offline_check_connection),
                 )
-            }
-            .show(FRAGMENT_TAG)
+            }.show(FRAGMENT_TAG)
     }
 
     private fun showList() {
-        supportFragmentManager.beginTransaction().replace(
-            binding.fragmentContainer.id,
-            EventListFragment(),
-            "EVENT_LIST",
-        ).commitNow()
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                binding.fragmentContainer.id,
+                EventListFragment(),
+                "EVENT_LIST",
+            ).commitNow()
         binding.filter.visibility = View.VISIBLE
     }
 
     private fun showMap() {
-        supportFragmentManager.beginTransaction().replace(
-            binding.fragmentContainer.id,
-            EventMapFragment(),
-            "EVENT_MAP",
-        ).commitNow()
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                binding.fragmentContainer.id,
+                EventMapFragment(),
+                "EVENT_MAP",
+            ).commitNow()
         binding.filter.visibility = View.VISIBLE
     }
 
     private fun showAnalytics() {
-        supportFragmentManager.beginTransaction().replace(
-            binding.fragmentContainer.id,
-            GroupAnalyticsFragment.forProgram(programUid),
-        ).commitNow()
+        supportFragmentManager
+            .beginTransaction()
+            .replace(
+                binding.fragmentContainer.id,
+                GroupAnalyticsFragment.forProgram(programUid),
+            ).commitNow()
         binding.filter.visibility = View.GONE
     }
 
@@ -486,16 +472,19 @@ class ProgramEventDetailActivity :
     companion object {
         private const val FRAGMENT_TAG = "SYNC"
         const val EXTRA_PROGRAM_UID = "PROGRAM_UID"
+
         fun getBundle(programUid: String?): Bundle {
             val bundle = Bundle()
             bundle.putString(EXTRA_PROGRAM_UID, programUid)
             return bundle
         }
 
-        fun intent(context: Context, programUid: String): Intent {
-            return Intent(context, ProgramEventDetailActivity::class.java).apply {
+        fun intent(
+            context: Context,
+            programUid: String,
+        ): Intent =
+            Intent(context, ProgramEventDetailActivity::class.java).apply {
                 putExtra(EXTRA_PROGRAM_UID, programUid)
             }
-        }
     }
 }

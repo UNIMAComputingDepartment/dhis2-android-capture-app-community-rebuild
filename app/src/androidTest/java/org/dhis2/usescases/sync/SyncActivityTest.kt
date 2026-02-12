@@ -14,6 +14,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
+import org.junit.After
 
 @RunWith(AndroidJUnit4::class)
 class SyncActivityTest : BaseTest() {
@@ -27,6 +28,12 @@ class SyncActivityTest : BaseTest() {
         super.setUp()
         workInfoStatusLiveData =
             ApplicationProvider.getApplicationContext<AppTest>().mutableWorkInfoStatuses
+    }
+
+    @After
+    override fun teardown() {
+        super.teardown()
+        workInfoStatusLiveData.postValue(emptyList())
     }
 
     @Test
@@ -61,13 +68,13 @@ class SyncActivityTest : BaseTest() {
 
     private fun mockedMetaWorkInfo(state: WorkInfo.State): WorkInfo {
         return WorkInfo(
-            UUID.randomUUID(),
-            state,
-            Data.EMPTY,
-            arrayListOf(Constants.META_NOW),
-            Data.EMPTY,
-            0,
-            0
+            id = UUID.randomUUID(),
+            state = state,
+            tags = setOf(Constants.META_NOW),
+            outputData = Data.EMPTY,
+            progress = Data.EMPTY,
+            runAttemptCount = 0,
+            generation = 0
         )
     }
 }

@@ -6,7 +6,6 @@ import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Consumer
 import org.dhis2.commons.orgunitselector.OUTreeFragment
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope.ProgramCaptureScope
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.Relationship
@@ -15,6 +14,7 @@ import org.dhis2.community.relationships.RelationshipConstraintSide
 import org.dhis2.community.relationships.RelationshipRepository
 import org.dhis2.community.workflow.WorkflowConfig
 import org.dhis2.community.workflow.WorkflowRepository
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import timber.log.Timber
@@ -215,7 +215,7 @@ class CmtRelationshipTEIDataPresenter(
                                     )
                                     Unit
                                 }
-                                .orgUnitScope(ProgramCaptureScope(programUid))
+                                .orgUnitScope(OrgUnitSelectorScope.ProgramCaptureScope(programUid))
                                 .build()
                                 .show(
                                     view.getAbstracContext().supportFragmentManager,
