@@ -329,9 +329,9 @@ private fun TaskListGroupedView(
     onTaskClick: (TaskingUiModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Track expanded state for each group by patient UID
-    // Using mutableStateOf to ensure recomposition when state changes
-    val expandedStates = remember { androidx.compose.runtime.mutableStateOf(mutableMapOf<String, Boolean>()) }
+    // Track expanded state for only ONE group at a time (accordion behavior)
+    // Store the UID of the currently expanded group (null if none expanded)
+    val expandedGroupUid = remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -339,8 +339,8 @@ private fun TaskListGroupedView(
     ) {
         items(groups.size, key = { groupIndex -> groups[groupIndex].patientUid }) { groupIndex ->
             val group = groups[groupIndex]
-            // Get current state - reread each render
-            val isExpanded = expandedStates.value[group.patientUid] ?: false
+            // Check if THIS group is the currently expanded one
+            val isExpanded = expandedGroupUid.value == group.patientUid
 
             Timber.d("TaskListGroupedView: Rendering group ${group.patientName}, expanded=$isExpanded")
 
@@ -350,10 +350,14 @@ private fun TaskListGroupedView(
                 isExpanded = isExpanded,
                 onExpandedChange = { expanded ->
                     Timber.d("TaskListGroupedView: onExpandedChange for ${group.patientName}: $expanded")
-                    // Update the state map and trigger recomposition
-                    val newMap = expandedStates.value.toMutableMap()
-                    newMap[group.patientUid] = expanded
-                    expandedStates.value = newMap
+                    // Accordion behavior: only one group can be expanded at a time
+                    if (expanded) {
+                        // Opening this group - close any previously open group
+                        expandedGroupUid.value = group.patientUid
+                    } else {
+                        // Closing this group
+                        expandedGroupUid.value = null
+                    }
                 }
             )
         }
