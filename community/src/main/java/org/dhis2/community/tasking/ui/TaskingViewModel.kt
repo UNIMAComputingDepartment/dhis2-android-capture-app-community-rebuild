@@ -78,12 +78,14 @@ class TaskingViewModel @Inject constructor(
                 try {
                     // Ensure config is loaded before accessing cachedConfig
                     repository.getTaskingConfig()
-                    val orgUnits = repository.currentOrgUnits
 
-                    val tasks = orgUnits.flatMap { orgUnitUid ->
-                        val fetchedTasks = repository.getAllTasks()
+                    // Fetch all tasks only once and map them to their respective orgUnits
+                    val fetchedTasks = repository.getAllTasks()
 
-                        fetchedTasks.map { task -> TaskingUiModel(task, orgUnitUid, repository) }
+                    val tasks = fetchedTasks.map { task ->
+                        // Get the orgUnit from the task itself or use an empty string
+                        val taskOrgUnit = repository.getOrgUnit(task.sourceTeiUid) ?: ""
+                        TaskingUiModel(task, taskOrgUnit, repository)
                     }
 
                     _allTasks.value = tasks

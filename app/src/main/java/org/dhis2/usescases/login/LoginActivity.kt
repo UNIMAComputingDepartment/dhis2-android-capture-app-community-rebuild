@@ -14,6 +14,7 @@ import org.dhis2.bindings.buildInfo
 import org.dhis2.commons.Constants.SESSION_DIALOG_RQ
 import org.dhis2.commons.dialogs.CustomDialog
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.community.IchisTheme
 import org.dhis2.data.server.OpenIdSession
 import org.dhis2.mobile.login.main.ui.navigation.AppLinkNavigation
 import org.dhis2.mobile.login.main.ui.screen.LoginScreen
@@ -90,7 +91,7 @@ class LoginActivity : ActivityGlobalAbstract() {
         fromHome = intent.getBooleanExtra(FROM_MAIN_ACTIVITY, false)
 
         setContent {
-            DHIS2Theme {
+            IchisTheme {
                 LoginScreen(
                     versionName = buildInfo(),
                     fromHome = fromHome,

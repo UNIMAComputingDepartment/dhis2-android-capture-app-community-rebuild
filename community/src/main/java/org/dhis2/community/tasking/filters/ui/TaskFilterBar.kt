@@ -79,11 +79,11 @@ fun TaskFilterBar(
                 enabled = true,
                 style = ButtonStyle.FILLED,
                 onClick = onClearAllFilters,
-                text = "Clear All",
+                text = "Clear All Filters",
                 icon = {
                     Icon(
                         imageVector = Icons.Default.ClearAll,
-                        contentDescription = "Clear Filters"
+                        contentDescription = "Clear All Filters"
                     )
                 },
             )

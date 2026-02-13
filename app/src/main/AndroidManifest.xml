@@ -74,7 +74,22 @@
             android:exported="true"
             android:launchMode="singleTask">
         </activity>
-        <activity android:name=".usescases.main.MainActivity" />
+        <activity
+            android:name=".usescases.main.MainActivity"
+            android:exported="true">
+            <!-- Handle app:// scheme deep links for task reminder notifications -->
+            <intent-filter
+                android:autoVerify="false"
+                android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="app"
+                    android:host="tasks"
+                    android:pathPrefix="/reminders" />
+            </intent-filter>
+        </activity>
         <activity android:name=".usescases.programEventDetail.ProgramEventDetailActivity" />
         <activity
             android:name=".usescases.searchTrackEntity.SearchTEActivity"
@@ -159,6 +174,21 @@
                 android:resource="@xml/provider_paths"
                 tools:replace="android:resource" />
         </provider>
+
+        <!-- Task Reminder Broadcast Receiver for notifications -->
+        <receiver
+            android:name="org.dhis2.community.tasking.notifications.TaskReminderBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <!-- Receive device boot completion to reschedule alarms -->
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <!-- Receive custom alarm action for task reminders -->
+            <intent-filter>
+                <action android:name="org.dhis2.community.tasking.ALARM_ACTION" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

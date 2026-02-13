@@ -60,6 +60,9 @@ import org.dhis2.utils.granularsync.SyncStatusDialog
 import org.dhis2.utils.session.PIN_DIALOG_TAG
 import org.dhis2.utils.session.PinDialog
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
+import timber.log.Timber
+import org.dhis2.community.tasking.notifications.TaskReminderScheduler
+import org.dhis2.community.tasking.notifications.TaskReminderWorkScheduler
 import java.io.File
 import javax.inject.Inject
 
@@ -198,7 +201,16 @@ class MainActivity :
             ) ?: false,
         )
 
-        val openScreen = intent.getStringExtra(FRAGMENT)
+        // Extract screen name from FRAGMENT extra or from deep link URI
+        var openScreen = intent.getStringExtra(FRAGMENT)
+        if (openScreen == null && intent.data != null) {
+            // Handle deep link: app://tasks/reminders?timestamp=...
+            val uri = intent.data
+            openScreen = when {
+                uri?.scheme == "app" && uri.host == "tasks" -> MainNavigator.MainScreen.TASKS.name
+                else -> null
+            }
+        }
 
         when {
             openScreen != null || restoreScreenName != null -> {
@@ -234,11 +246,21 @@ class MainActivity :
 
         checkNotificationPermission()
 
+        // Schedule daily task reminder notifications (7 AM Malawi time)
+        // This ensures notifications fire even if app isn't open
+        try {
+            TaskReminderScheduler.scheduleTaskReminder(this)
+            // Also schedule WorkManager as backup for maximum reliability
+            TaskReminderWorkScheduler.scheduleTaskReminderWork(this)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to schedule task reminders in MainActivity")
+        }
+
         registerOnBackPressedCallback()
     }
 
     private fun checkNotificationPermission() {
-        if (!hasPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) and
+        if (!hasPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) &&
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         ) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
