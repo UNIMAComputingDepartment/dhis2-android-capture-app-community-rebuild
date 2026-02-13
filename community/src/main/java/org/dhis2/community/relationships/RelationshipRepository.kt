@@ -252,6 +252,7 @@ class RelationshipRepository(
         orgUnit: String,
         programUid: String,
         attributeIncrement: Pair<String, String>?,
+        sourceTeiUid: String,
     ): Pair<String?, String?> {
         val teiType = relationship.relatedProgram.teiTypeUid
 
@@ -277,6 +278,12 @@ class RelationshipRepository(
             .uid(enrollmentUid)
             .setIncidentDate(Date())
 
+        applyAttributeMappings(
+            sourceTeiUid = sourceTeiUid,
+            targetTeiUid = teiUid,
+            mappings = relationship.attributeMappings
+        )
+
         // Handle auto-increment attributes if any
         if (attributeIncrement != null) {
             d2.trackedEntityModule().trackedEntityAttributeValues()
@@ -285,6 +292,35 @@ class RelationshipRepository(
         }
 
         return teiUid to enrollmentUid
+    }
+
+    private fun applyAttributeMappings(
+        sourceTeiUid: String,
+        targetTeiUid: String,
+        mappings: List<AttributeMapping>
+    ) {
+        if (sourceTeiUid.isBlank() || mappings.isEmpty()) return
+
+        val sourceTei = d2.trackedEntityModule()
+            .trackedEntityInstances()
+            .withTrackedEntityAttributeValues()
+            .uid(sourceTeiUid)
+            .blockingGet()
+
+        val sourceAttributes = sourceTei?.trackedEntityAttributeValues()
+
+        mappings.forEach { mapping ->
+            val sourceValue = sourceAttributes?.firstOrNull {
+                it.trackedEntityAttribute() == mapping.sourceAttribute
+            }?.value()
+
+            val valueToSet = sourceValue ?: mapping.defaultValue
+            if (valueToSet != null) {
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(mapping.targetAttribute, targetTeiUid)
+                    .blockingSet(valueToSet)
+            }
+        }
     }
 
 }

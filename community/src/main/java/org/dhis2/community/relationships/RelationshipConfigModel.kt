@@ -9,6 +9,7 @@ data class Relationship(
     val description: String,
     val view: View,
     val relatedProgram: RelatedProgram,
+    val attributeMappings: List<AttributeMapping> = emptyList(),
 )
 
 data class Access(
@@ -27,4 +28,10 @@ data class RelatedProgram(
     val programUid: String,
     val teiTypeUid: String,
     val teiTypeName: String
+)
+
+data class AttributeMapping(
+    val sourceAttribute: String,
+    val targetAttribute: String,
+    val defaultValue: String?,
 )
