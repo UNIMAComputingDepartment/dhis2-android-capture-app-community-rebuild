@@ -4,4 +4,9 @@
     <string name="expand">Expand</string>
     <string name="add_relationship">Add Relationship</string>
     <string name="search_placeholder">Search</string>
+
+    <!-- Task Reminder Notifications -->
+    <string name="notification_title_weekly_summary">Weekly Task Summary</string>
+    <string name="notification_action_open_tasks">Open Task</string>
+    <string name="notification_error_fallback">You have pending tasks this week.</string>
 </resources>
