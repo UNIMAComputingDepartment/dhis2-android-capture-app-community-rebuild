@@ -18,7 +18,7 @@ object NotificationChannelManager {
                 val channel = NotificationChannel(
                     TASK_REMINDER_CHANNEL_ID,
                     TASK_REMINDER_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
+                    NotificationManager.IMPORTANCE_DEFAULT  // ✅ CHANGED from IMPORTANCE_HIGH to enable grouping on Android 11+
                 ).apply {
                     description = TASK_REMINDER_CHANNEL_DESC
                     enableVibration(true)
@@ -29,7 +29,7 @@ object NotificationChannelManager {
                 val notificationManager =
                     context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.createNotificationChannel(channel)
-                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_HIGH for heads-up behavior")
+                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_DEFAULT for proper grouping on Android 11+")
             } catch (e: Exception) {
                 Timber.e(e, "NotificationChannelManager: Error creating notification channel")
             }
