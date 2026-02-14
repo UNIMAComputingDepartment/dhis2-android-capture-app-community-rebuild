@@ -305,7 +305,8 @@ class CmtRelationshipTEIDataPresenter(
                     orgUnit = orgUnitUid,
                     programUid = programUid,
                     relationship = relationship,
-                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null
+                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null,
+                    sourceTeiUid = teiUid
                 )
             }
                 .subscribeOn(schedulerProvider.computation())
