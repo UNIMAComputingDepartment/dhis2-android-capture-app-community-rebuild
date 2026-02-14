@@ -15,21 +15,24 @@ object NotificationChannelManager {
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
+                val notificationManager =
+                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                // IMPORTANT: If you change the importance, you must delete the channel or uninstall/reinstall the app!
+                // Otherwise, Android will keep the old importance and grouping may not work.
+                // Uncomment the next line to delete the channel for testing:
+                // notificationManager.deleteNotificationChannel(TASK_REMINDER_CHANNEL_ID)
                 val channel = NotificationChannel(
                     TASK_REMINDER_CHANNEL_ID,
                     TASK_REMINDER_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT  // ✅ CHANGED from IMPORTANCE_HIGH to enable grouping on Android 11+
+                    NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
                     description = TASK_REMINDER_CHANNEL_DESC
                     enableVibration(true)
                     enableLights(true)
                     setShowBadge(true)
                 }
-
-                val notificationManager =
-                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 notificationManager.createNotificationChannel(channel)
-                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_DEFAULT for proper grouping on Android 11+")
+                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_DEFAULT for proper grouping on Android 11+ (delete channel if changing importance!)")
             } catch (e: Exception) {
                 Timber.e(e, "NotificationChannelManager: Error creating notification channel")
             }

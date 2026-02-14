@@ -27,15 +27,15 @@ import java.util.TimeZone
  */
 object TaskReminderScheduler {
     // Request codes for two daily alarms (must be unique)
-    private const val ALARM_REQUEST_CODE_MORNING = 9010  // 7:00 AM
-    private const val ALARM_REQUEST_CODE_EVENING = 9012  // 5:00 PM
+    private const val ALARM_REQUEST_CODE_MORNING = 9010
+    private const val ALARM_REQUEST_CODE_EVENING = 9012
     fun scheduleTaskReminder(context: Context) {
         try {
             Timber.d("TaskReminderScheduler: Scheduling two-times-daily alarms (7:00 AM, 5:00 PM)")
 
             // Schedule morning and evening alarms
-            scheduleAlarmForTime(context, 10, 10, ALARM_REQUEST_CODE_MORNING)    // 7:00 AM
-            scheduleAlarmForTime(context, 10, 12, ALARM_REQUEST_CODE_EVENING)   // 5:00 PM
+            scheduleAlarmForTime(context, 12, 45, ALARM_REQUEST_CODE_MORNING)    // 7:00 AM
+            scheduleAlarmForTime(context, 12, 48, ALARM_REQUEST_CODE_EVENING)   // 5:00 PM
 
             Timber.d("TaskReminderScheduler: Both daily alarms scheduled successfully")
 

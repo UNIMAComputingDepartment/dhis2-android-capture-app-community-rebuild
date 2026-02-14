@@ -212,6 +212,17 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
                         }
 
                         Timber.d("TaskReminderBroadcastReceiver: Finished posting ${thisWeekTasks.size} child notifications - now posting SUMMARY LAST")
+                        // Post group summary notification LAST with CONSTANT ID (1000)
+                        notificationManager.notify(
+                            TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
+                            TaskReminderNotificationBuilder.buildTaskReminderNotification(
+                                context,
+                                thisWeekTasks
+                            ).build()
+                        )
+                        Timber.d("TaskReminderBroadcastReceiver: Group summary notification posted LAST with CONSTANT ID ${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID}")
+                        notificationPosted = true
+
                     } catch (e: Exception) {
                         Timber.w(e, "TaskReminderBroadcastReceiver: Could not post individual child notifications")
                     }

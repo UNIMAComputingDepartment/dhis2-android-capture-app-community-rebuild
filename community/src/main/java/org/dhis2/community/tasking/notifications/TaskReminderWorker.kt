@@ -1,6 +1,8 @@
 package org.dhis2.community.tasking.notifications
 
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -29,7 +31,19 @@ class TaskReminderWorker(
         return try {
             Timber.d("TaskReminderWorker: Starting background task notification posting")
 
-            // Create notification channels first
+            // Delete old notification channel and recreate with fresh settings
+            // This fixes any grouping issues caused by old channel config
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.deleteNotificationChannel(NotificationChannelManager.TASK_REMINDER_CHANNEL_ID)
+                    Timber.d("TaskReminderWorker: Deleted old notification channel for fresh recreation")
+                } catch (e: Exception) {
+                    Timber.w(e, "TaskReminderWorker: Could not delete old channel (might not exist)")
+                }
+            }
+
+            // Recreate channel with correct settings
             NotificationChannelManager.createNotificationChannels(applicationContext)
 
             // Check if notifications are allowed
@@ -50,25 +64,26 @@ class TaskReminderWorker(
                 counts.open, counts.dueSoon, counts.dueToday, counts.overdue
             )
 
-            // Build notification
-            val notification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
-                applicationContext,
-                counts
-            ).build()
-
             val notificationManager = NotificationManagerCompat.from(applicationContext)
 
-            // Cancel old child notifications before posting new batch
-            // This ensures old notifications don't mix with new ones and cleans up the notification group
+            // FIRST: Cancel old notifications
             try {
-                Timber.d("TaskReminderWorker: Cancelling old child notifications (IDs 2000-2999)")
-                // Cancel a wider range of IDs to handle more notifications
-                for (i in 0..999) {  // Cancel old IDs 2000-2999 (up to 1000 tasks)
+                Timber.d("TaskReminderWorker: Cancelling all old notifications (IDs 2000-2999 and summary 1000)")
+                for (i in 0..999) {
                     notificationManager.cancel(TaskReminderNotificationBuilder.CHILD_NOTIFICATION_ID_START + i)
                 }
-                Timber.d("TaskReminderWorker: Old notifications cancelled")
+                // Also cancel old summary
+                notificationManager.cancel(TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID)
+                Timber.d("TaskReminderWorker: All old notifications cancelled")
             } catch (e: Exception) {
                 Timber.w(e, "TaskReminderWorker: Could not cancel old notifications")
+            }
+
+            // Wait for system to process cancellations
+            try {
+                Thread.sleep(200)
+            } catch (e: InterruptedException) {
+                Timber.w(e, "TaskReminderWorker: Interrupted during post-cancel delay")
             }
 
             // Post child notifications first (UNLIMITED - no cap)
@@ -150,19 +165,39 @@ class TaskReminderWorker(
                     }
                 }
 
-                Timber.d("TaskReminderWorker: Finished posting ${thisWeekTasks.size} child notifications - now posting SUMMARY LAST")
+                Timber.d("TaskReminderWorker: Finished posting ${thisWeekTasks.size} child notifications")
+
+                // CRITICAL DELAY: Wait 1 second before posting summary
+                // This gives Android time to recognize and group all child notifications
+                // Without this delay, Android may not properly group the notifications
+                try {
+                    Timber.d("TaskReminderWorker: Waiting 1 second before posting summary (critical for grouping)")
+                    Thread.sleep(1000)
+                    Timber.d("TaskReminderWorker: Delay complete, now posting group summary")
+                } catch (e: InterruptedException) {
+                    Timber.w(e, "TaskReminderWorker: Thread interrupted during pre-summary delay")
+                }
+
+                // FOURTH: Post summary notification LAST with CONSTANT ID
+                // This ensures Android recognizes it as the group summary and groups all children
+                try {
+                    val summaryNotification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
+                        applicationContext,
+                        thisWeekTasks
+                    ).build()
+
+                    notificationManager.notify(
+                        TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
+                        summaryNotification
+                    )
+                    Timber.d("TaskReminderWorker: Posted group summary notification with ID=${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID} for ${thisWeekTasks.size} child notifications")
+                } catch (e: Exception) {
+                    Timber.e(e, "TaskReminderWorker: Error posting summary notification")
+                }
+
             } catch (e: Exception) {
                 Timber.w(e, "TaskReminderWorker: Could not post individual child notifications")
             }
-
-            // Post group summary notification LAST with CONSTANT ID (1000)
-            // According to Android docs, summary MUST be posted after all children
-            notificationManager.notify(
-                TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
-                notification
-            )
-
-            Timber.d("TaskReminderWorker: Group summary notification posted LAST with CONSTANT ID ${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID}")
 
             // Reschedule both AlarmManager and WorkManager for next day
             TaskReminderScheduler.scheduleTaskReminder(applicationContext)

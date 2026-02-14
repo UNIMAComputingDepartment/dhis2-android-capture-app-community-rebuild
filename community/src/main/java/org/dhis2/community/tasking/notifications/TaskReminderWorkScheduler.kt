@@ -31,10 +31,10 @@ object TaskReminderWorkScheduler {
 
     private const val MALAWI_TIMEZONE = "Africa/Johannesburg" // UTC+2
 
-    private const val ALARM_HOUR_MORNING = 10
-    private const val ALARM_MINUTE_MORNING = 22
-    private const val ALARM_HOUR_EVENING = 10
-    private const val ALARM_MINUTE_EVENING = 25
+    private const val ALARM_HOUR_MORNING = 12  // 7:00 AM
+    private const val ALARM_MINUTE_MORNING = 45
+    private const val ALARM_HOUR_EVENING = 12  // 5:00 PM
+    private const val ALARM_MINUTE_EVENING = 48
 
     /**
      * Schedule two daily task reminder work using WorkManager.
