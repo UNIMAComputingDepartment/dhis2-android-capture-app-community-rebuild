@@ -42,7 +42,7 @@ fun PatientGroupSection(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .shadow(
                 elevation = 4.dp,
                 ambientColor = SurfaceColor.ContainerHighest,
@@ -61,7 +61,7 @@ fun PatientGroupSection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(animationSpec = tween(durationMillis = 250))
+                .animateContentSize(animationSpec = tween(durationMillis = 100))
         ) {
             // Header - Patient section with expand/collapse
             Row(
@@ -79,18 +79,18 @@ fun PatientGroupSection(
                 // Patient name and task count
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
                         text = group.patientName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = SurfaceColor.Primary
+                        color = TextColor.OnPrimaryContainer
                     )
                     Text(
                         text = "${group.taskCount} task${if (group.taskCount != 1) "s" else ""}",
                         fontSize = 12.sp,
-                        color = TextColor.OnSurface.copy(alpha = 0.7f)
+                        color = TextColor.OnSurfaceLight
                     )
                 }
 
@@ -101,7 +101,7 @@ fun PatientGroupSection(
                     modifier = Modifier
                         .rotate(if (isExpanded) 180f else 0f)
                         .padding(8.dp),
-                    tint = SurfaceColor.Primary
+                    tint = TextColor.OnPrimaryContainer
                 )
             }
 
@@ -112,7 +112,7 @@ fun PatientGroupSection(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
-                        .padding(8.dp),
+                        .padding(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     group.tasks.forEach { task ->

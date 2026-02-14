@@ -35,6 +35,20 @@
                 <action android:name="org.dhis2.community.tasking.ALARM_ACTION" />
             </intent-filter>
         </receiver>
+
+        <!-- ========================================
+             BROADCAST RECEIVER FOR NOTIFICATION ACTIONS
+             Handles "Open Task" button clicks
+             ======================================== -->
+        <receiver
+            android:name="org.dhis2.community.tasking.notifications.NotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <!-- Receive notification action clicks -->
+            <intent-filter>
+                <action android:name="org.dhis2.community.tasking.OPEN_TASK_ACTION" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

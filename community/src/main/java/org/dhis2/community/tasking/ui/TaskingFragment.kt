@@ -83,7 +83,10 @@ class TaskingFragment(
 
         // Create notification channels for task reminders (API 26+)
         NotificationChannelManager.createNotificationChannels(requireContext())
-        // Schedule daily task reminder at 07:00 Malawi time (UTC+2)
+
+        // Schedule three-times-daily task reminders (7 AM, 12 PM, 5 PM)
+        // Uses AlarmManager with setExactAndAllowWhileIdle() to ensure notifications trigger
+        // even in power saving mode, Doze mode, and across device reboots
         TaskReminderScheduler.scheduleTaskReminder(requireContext())
     }
 

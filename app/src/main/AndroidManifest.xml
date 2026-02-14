@@ -89,6 +89,18 @@
                     android:host="tasks"
                     android:pathPrefix="/reminders" />
             </intent-filter>
+            <!-- Handle app://tei/ deep links for opening TEI dashboard from notifications -->
+            <intent-filter
+                android:autoVerify="false"
+                android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="app"
+                    android:host="tei"
+                    android:pathPrefix="/" />
+            </intent-filter>
         </activity>
         <activity android:name=".usescases.programEventDetail.ProgramEventDetailActivity" />
         <activity
