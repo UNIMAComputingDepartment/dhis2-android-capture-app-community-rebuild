@@ -177,12 +177,14 @@ private fun CollapsibleRelationshipSectionContent(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                IconButton(onClick = { coroutineScope.launch { showAddSheet = true } }) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add Entity",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (relationshipTypeView.relatedTeis.size < relationshipTypeView.maxCount || relationshipTypeView.maxCount == 0) {
+                    IconButton(onClick = { coroutineScope.launch { showAddSheet = true } }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add Entity",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
             }

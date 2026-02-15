@@ -106,6 +106,7 @@ class CmtRelationshipTEIDataPresenter(
                                 relatedTeis = teis,
                                 relatedProgramName = relationship.relatedProgram.teiTypeName,
                                 relatedProgramUid = relationship.relatedProgram.programUid,
+                                maxCount = relationship.maxCount
                             )
                         }
                 }

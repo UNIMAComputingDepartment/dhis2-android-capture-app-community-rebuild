@@ -20,4 +20,7 @@ data class CmtRelationshipTypeViewModel(
     val relatedProgramName: String,
     val relatedProgramUid: String,
     val relatedTeis: List<CmtRelationshipViewModel>,
-)
+    val maxCount: Int = Int.MAX_VALUE
+) {
+
+}
