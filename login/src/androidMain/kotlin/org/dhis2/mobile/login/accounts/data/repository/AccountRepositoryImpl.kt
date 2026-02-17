@@ -19,14 +19,7 @@ class AccountRepositoryImpl(
         }
 
     override suspend fun availableServers(): List<String> {
-        val providedServers =
-            if (BuildConfig.DEBUG) {
-                defaultTestingCredentials
-            } else if (BuildConfig.FLAVOR == "dhis2Training") {
-                trainingTestingCredentials
-            } else {
-                emptyList()
-            }
+        val providedServers = defaultTestingCredentials
 
         providedServers.forEach {
             preferenceProvider.updateLoginServers(it.server)

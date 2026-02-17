@@ -9,15 +9,20 @@ data class TestingCredentials(
 val defaultTestingCredentials =
     listOf(
         TestingCredentials(
-            server = "https://android.im.dhis2.org/current",
-            username = "android",
-            password = "Android123",
+            server = "https://ccdev.org/ichis",
+            username = "",
+            password = "",
         ),
         TestingCredentials(
-            server = "https://android.im.dhis2.org/dev",
-            username = "android",
-            password = "Android123",
+            server = "https://ccdev.org/chistest",
+            username = "",
+            password = "",
         ),
+        /*TestingCredentials(
+            server = "https://project.ccdev.org/chisdev",
+            username = "",
+            password = "",
+        ),*/
     )
 
 val trainingTestingCredentials =
