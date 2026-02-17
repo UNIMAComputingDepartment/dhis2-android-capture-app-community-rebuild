@@ -12,15 +12,6 @@ import org.dhis2.community.tasking.ui.TaskingStatus
 import timber.log.Timber
 import java.util.Locale
 
-/**
- * Builds task reminder notifications with deep links and action buttons.
- *
- * Features:
- * - WhatsApp-style grouped notifications
- * - TaskStackBuilder for proper "Back" navigation (TEI Dashboard -> Tasks Tab)
- * - Sorted by due date (Newest first) via setSortKey
- * - Dynamic weekly task counts
- */
 object TaskReminderNotificationBuilder {
     // ===== WHATSAPP-STYLE GROUP CONSTANTS =====
     const val GROUP_KEY_TASKS = "DHIS2_TASK_REMINDERS_GROUP"
@@ -31,9 +22,6 @@ object TaskReminderNotificationBuilder {
     const val TASKS_SCREEN_REQUEST_CODE = 1001
     const val TASKS_SCREEN_ACTION_REQUEST_CODE = 1002
 
-    /**
-     * Build a group summary notification using pre-calculated counts.
-     */
     fun buildTaskReminderNotification(
         context: Context,
         counts: TaskStatusCounts
@@ -41,10 +29,6 @@ object TaskReminderNotificationBuilder {
         return buildSummaryNotification(context, counts)
     }
 
-    /**
-     * Overload: Build a group summary notification from a list of tasks.
-     * Calculates counts internally. Useful for the Worker/Receiver integration.
-     */
     fun buildTaskReminderNotification(
         context: Context,
         tasks: List<Any> // Using Any to avoid direct dependency on TaskModel if not imported, normally List<TaskModel>
@@ -100,7 +84,7 @@ object TaskReminderNotificationBuilder {
             inboxStyle.setBigContentTitle("${counts.total} ${pluralize("task", counts.total)}")
             inboxStyle.setSummaryText(contentText)
 
-            val subtext = if (counts.total > 0) "You have ${counts.total} tasks" else "No pending tasks"
+            val subtext = if (counts.total > 0) "You have ${counts.total} tasks this week" else "No pending tasks this week"
 
             return NotificationCompat.Builder(context, NotificationChannelManager.TASK_REMINDER_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_exclamation)
@@ -125,11 +109,6 @@ object TaskReminderNotificationBuilder {
                 .setContentText("You have pending tasks")
         }
     }
-
-    /**
-     * Build a child notification for a single task.
-     * USES TASKSTACKBUILDER for correct Back navigation (TEI -> Tasks).
-     */
     fun buildChildTaskNotification(
         context: Context,
         taskName: String,
@@ -150,7 +129,6 @@ object TaskReminderNotificationBuilder {
             val teiIntent = Intent(Intent.ACTION_VIEW, deepLinkUri)
 
             // 2. Create the Intent for the Parent (MainActivity -> Tasks Tab)
-            // FIXED: Use setClassName to avoid compilation errors with direct class reference
             val parentIntent = Intent().apply {
                 setClassName(context, "org.dhis2.usescases.main.MainActivity")
                 data = "app://tasks/reminders".toUri()
@@ -222,8 +200,10 @@ object TaskReminderNotificationBuilder {
                 // Grouping & Sorting
                 .setGroup(GROUP_KEY_TASKS)
                 .setGroupSummary(false)
-                // Use descending timestamp for sort key so newest tasks appear first
-                .setSortKey((Long.MAX_VALUE - notificationId).toString())
+                // Use padded numeric sort key - first posted task (most recent) has LOWEST key and appears FIRST
+                // notificationId 2000 -> sort key "0000000000" (appears first)
+                // notificationId 2001 -> sort key "0000000001" (appears second)
+                .setSortKey(String.format("%010d", notificationId - CHILD_NOTIFICATION_ID_START))
                 .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY)
 
         } catch (e: Exception) {

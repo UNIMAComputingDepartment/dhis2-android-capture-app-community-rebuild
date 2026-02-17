@@ -4,6 +4,8 @@ import android.util.Log
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
@@ -19,6 +21,7 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
 
 @Singleton
@@ -286,6 +289,11 @@ class TaskingRepository(
     }
 
 
+    // ===== CACHING FOR PERFORMANCE =====
+    private val _allTasksCache = MutableStateFlow<List<Task>>(emptyList())
+    private val allTasksCacheTimestamp = AtomicReference<Long>(0)
+    private val CACHE_TTL_TASKS = 30 * 1000L // 30 seconds for task list
+
     @Synchronized
     fun createTask(
         task: Task,
@@ -412,3 +420,4 @@ class TaskingRepository(
     fun getEnrollment(enrollmentUid: String) =
         d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
 }
+

@@ -32,7 +32,7 @@ object NotificationChannelManager {
                     setShowBadge(true)
                 }
                 notificationManager.createNotificationChannel(channel)
-                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_DEFAULT for proper grouping on Android 11+ (delete channel if changing importance!)")
+                Timber.d("NotificationChannelManager: Created task reminder notification channel with IMPORTANCE_HIGH for proper grouping (delete channel if changing importance!)")
             } catch (e: Exception) {
                 Timber.e(e, "NotificationChannelManager: Error creating notification channel")
             }

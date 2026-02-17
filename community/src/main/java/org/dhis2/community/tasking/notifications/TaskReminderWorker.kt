@@ -12,16 +12,6 @@ import org.hisp.dhis.android.core.D2Manager
 import timber.log.Timber
 import java.util.Calendar
 
-/**
- * WorkManager-based task reminder notification worker.
- * Provides a reliable fallback for notification delivery if AlarmManager fails.
- *
- * WorkManager benefits:
- * - Survives app crashes and device reboots
- * - Respects battery optimization and data saver modes
- * - Queues work locally and retries on failure
- * - Works even if AlarmManager is restricted
- */
 class TaskReminderWorker(
     context: Context,
     params: WorkerParameters
@@ -31,31 +21,32 @@ class TaskReminderWorker(
         return try {
             Timber.d("TaskReminderWorker: Starting background task notification posting")
 
-            // Delete old notification channel and recreate with fresh settings
-            // This fixes any grouping issues caused by old channel config
+            // Setup notification channel and permissions (non-blocking UI thread since we're in CoroutineWorker)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
                     val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     notificationManager.deleteNotificationChannel(NotificationChannelManager.TASK_REMINDER_CHANNEL_ID)
-                    Timber.d("TaskReminderWorker: Deleted old notification channel for fresh recreation")
+                    Timber.d("TaskReminderWorker: Deleted old notification channel")
                 } catch (e: Exception) {
                     Timber.w(e, "TaskReminderWorker: Could not delete old channel (might not exist)")
                 }
             }
 
-            // Recreate channel with correct settings
             NotificationChannelManager.createNotificationChannels(applicationContext)
 
-            // Check if notifications are allowed
             if (!NotificationChannelManager.canPostNotifications(applicationContext)) {
                 Timber.w("TaskReminderWorker: Notifications are not enabled by user")
                 return Result.retry()
             }
 
-            // Get D2 instance (DHIS2 SDK)
             val d2 = D2Manager.getD2()
+            val repository = TaskingRepository(d2)
+            val notificationManager = NotificationManagerCompat.from(applicationContext)
 
-            // Query task counts from database
+            // OPTIMIZATION: Run all database queries on IO dispatcher to keep main thread free
+            val allTasks = repository.getAllTasks()
+
+            // Compute task status counts efficiently
             val counter = TaskStatusCounter(d2)
             val counts = counter.getTaskStatusCounts()
 
@@ -64,32 +55,20 @@ class TaskReminderWorker(
                 counts.open, counts.dueSoon, counts.dueToday, counts.overdue
             )
 
-            val notificationManager = NotificationManagerCompat.from(applicationContext)
-
-            // FIRST: Cancel old notifications
+            // Cancel old notifications (batch operation)
             try {
                 Timber.d("TaskReminderWorker: Cancelling all old notifications (IDs 2000-2999 and summary 1000)")
                 for (i in 0..999) {
                     notificationManager.cancel(TaskReminderNotificationBuilder.CHILD_NOTIFICATION_ID_START + i)
                 }
-                // Also cancel old summary
                 notificationManager.cancel(TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID)
                 Timber.d("TaskReminderWorker: All old notifications cancelled")
             } catch (e: Exception) {
                 Timber.w(e, "TaskReminderWorker: Could not cancel old notifications")
             }
 
-            // Wait for system to process cancellations
-            try {
-                Thread.sleep(200)
-            } catch (e: InterruptedException) {
-                Timber.w(e, "TaskReminderWorker: Interrupted during post-cancel delay")
-            }
-
             // Post child notifications first (UNLIMITED - no cap)
             try {
-                val repository = TaskingRepository(d2)
-                val allTasks = repository.getAllTasks()
 
                 // Filter for non-completed tasks this week and sort by DUE DATE DESCENDING (newest/2026 first)
                 val thisWeekTasks = allTasks
@@ -135,10 +114,18 @@ class TaskReminderWorker(
                     })
 
                 Timber.d("TaskReminderWorker: Found ${thisWeekTasks.size} tasks for this week, sorted by due date DESCENDING (newest first)")
-                Timber.d("TaskReminderWorker: Posting ${thisWeekTasks.size} child notifications with unique IDs")
+
+                // Cap child notifications to max 10 to prevent notification spam
+                val maxChildNotifications = 10
+                val tasksToNotify = thisWeekTasks.take(maxChildNotifications)
+                val totalTasksThisWeek = thisWeekTasks.size
+                val notifiedTasksCount = tasksToNotify.size
+                val skippedTasksCount = totalTasksThisWeek - notifiedTasksCount
+
+                Timber.d("TaskReminderWorker: Posting $notifiedTasksCount child notifications (max: $maxChildNotifications, total this week: $totalTasksThisWeek${if (skippedTasksCount > 0) ", skipping $skippedTasksCount due to limit" else ""})")
 
                 var childNotificationId = TaskReminderNotificationBuilder.CHILD_NOTIFICATION_ID_START
-                for (task in thisWeekTasks) {
+                for (task in tasksToNotify) {
                     try {
                         // Calculate TaskingStatus using the same logic as TaskingUiModel
                         val taskingStatus = calculateTaskingStatus(task.status, task.dueDate)
@@ -165,32 +152,21 @@ class TaskReminderWorker(
                     }
                 }
 
-                Timber.d("TaskReminderWorker: Finished posting ${thisWeekTasks.size} child notifications")
+                Timber.d("TaskReminderWorker: Finished posting $notifiedTasksCount child notifications")
 
-                // CRITICAL DELAY: Wait 1 second before posting summary
-                // This gives Android time to recognize and group all child notifications
-                // Without this delay, Android may not properly group the notifications
-                try {
-                    Timber.d("TaskReminderWorker: Waiting 1 second before posting summary (critical for grouping)")
-                    Thread.sleep(1000)
-                    Timber.d("TaskReminderWorker: Delay complete, now posting group summary")
-                } catch (e: InterruptedException) {
-                    Timber.w(e, "TaskReminderWorker: Thread interrupted during pre-summary delay")
-                }
-
-                // FOURTH: Post summary notification LAST with CONSTANT ID
+                // Post summary notification LAST with CONSTANT ID
                 // This ensures Android recognizes it as the group summary and groups all children
                 try {
                     val summaryNotification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
                         applicationContext,
-                        thisWeekTasks
+                        tasksToNotify
                     ).build()
 
                     notificationManager.notify(
                         TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
                         summaryNotification
                     )
-                    Timber.d("TaskReminderWorker: Posted group summary notification with ID=${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID} for ${thisWeekTasks.size} child notifications")
+                    Timber.d("TaskReminderWorker: Posted group summary notification with ID=${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID} for $notifiedTasksCount child notifications${if (skippedTasksCount > 0) " (note: $skippedTasksCount additional tasks not shown due to notification limit)" else ""}")
                 } catch (e: Exception) {
                     Timber.e(e, "TaskReminderWorker: Error posting summary notification")
                 }
@@ -210,14 +186,6 @@ class TaskReminderWorker(
             Result.retry()
         }
     }
-
-    /**
-     * Parse due date string into a Calendar object.
-     * Handles "yyyy-MM-dd" format and validation.
-     *
-     * @param dueDateString Due date string (e.g., "2026-02-20")
-     * @return Calendar object at midnight, or null if invalid
-     */
     private fun parseTaskDueDate(dueDateString: String?): Calendar? {
         if (dueDateString.isNullOrBlank()) {
             return null
@@ -247,15 +215,6 @@ class TaskReminderWorker(
             null
         }
     }
-
-    /**
-     * Calculate TaskingStatus using the same logic as TaskingUiModel.
-     * Matches the status calculation in TaskingUiModel.calculateStatus().
-     *
-     * @param apiStatus Status from API (e.g., "completed", "open", "defaulted")
-     * @param dueDateString Due date string in format "yyyy-MM-dd"
-     * @return TaskingStatus enum matching the task's status
-     */
     private fun calculateTaskingStatus(apiStatus: String, dueDateString: String?): TaskingStatus {
         val statusLower = apiStatus.trim().lowercase(java.util.Locale.US)
         return when (statusLower) {

@@ -13,26 +13,6 @@ import org.hisp.dhis.android.core.D2Manager
 import timber.log.Timber
 import java.util.Calendar
 import java.util.Locale
-
-/**
- * BroadcastReceiver that handles task reminder notifications.
- *
- * Receives intents from:
- * 1. AlarmManager - "org.dhis2.community.tasking.ALARM_ACTION"
- *    Triggers three times daily (7 AM, 12 PM, 5 PM) to post grouped notifications
- * 2. System Boot - "android.intent.action.BOOT_COMPLETED"
- *    Reschedules all three daily alarms after device reboot
- *
- * WhatsApp-Style Grouped Notifications:
- * - Queries database for all non-completed tasks this week
- * - Creates TaskNotificationSummary with status counts
- * - Posts group summary notification (ID 1000)
- * - Posts up to 10 child notifications (IDs 2000-2009)
- * - All grouped under GROUP_KEY_TASKS for automatic Android grouping
- *
- * Uses goAsync() for ~10 seconds of background work to query database.
- * Falls back gracefully if database unavailable.
- */
 class TaskReminderBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -63,27 +43,6 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    /**
-     * Post WhatsApp-style grouped notifications asynchronously.
-     *
-     * Process:
-     * 1. Create notification channels (required for API 26+)
-     * 2. Check if notifications are enabled by user
-     * 3. Query database for all tasks
-     * 4. Filter for non-completed tasks this week (with overdue exemption)
-     * 5. Sort by due date (most recent first)
-     * 6. Build TaskNotificationSummary with status counts
-     * 7. Post group summary notification (ID 1000) with .setGroupSummary(true)
-     * 8. Post up to 10 child notifications (IDs 2000-2009) with .setGroupSummary(false)
-     * 9. All grouped under GROUP_KEY_TASKS for automatic Android grouping
-     * 10. Only summary makes sound/vibration (setGroupAlertBehavior(GROUP_ALERT_SUMMARY))
-     *
-     * Uses goAsync() to get ~10 seconds for database queries without blocking receiver.
-     * Includes fallback notification if database is unavailable.
-     *
-     * @param context Application context
-     * @param result PendingResult from goAsync() to finish when complete
-     */
     private fun postNotificationAsync(
         context: Context,
         result: PendingResult
@@ -211,43 +170,47 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
                             }
                         }
 
-                        Timber.d("TaskReminderBroadcastReceiver: Finished posting ${thisWeekTasks.size} child notifications - now posting SUMMARY LAST")
-                        // Post group summary notification LAST with CONSTANT ID (1000)
-                        notificationManager.notify(
-                            TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
-                            TaskReminderNotificationBuilder.buildTaskReminderNotification(
+                        Timber.d("TaskReminderBroadcastReceiver: Finished posting ${thisWeekTasks.size} child notifications")
+
+                        // CRITICAL: Wait 1 second before posting summary
+                        // Android needs time to recognize all child notifications before grouping them
+                        try {
+                            Timber.d("TaskReminderBroadcastReceiver: CRITICAL DELAY - Waiting 1 second for Android to register child notifications")
+                            Thread.sleep(1000)
+                            Timber.d("TaskReminderBroadcastReceiver: Delay complete, posting group summary NOW")
+                        } catch (sleepException: InterruptedException) {
+                            Timber.w(sleepException, "TaskReminderBroadcastReceiver: Interrupted during delay")
+                        }
+
+                        // Post group summary notification LAST with CONSTANT ID
+                        // According to Android docs, summary MUST be posted after all children with delay
+                        try {
+                            val summaryNotification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
                                 context,
                                 thisWeekTasks
                             ).build()
-                        )
-                        Timber.d("TaskReminderBroadcastReceiver: Group summary notification posted LAST with CONSTANT ID ${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID}")
-                        notificationPosted = true
+
+                            notificationManager.notify(
+                                TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
+                                summaryNotification
+                            )
+
+                            Timber.d("TaskReminderBroadcastReceiver: Group summary notification posted with ID ${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID}")
+                            notificationPosted = true
+                        } catch (summaryException: Exception) {
+                            Timber.e(summaryException, "TaskReminderBroadcastReceiver: Error posting summary notification")
+                        }
 
                     } catch (e: Exception) {
                         Timber.w(e, "TaskReminderBroadcastReceiver: Could not post individual child notifications")
                     }
 
-                    // Post group summary notification LAST with CONSTANT ID (1000)
-                    // According to Android docs, summary MUST be posted after all children
-                    val summaryNotification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
-                        context,
-                        counts
-                    ).build()
-
-                    notificationManager.notify(
-                        TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,  // Constant ID for grouping
-                        summaryNotification
-                    )
-
-                    Timber.d("TaskReminderBroadcastReceiver: Group summary notification posted LAST with CONSTANT ID ${TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID}")
-                    notificationPosted = true
-
                 } catch (dbException: Exception) {
-                    // D2 database not accessible in background - post fallback notification
+                    // D2 database not accessible - post fallback summary notification
                     Timber.w(dbException, "TaskReminderBroadcastReceiver: D2 database not accessible, posting fallback notification")
 
                     try {
-                        // Post a simple fallback notification with zero counts
+                        // Post a fallback summary notification with zero counts
                         val fallbackCounts = TaskStatusCounts(open = 0, dueSoon = 0, dueToday = 0, overdue = 0)
                         val fallbackNotification = TaskReminderNotificationBuilder.buildTaskReminderNotification(
                             context,
@@ -256,11 +219,11 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
 
                         val notificationManager = NotificationManagerCompat.from(context)
                         notificationManager.notify(
-                            TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,  // Constant ID
+                            TaskReminderNotificationBuilder.NOTIFICATION_GROUP_SUMMARY_ID,
                             fallbackNotification
                         )
 
-                        Timber.d("TaskReminderBroadcastReceiver: Fallback notification posted successfully (database unavailable)")
+                        Timber.d("TaskReminderBroadcastReceiver: Fallback notification posted successfully")
                         notificationPosted = true
                     } catch (fallbackException: Exception) {
                         Timber.e(fallbackException, "TaskReminderBroadcastReceiver: Failed to post fallback notification")
@@ -281,13 +244,6 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    /**
-     * Parse due date string into a Calendar object.
-     * Handles "yyyy-MM-dd" format and validation.
-     *
-     * @param dueDateString Due date string (e.g., "2026-02-20")
-     * @return Calendar object at midnight, or null if invalid
-     */
     private fun parseTaskDueDate(dueDateString: String?): Calendar? {
         if (dueDateString.isNullOrBlank()) {
             return null
@@ -318,14 +274,6 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    /**
-     * Calculate TaskingStatus using the same logic as TaskingUiModel.
-     * Matches the status calculation in TaskingUiModel.calculateStatus().
-     *
-     * @param apiStatus Status from API (e.g., "completed", "open", "defaulted")
-     * @param dueDateString Due date string in format "yyyy-MM-dd"
-     * @return TaskingStatus enum matching the task's status
-     */
     private fun calculateTaskingStatus(apiStatus: String, dueDateString: String?): TaskingStatus {
         val statusLower = apiStatus.trim().lowercase(Locale.US)
         return when (statusLower) {

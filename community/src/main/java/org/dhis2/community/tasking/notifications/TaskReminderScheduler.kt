@@ -9,22 +9,6 @@ import timber.log.Timber
 import java.util.Calendar
 import java.util.TimeZone
 
-/**
- * Manages scheduling and cancellation of task reminder alarms.
- *
- * **Two-Times-Daily Scheduling**
- * Schedules alarms for two times daily in local time:
- * - 7:00 AM (Morning)
- * - 5:00 PM (Evening)
- *
- * Uses AlarmManager.setExactAndAllowWhileIdle() for reliable scheduling even in:
- * - Low-power modes
- * - Android Doze mode
- * - Power saving modes
- *
- * Notifications work WITHOUT opening the app (background alarms with goAsync()).
- * Alarms survive device reboots via BOOT_COMPLETED broadcast.
- */
 object TaskReminderScheduler {
     // Request codes for two daily alarms (must be unique)
     private const val ALARM_REQUEST_CODE_MORNING = 9010
@@ -34,8 +18,8 @@ object TaskReminderScheduler {
             Timber.d("TaskReminderScheduler: Scheduling two-times-daily alarms (7:00 AM, 5:00 PM)")
 
             // Schedule morning and evening alarms
-            scheduleAlarmForTime(context, 12, 45, ALARM_REQUEST_CODE_MORNING)    // 7:00 AM
-            scheduleAlarmForTime(context, 12, 48, ALARM_REQUEST_CODE_EVENING)   // 5:00 PM
+            scheduleAlarmForTime(context, 15, 31, ALARM_REQUEST_CODE_MORNING)
+            scheduleAlarmForTime(context, 15, 33, ALARM_REQUEST_CODE_EVENING)
 
             Timber.d("TaskReminderScheduler: Both daily alarms scheduled successfully")
 
@@ -48,14 +32,6 @@ object TaskReminderScheduler {
         }
     }
 
-    /**
-     * Schedule a single alarm for a specific time of day.
-     *
-     * @param context Application context
-     * @param hour Hour of day (0-23)
-     * @param minute Minute of hour (0-59)
-     * @param requestCode Unique request code for this alarm
-     */
     private fun scheduleAlarmForTime(
         context: Context,
         hour: Int,
@@ -133,11 +109,6 @@ object TaskReminderScheduler {
         }
     }
 
-    /**
-     * Cancel all three daily task reminder alarms.
-     *
-     * @param context Application context
-     */
     fun cancelTaskReminder(context: Context) {
         try {
             Timber.d("TaskReminderScheduler: Cancelling both daily alarms")
@@ -184,12 +155,6 @@ object TaskReminderScheduler {
         }
     }
 
-    /**
-     * Check if task reminder alarms are scheduled.
-     *
-     * @param context Application context
-     * @return True if at least one alarm is scheduled, false otherwise
-     */
     fun isTaskReminderScheduled(context: Context): Boolean {
         return try {
             val requestCodes = listOf(
@@ -231,13 +196,6 @@ object TaskReminderScheduler {
         }
     }
 
-    /**
-     * Trigger task reminder notification immediately for testing purposes.
-     * Call this from MainActivity onCreate or anywhere to test notification grouping.
-     * Creates 5 test notifications to verify grouping works.
-     *
-     * @param context Application context
-     */
     fun triggerTaskReminderTest(context: Context) {
         try {
             Timber.d("TaskReminderScheduler: Manually triggering task reminder for testing")

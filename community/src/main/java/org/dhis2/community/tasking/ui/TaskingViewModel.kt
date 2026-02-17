@@ -68,6 +68,10 @@ class TaskingViewModel @Inject constructor(
     override val allTasksForProgress: List<TaskingUiModel>
         get() = _allTasks.value
 
+    // Debounce filter updates to prevent recomposition storms
+    private var filterDebounceJob: kotlinx.coroutines.Job? = null
+    private val FILTER_DEBOUNCE_MS = 300L
+
     init {
         loadInitialData()
     }
@@ -76,23 +80,34 @@ class TaskingViewModel @Inject constructor(
         viewModelScope.launch {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
-                    // Ensure config is loaded before accessing cachedConfig
+                    // Ensure config is loaded before accessing cachedConfig (this is still blocking but happens once)
                     repository.getTaskingConfig()
 
-                    // Fetch all tasks only once and map them to their respective orgUnits
-                    val fetchedTasks = repository.getAllTasks()
+                    // Fetch all tasks on IO dispatcher to avoid main thread blockage
+                    val fetchedTasks = withContext(Dispatchers.IO) {
+                        repository.getAllTasks()
+                    }
 
-                    val tasks = fetchedTasks.map { task ->
-                        // Get the orgUnit from the task itself or use an empty string
-                        val taskOrgUnit = repository.getOrgUnit(task.sourceTeiUid) ?: ""
-                        TaskingUiModel(task, taskOrgUnit, repository)
+                    Timber.tag("TaskingViewModel").d("Loaded ${fetchedTasks.size} tasks")
+
+                    // Map tasks to UI models on Default dispatcher
+                    val tasks = withContext(Dispatchers.Default) {
+                        fetchedTasks.map { task ->
+                            val taskOrgUnit = withContext(Dispatchers.IO) {
+                                repository.getOrgUnit(task.sourceTeiUid)
+                            } ?: ""
+                            TaskingUiModel(task, taskOrgUnit, repository)
+                        }
                     }
 
                     _allTasks.value = tasks
 
-                    filterState.updateUiState()
-                    updateFilterOptions()
-                    applyFilters()
+                    // Update UI on main thread
+                    withContext(Dispatchers.Main) {
+                        filterState.updateUiState()
+                        updateFilterOptions()
+                        applyFilters()
+                    }
                 } catch (e: Exception) {
                     Timber.tag("TaskingViewModel").e(e, "Error loading tasks in loadInitialData()")
                 }
@@ -270,7 +285,13 @@ class TaskingViewModel @Inject constructor(
     }
 
     override fun onFilterChanged() {
-        applyFilters()
+        // Cancel any ongoing debounce job
+        filterDebounceJob?.cancel()
+        // Start a new debounce job
+        filterDebounceJob = viewModelScope.launch {
+            delay(FILTER_DEBOUNCE_MS)
+            applyFilters()
+        }
     }
 
     override fun tasksForProgressBar(): List<TaskingUiModel> {
