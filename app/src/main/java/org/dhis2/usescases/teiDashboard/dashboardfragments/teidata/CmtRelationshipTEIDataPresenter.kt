@@ -181,7 +181,7 @@ class CmtRelationshipTEIDataPresenter(
 
                     // 2️⃣ Build search criteria from config
                     val matchingAttributes = config.attributesMappings
-                        .filter { it.sourceAttribute.isNotEmpty() }
+                        .filter { it.isDuplicationKey && it.sourceAttribute.isNotEmpty() }
                         .mapNotNull { mapping ->
                             val value = currentAttributes[mapping.sourceAttribute]
                             value?.let {
