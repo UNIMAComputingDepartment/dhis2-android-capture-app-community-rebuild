@@ -9,12 +9,17 @@ data class TestingCredentials(
 val defaultTestingCredentials =
     listOf(
         TestingCredentials(
-            server = "https://android.im.dhis2.org/current",
+            server = "https://project.ccdev.org/chisdev",
             username = "android",
             password = "Android123",
         ),
         TestingCredentials(
-            server = "https://android.im.dhis2.org/dev",
+            server = "https://ccdev.org/chistest",
+            username = "android",
+            password = "Android123",
+        ),
+        TestingCredentials(
+            server = "https://ccdev.org/ichis",
             username = "android",
             password = "Android123",
         ),
@@ -23,8 +28,28 @@ val defaultTestingCredentials =
 val trainingTestingCredentials =
     listOf(
         TestingCredentials(
-            server = "https://play.dhis2.org/demo",
+            server = "https://ccdev.org/chistest",
             username = "android",
             password = "Android123",
         ),
+        TestingCredentials(
+            server = "https://ccdev.org/ichis",
+            username = "android",
+            password = "Android123",
+        ),
+    )
+
+val productionDefaultCredentials =
+    listOf(
+        TestingCredentials(
+            server = "https://ccdev.org/chistest",
+            username = "",
+            password = "",
+        ),
+        TestingCredentials(
+            server = "https://ccdev.org/ichis",
+            username = "",
+            password = "",
+        ),
+
     )
