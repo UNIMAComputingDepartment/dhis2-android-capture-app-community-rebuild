@@ -18,8 +18,8 @@ object TaskReminderScheduler {
             Timber.d("TaskReminderScheduler: Scheduling two-times-daily alarms (7:00 AM, 5:00 PM)")
 
             // Schedule morning and evening alarms
-            scheduleAlarmForTime(context, 15, 31, ALARM_REQUEST_CODE_MORNING)
-            scheduleAlarmForTime(context, 15, 33, ALARM_REQUEST_CODE_EVENING)
+            scheduleAlarmForTime(context, 7, 0, ALARM_REQUEST_CODE_MORNING)
+            scheduleAlarmForTime(context, 17, 0, ALARM_REQUEST_CODE_EVENING)
 
             Timber.d("TaskReminderScheduler: Both daily alarms scheduled successfully")
 

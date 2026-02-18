@@ -17,10 +17,10 @@ object TaskReminderWorkScheduler {
 
     private const val MALAWI_TIMEZONE = "Africa/Johannesburg"
 
-    private const val ALARM_HOUR_MORNING = 15
-    private const val ALARM_MINUTE_MORNING = 31
-    private const val ALARM_HOUR_EVENING = 15
-    private const val ALARM_MINUTE_EVENING = 33
+    private const val ALARM_HOUR_MORNING = 7
+    private const val ALARM_MINUTE_MORNING = 0
+    private const val ALARM_HOUR_EVENING = 17
+    private const val ALARM_MINUTE_EVENING = 0
 
     fun scheduleTaskReminderWork(context: Context) {
         try {
