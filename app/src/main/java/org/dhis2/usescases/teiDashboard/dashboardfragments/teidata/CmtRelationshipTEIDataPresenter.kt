@@ -106,6 +106,7 @@ class CmtRelationshipTEIDataPresenter(
                                 relatedTeis = teis,
                                 relatedProgramName = relationship.relatedProgram.teiTypeName,
                                 relatedProgramUid = relationship.relatedProgram.programUid,
+                                maxCount = relationship.maxCount
                             )
                         }
                 }
@@ -143,7 +144,7 @@ class CmtRelationshipTEIDataPresenter(
         )
     }
 
-    private fun checkForAutoCreation(programUid: String, teiUid: String) {
+    /*private fun checkForAutoCreation(programUid: String, teiUid: String) {
         val autoCreationConfig = workflowConfig.entityAutoCreation.firstOrNull {
             it.triggerProgram == programUid
         }
@@ -162,7 +163,68 @@ class CmtRelationshipTEIDataPresenter(
                     )
             )
         }
+    }*/
+
+    private fun checkForAutoCreation(programUid: String, teiUid: String) {
+        val autoCreationConfig = workflowConfig.entityAutoCreation.firstOrNull {
+            it.triggerProgram == programUid
+        }
+
+        autoCreationConfig?.let { config ->
+
+            compositeDisposable.add(
+                Single.fromCallable {
+
+                    // 1️⃣ Get current TEI attributes
+                    val currentAttributes =
+                        workflowRepository.getTeiAttributes(teiUid)
+
+                    // 2️⃣ Build search criteria from config
+                    val matchingAttributes = config.attributesMappings
+                        .filter { it.isDuplicationKey && it.sourceAttribute.isNotEmpty() }
+                        .mapNotNull { mapping ->
+                            val value = currentAttributes[mapping.sourceAttribute]
+                            value?.let {
+                                mapping.targetAttribute to it
+                            }
+                        }
+
+                    // 3️⃣ Search if TEI already exists
+                    val existingTei =
+                        workflowRepository.searchTeiByAttributes(
+                            teiType = config.targetTeiType,
+                            attributes = matchingAttributes
+                        )
+
+                    if (existingTei != null) {
+                        Timber.d("Member already exists: ${existingTei.uid()}")
+                        workflowRepository.addMemberToHousehold(
+                            memberTeiUid = existingTei.uid(),
+                            householdUid = teiUid,
+                            relationshipType = config.relationshipType
+                        )
+                        existingTei.uid()
+                    } else {
+                        // 4️⃣ Only auto create if not found
+                        val result = workflowRepository.autoCreateEntity(
+                            teiUid = teiUid,
+                            autoCreationConfig = config
+                        )
+                        Timber.d("Created ${result.first}")
+                        result.first
+                    }
+
+                }
+                    .subscribeOn(schedulerProvider.io())
+                    .observeOn(schedulerProvider.ui())
+                    .subscribe(
+                        { Timber.d("Auto creation check complete") },
+                        { error -> Timber.e(error) }
+                    )
+            )
+        }
     }
+
 
     fun addRelationship(teiUid: String, relationshipTypeUid: String) {
         compositeDisposable.add(
@@ -244,7 +306,8 @@ class CmtRelationshipTEIDataPresenter(
                     orgUnit = orgUnitUid,
                     programUid = programUid,
                     relationship = relationship,
-                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null
+                    attributeIncrement = if (attributeToIncrement != null) attributeToIncrement to incrementValue.toString() else null,
+                    sourceTeiUid = teiUid
                 )
             }
                 .subscribeOn(schedulerProvider.computation())

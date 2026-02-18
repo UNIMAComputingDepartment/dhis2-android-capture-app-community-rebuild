@@ -1,8 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <!--GENERAL-->
-    <string name="app_name">Dhis2</string>
-    <string name="logo_text">dhis</string>
-    <string name="logo_number">2</string>
+    <string name="app_name">iCHIS</string>
+    <string name="logo_text">iCHIS</string>
+    <string name="logo_number"></string>
     <!-- Warnings and error messages -->
     <string name="error">Erro</string>
     <plurals name="error_message">

@@ -79,10 +79,44 @@ class RelationshipRepository(
         relationshipSide: RelationshipConstraintSide
     ): Result<String> {
         return try {
-            val (fromUid, toUid) = when (relationshipSide) {
-                RelationshipConstraintSide.FROM -> Pair(teiUid, selectedTeiUid)
-                RelationshipConstraintSide.TO -> Pair(selectedTeiUid, teiUid)
-            }
+            // Fetch the relationship type with constraints
+            val relationshipType = d2.relationshipModule()
+                .relationshipTypes()
+                .withConstraints()
+                .uid(relationshipTypeUid)
+                .blockingGet()
+                ?: throw IllegalArgumentException("Relationship type not found: $relationshipTypeUid")
+
+            // Get TEI types for both entities
+            val teiType = d2.trackedEntityModule()
+                .trackedEntityInstances()
+                .uid(teiUid)
+                .blockingGet()
+                ?.trackedEntityType()
+                ?: throw IllegalArgumentException("TEI not found: $teiUid")
+
+            val selectedTeiType = d2.trackedEntityModule()
+                .trackedEntityInstances()
+                .uid(selectedTeiUid)
+                .blockingGet()
+                ?.trackedEntityType()
+                ?: throw IllegalArgumentException("TEI not found: $selectedTeiUid")
+
+            Timber.d("Current TEI type: $teiType, Selected TEI type: $selectedTeiType")
+            Timber.d("Relationship from constraint: ${relationshipType.fromConstraint()?.trackedEntityType()?.uid()}")
+            Timber.d("Relationship to constraint: ${relationshipType.toConstraint()?.trackedEntityType()?.uid()}")
+
+            // Determine the correct direction based on TEI types and relationship constraints
+            val (fromUid, toUid) = determineRelationshipDirection(
+                teiUid = teiUid,
+                teiType = teiType,
+                selectedTeiUid = selectedTeiUid,
+                selectedTeiType = selectedTeiType,
+                relationshipType = relationshipType,
+                providedSide = relationshipSide
+            )
+
+            Timber.d("Creating relationship: from=$fromUid, to=$toUid, type=$relationshipTypeUid")
 
             val relationship = RelationshipHelper.teiToTeiRelationship(
                 fromUid, toUid, relationshipTypeUid
@@ -91,8 +125,51 @@ class RelationshipRepository(
             val relationshipUid = d2.relationshipModule().relationships().blockingAdd(relationship)
             Result.success(relationshipUid)
         } catch (error: Exception) {
-            Timber.e(error)
+            Timber.e(error, "Error creating relationship")
             Result.failure(error)
+        }
+    }
+
+    private fun determineRelationshipDirection(
+        teiUid: String,
+        teiType: String,
+        selectedTeiUid: String,
+        selectedTeiType: String,
+        relationshipType: org.hisp.dhis.android.core.relationship.RelationshipType,
+        providedSide: RelationshipConstraintSide
+    ): Pair<String, String> {
+        val fromConstraintTeiType = relationshipType.fromConstraint()?.trackedEntityType()?.uid()
+        val toConstraintTeiType = relationshipType.toConstraint()?.trackedEntityType()?.uid()
+
+        // If relationship is bidirectional, use the provided side
+        if (relationshipType.bidirectional() == true) {
+            Timber.d("Relationship is bidirectional, using provided side: $providedSide")
+            return when (providedSide) {
+                RelationshipConstraintSide.FROM -> Pair(teiUid, selectedTeiUid)
+                RelationshipConstraintSide.TO -> Pair(selectedTeiUid, teiUid)
+            }
+        }
+
+        // Match TEI types with relationship constraints to determine correct direction
+        return when {
+            // Current TEI matches FROM constraint and selected TEI matches TO constraint
+            teiType == fromConstraintTeiType && selectedTeiType == toConstraintTeiType -> {
+                Timber.d("Current TEI matches FROM constraint, selected TEI matches TO constraint")
+                Pair(teiUid, selectedTeiUid)
+            }
+            // Selected TEI matches FROM constraint and current TEI matches TO constraint
+            selectedTeiType == fromConstraintTeiType && teiType == toConstraintTeiType -> {
+                Timber.d("Selected TEI matches FROM constraint, current TEI matches TO constraint")
+                Pair(selectedTeiUid, teiUid)
+            }
+            // Fallback to provided side if constraints don't match (shouldn't happen in valid data)
+            else -> {
+                Timber.w("Could not determine direction from constraints, using provided side: $providedSide")
+                when (providedSide) {
+                    RelationshipConstraintSide.FROM -> Pair(teiUid, selectedTeiUid)
+                    RelationshipConstraintSide.TO -> Pair(selectedTeiUid, teiUid)
+                }
+            }
         }
     }
 
@@ -242,7 +319,7 @@ class RelationshipRepository(
             relatedProgramName = relationship.relatedProgram.teiTypeName,
             relatedProgramUid = relationship.relatedProgram.programUid,
             //icon = iconName.toString()
-
+            maxCount = relationship.maxCount
             )
 
     }
@@ -252,6 +329,7 @@ class RelationshipRepository(
         orgUnit: String,
         programUid: String,
         attributeIncrement: Pair<String, String>?,
+        sourceTeiUid: String,
     ): Pair<String?, String?> {
         val teiType = relationship.relatedProgram.teiTypeUid
 
@@ -277,6 +355,12 @@ class RelationshipRepository(
             .uid(enrollmentUid)
             .setIncidentDate(Date())
 
+        applyAttributeMappings(
+            sourceTeiUid = sourceTeiUid,
+            targetTeiUid = teiUid,
+            mappings = relationship.attributeMappings
+        )
+
         // Handle auto-increment attributes if any
         if (attributeIncrement != null) {
             d2.trackedEntityModule().trackedEntityAttributeValues()
@@ -285,6 +369,35 @@ class RelationshipRepository(
         }
 
         return teiUid to enrollmentUid
+    }
+
+    private fun applyAttributeMappings(
+        sourceTeiUid: String,
+        targetTeiUid: String,
+        mappings: List<AttributeMapping>
+    ) {
+        if (sourceTeiUid.isBlank() || mappings.isEmpty()) return
+
+        val sourceTei = d2.trackedEntityModule()
+            .trackedEntityInstances()
+            .withTrackedEntityAttributeValues()
+            .uid(sourceTeiUid)
+            .blockingGet()
+
+        val sourceAttributes = sourceTei?.trackedEntityAttributeValues()
+
+        mappings.forEach { mapping ->
+            val sourceValue = sourceAttributes?.firstOrNull {
+                it.trackedEntityAttribute() == mapping.sourceAttribute
+            }?.value()
+
+            val valueToSet = sourceValue ?: mapping.defaultValue
+            if (valueToSet != null) {
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(mapping.targetAttribute, targetTeiUid)
+                    .blockingSet(valueToSet)
+            }
+        }
     }
 
 }
