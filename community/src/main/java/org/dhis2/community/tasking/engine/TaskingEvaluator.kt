@@ -54,6 +54,8 @@ abstract class TaskingEvaluator(
             when (cond.op) {
                 "EQUALS" -> rhsValue == lhsValue
                 "NOT_EQUALS" -> rhsValue != lhsValue
+                "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue >= rhsValue
+                "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue <= rhsValue
                 "NOT_NULL" -> !lhsValue.isNullOrEmpty()
                 "NULL" -> lhsValue.isNullOrEmpty()
                 else -> false
