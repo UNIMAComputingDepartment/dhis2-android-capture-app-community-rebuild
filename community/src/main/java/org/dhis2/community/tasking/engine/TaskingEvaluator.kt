@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.event.Event
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -45,11 +44,12 @@ abstract class TaskingEvaluator(
         conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
         teiUid: String,
         programUid: String,
-        eventUid: String? = null
+        eventUid: String? = null,
+        secondaryProgramUid: String? = null
     ): List<Boolean> {
         return conditions.condition.map { cond ->
-            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid)
-            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
+            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
+            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
 
             when (cond.op) {
                 "EQUALS" -> rhsValue == lhsValue
@@ -82,17 +82,18 @@ abstract class TaskingEvaluator(
         reference: TaskingConfig.ProgramTasks.TaskConfig.Reference,
         teiUid: String,
         programUid: String,
-        eventUid: String? = null
+        eventUid: String? = null,
+        secondaryProgramUid: String?
     ): String? {
 
         val enrollment = repository.getLatestEnrollment(teiUid, programUid)
-            ?: return null
+            ?: secondaryProgramUid?.let { repository.getLatestEnrollment(teiUid, it) } ?: return null
 
         if (reference.uid.isNullOrBlank())
             return reference.value.toString()
 
         return when (reference.ref) {
-            "teiAttribute" -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+            "attribute" -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
                 .byTrackedEntityInstance().eq(teiUid)
                 .byTrackedEntityAttribute().eq(reference.uid)
                 .one().blockingGet()?.value()

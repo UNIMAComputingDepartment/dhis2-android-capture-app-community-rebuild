@@ -39,7 +39,7 @@ class CreationEvaluator (
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
                 targetProgramUid,
-                eventUid
+                eventUid,
             ).any { it }
 
             if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)

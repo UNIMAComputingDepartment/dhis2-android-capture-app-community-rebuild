@@ -33,7 +33,7 @@ class DefaultingEvaluator(
                         conditions = taskConfigs.trigger,
                         teiUid = sourceTeiUid,
                         programUid = programUid,
-                        eventUid = taskTriggerEventUid
+                        eventUid = taskTriggerEventUid,
                     ).all { it }
                 ) {
                     defaultTask(task)
