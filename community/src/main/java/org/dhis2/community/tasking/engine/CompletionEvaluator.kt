@@ -53,6 +53,12 @@ class CompletionEvaluator(
                         secondaryProgramUid = taskConfig.secondaryProgramUid
                     )
 
+                    val isComplete = when (taskConfig.completion.combination){
+                        "AND" -> conditions.all {it}
+                        "OR" -> conditions.any {it}
+                        else -> conditions.any {it}
+                    }
+
                     val progress = if (conditions.isNotEmpty()) {
                         conditions.filter { it }.size.toFloat() / conditions.size.toFloat()
                     } else 0f
@@ -63,7 +69,7 @@ class CompletionEvaluator(
                         task.teiUid
                     )
 
-                    if(conditions.all{it}) {
+                    if(isComplete) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
                             "completed",
