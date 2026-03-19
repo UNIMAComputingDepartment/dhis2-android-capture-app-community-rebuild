@@ -56,6 +56,8 @@ abstract class TaskingEvaluator(
                 "NOT_EQUALS" -> rhsValue != lhsValue
                 "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue >= rhsValue
                 "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue <= rhsValue
+                "GREATER_THAN" -> lhsValue != null && rhsValue != null && lhsValue > rhsValue
+                "LESS_THAN" -> lhsValue != null && rhsValue != null && lhsValue < rhsValue
                 "NOT_NULL" -> !lhsValue.isNullOrEmpty()
                 "NULL" -> lhsValue.isNullOrEmpty()
                 else -> false
