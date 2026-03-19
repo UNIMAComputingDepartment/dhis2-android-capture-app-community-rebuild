@@ -8,9 +8,9 @@ import org.dhis2.community.tasking.repositories.TaskingRepository
 import timber.log.Timber
 
 
-class CreationEvaluator (
+class CreationEvaluator(
     private val repository: TaskingRepository
-) : TaskingEvaluator(repository){
+) : TaskingEvaluator(repository) {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForCreation(
@@ -28,22 +28,35 @@ class CreationEvaluator (
         }
 
         val config = repository.getTaskingConfig()
-        val configsForProgram = config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
+        val configsForProgram =
+            config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
         if (configsForProgram == null) {
             Timber.e("CreationEvaluator: No tasking config found for program $targetProgramUid")
             return
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            val isTriggered = evaluateConditions(
+
+            val evaluationResults = evaluateConditions(
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
                 targetProgramUid,
                 eventUid
-            ).any { it }
+            )
 
-            if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
-                ) {
+            val isTriggered = when (taskConfig.trigger.combination) {
+                "AND" -> evaluationResults.all { it }
+                "OR" -> evaluationResults.any { it }
+                else -> evaluationResults.any { it }
+            }
+
+            val isNotDuplicate = notDuplicateTask(
+                    taskConfig,
+                    targetProgramUid,
+                    sourceTeiProgramEnrollment
+            )
+
+            if (isTriggered && isNotDuplicate){
                 val res = createTaskForTei(
                     taskConfig,
                     configsForProgram.teiView,
@@ -100,9 +113,13 @@ class CreationEvaluator (
             teiPrimary = primary,
             teiSecondary = secondary,
             teiTertiary = tertiary,
-            dueDate = calculateDueDate(taskConfig, sourceTeiUid).toString(),
+            dueDate = calculateDueDate(
+                taskConfig,
+                sourceTeiUid,
+                programUid = targetProgramUid
+            ).toString(),
             priority = taskConfig.priority,
-            status = "OPEN",
+            status = "open",
             sourceEnrollmentUid = sourceTeiProgramEnrollment,
             sourceTeiUid = sourceTeiUid,
             iconNane = repository.getSourceProgramIcon(targetProgramUid),

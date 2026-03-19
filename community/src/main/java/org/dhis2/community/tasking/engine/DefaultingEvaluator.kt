@@ -27,15 +27,34 @@ class DefaultingEvaluator(
                 task.sourceTeiUid == sourceTeiUid
             ) {
                 val taskTriggerEventUid = eventUid
-                val taskConfigs = programTaskConfig.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
+                val taskConfigs = programTaskConfig.taskConfigs
+                    .firstOrNull { it.name == task.name }
+                    ?: return@forEach
 
-                if (!evaluateConditions(
+               /* if (!evaluateConditions(
                         conditions = taskConfigs.trigger,
                         teiUid = sourceTeiUid,
                         programUid = programUid,
                         eventUid = taskTriggerEventUid
                     ).all { it }
                 ) {
+                    defaultTask(task)
+                }*/
+
+                val results = evaluateConditions(
+                    conditions = taskConfigs.trigger,
+                    teiUid = sourceTeiUid,
+                    programUid = programUid,
+                    eventUid = taskTriggerEventUid
+                )
+
+                val isTriggered = when(taskConfigs.trigger.combination){
+                    "AND" -> results.all {it}
+                    "OR" -> results.any {it}
+                    else -> results.any {it}
+                }
+
+                if (!isTriggered){
                     defaultTask(task)
                 }
             }

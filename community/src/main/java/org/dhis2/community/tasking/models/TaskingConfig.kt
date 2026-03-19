@@ -51,6 +51,7 @@ data class TaskingConfig(
             data class Trigger(
                 val programName: String,
                 val programUid: String,
+                val combination: String,
                 override val condition: List<Condition>
             ): HasConditions
 
@@ -74,6 +75,7 @@ data class TaskingConfig(
             )
 
         data class Completion(
+            val combination: String? = null,
             override val condition: List<Condition>
         ): HasConditions
 
