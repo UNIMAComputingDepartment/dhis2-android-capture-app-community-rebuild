@@ -20,7 +20,7 @@ class CompletionEvaluator(
         require(taskConf.programTasks.isNotEmpty()) { "Task Config is Empty" }
 
         val configForPg = taskConf.programTasks
-            .filter { it.programUid == sourceProgramUid }
+            .filter { it.programUid == sourceProgramUid || it.taskConfigs.any {it.secondaryProgramUid == sourceProgramUid}}
             .flatMap { it.taskConfigs }
 
         if (configForPg.isEmpty()) return
@@ -28,7 +28,10 @@ class CompletionEvaluator(
         val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
 
 
-        tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == "open"}
+        tasks.filter{(it.sourceProgramUid == sourceProgramUid ||
+                (configForPg.any {it.secondaryProgramUid == sourceProgramUid} ))
+                && it.status == "open"
+        }
             .forEach { task ->
 
                 val taskConfig = configForPg.firstOrNull { it.name == task.name }
@@ -37,14 +40,17 @@ class CompletionEvaluator(
                 }
 
                 if (
-                    task.sourceEnrollmentUid == sourceProgramEnrollmentUid &&
+                    (task.sourceEnrollmentUid == sourceProgramEnrollmentUid
+                            || (taskConfig.secondaryProgramUid != null && taskConfig.secondaryProgramUid == sourceProgramUid)
+                    ) &&
                     task.status != "defaulted" &&
                     task.status != "completed"
                     ){
                     val conditions = evaluateConditions(
                         conditions = taskConfig.completion,
                         teiUid = sourceTeiUid!!,
-                        programUid = sourceProgramUid
+                        programUid = sourceProgramUid,
+                        secondaryProgramUid = taskConfig.secondaryProgramUid
                     )
 
                     val progress = if (conditions.isNotEmpty()) {
