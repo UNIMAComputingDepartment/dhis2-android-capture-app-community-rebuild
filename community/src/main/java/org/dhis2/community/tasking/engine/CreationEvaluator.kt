@@ -1,11 +1,12 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
+import timber.log.Timber
 
 
 class CreationEvaluator(
@@ -23,7 +24,7 @@ class CreationEvaluator(
         eventUid: String? = null
     ) {
         if (sourceTeiUid == null) {
-            Log.e("CreationEvaluator", "sourceTeiUid is null")
+            Timber.e("CreationEvaluator: sourceTeiUid is null")
             return
         }
 
@@ -31,24 +32,11 @@ class CreationEvaluator(
         val configsForProgram =
             config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
         if (configsForProgram == null) {
-            Log.e("CreationEvaluator", "No tasking config found for program $targetProgramUid")
+            Timber.e("CreationEvaluator: No tasking config found for program $targetProgramUid")
             return
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            Log.d("TASK_DEBUG", "--- Checking Triggers for Task: ${taskConfig.name} ---")
-            
-            // Birth weight specific logging
-            if (taskConfig.name.contains("Birth Weight", ignoreCase = true) || 
-                taskConfig.name.contains("Normal", ignoreCase = true) ||
-                taskConfig.name.contains("Low Weight", ignoreCase = true)) {
-                Log.d("BIRTH_WEIGHT_DEBUG", "╔════════════════════════════════════════════╗")
-                Log.d("BIRTH_WEIGHT_DEBUG", "║ Evaluating: ${taskConfig.name}")
-                Log.d("BIRTH_WEIGHT_DEBUG", "╠════════════════════════════════════════════╣")
-                Log.d("BIRTH_WEIGHT_DEBUG", "║ Number of conditions: ${taskConfig.trigger.condition.size}")
-                Log.d("BIRTH_WEIGHT_DEBUG", "║ Combination type: ${taskConfig.trigger.combination}")
-                Log.d("BIRTH_WEIGHT_DEBUG", "╚════════════════════════════════════════════╝")
-            }
 
             val evaluationResults = evaluateConditions(
                 conditions = taskConfig.trigger,
@@ -58,8 +46,8 @@ class CreationEvaluator(
             )
 
             val isTriggered = when (taskConfig.trigger.combination) {
-                "AND" -> evaluationResults.all { it }
-                "OR" -> evaluationResults.any { it }
+                Constants.AND -> evaluationResults.all { it }
+                Constants.OR -> evaluationResults.any { it }
                 else -> evaluationResults.any { it }
             }
 
@@ -68,20 +56,6 @@ class CreationEvaluator(
                     targetProgramUid,
                     sourceTeiProgramEnrollment
             )
-
-            Log.d("TASK_DEBUG", "Final Decision for ${taskConfig.name} -> isTriggered: $isTriggered | isNotDuplicate: $isNotDuplicate")
-            
-            // Birth weight result logging
-            if (taskConfig.name.contains("Birth Weight", ignoreCase = true) || 
-                taskConfig.name.contains("Normal", ignoreCase = true) ||
-                taskConfig.name.contains("Low Weight", ignoreCase = true)) {
-                Log.d("BIRTH_WEIGHT_DEBUG", "Final Result: isTriggered=$isTriggered, isNotDuplicate=$isNotDuplicate")
-                if (isTriggered && isNotDuplicate) {
-                    Log.d("BIRTH_WEIGHT_DEBUG", "✓ TASK WILL BE CREATED")
-                } else {
-                    Log.d("BIRTH_WEIGHT_DEBUG", "✗ TASK CREATION SKIPPED - isTriggered: $isTriggered, isNotDuplicate: $isNotDuplicate")
-                }
-            }
 
             if (isTriggered && isNotDuplicate){
                 val res = createTaskForTei(
@@ -95,8 +69,7 @@ class CreationEvaluator(
                     sourceTeiProgramEnrollment,
                     eventUid
                 )
-                Log.d("TASK_DEBUG", "Task ${taskConfig.name} creation result: $res")
-                Log.d("BIRTH_WEIGHT_DEBUG", "Task creation completed: $res")
+                Timber.d("Task ${taskConfig.name} creation result: $res")
             }
         }
     }
@@ -109,11 +82,11 @@ class CreationEvaluator(
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status == "open" &&
+                    task.status == Constants.OPEN &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
         }
-        Log.d("TASK_DEBUG", "Task ${taskConfig.name} already exists: $taskAlreadyExist")
+        Timber.d("Task ${taskConfig.name} already exists: $taskAlreadyExist")
         return !taskAlreadyExist
     }
 
@@ -147,7 +120,7 @@ class CreationEvaluator(
                 programUid = targetProgramUid
             ).toString(),
             priority = taskConfig.priority,
-            status = "open",
+            status = Constants.OPEN,
             sourceEnrollmentUid = sourceTeiProgramEnrollment,
             sourceTeiUid = sourceTeiUid,
             iconNane = repository.getSourceProgramIcon(targetProgramUid),
