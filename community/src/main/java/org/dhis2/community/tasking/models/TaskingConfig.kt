@@ -42,7 +42,7 @@ data class TaskingConfig(
             val period: Period,
             val priority: String = "medium",
             val completion: Completion,
-            val singleIncomplete: Boolean,
+            val singleIncomplete: Boolean = false,
             val anchorDate: String
         ) {
             interface HasConditions {

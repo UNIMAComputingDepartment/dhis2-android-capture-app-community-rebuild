@@ -91,6 +91,12 @@ abstract class TaskingEvaluator(
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs > rhs
                 }
+
+                Constants.GREATER_THAN_OR_EQUALS -> {
+                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
+                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    rhs != null && lhs != null && lhs >= rhs
+                }
                 else -> false
             }
         }
@@ -156,8 +162,6 @@ abstract class TaskingEvaluator(
                 val count = repository.countEventsByDataValue(programUid, reference.uid, enrollment.uid(), stageUid, expectedValue)
                 count.toString()
             }
-
-            "static" -> reference.uid
             else -> null
         }
     }

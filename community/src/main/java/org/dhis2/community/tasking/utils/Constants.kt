@@ -17,6 +17,8 @@ object Constants {
     const val NULL = "NULL"
     const val GREATER_THAN = "GREATER_THAN"
 
+    const val GREATER_THAN_OR_EQUALS = "GREATER_THAN_OR_EQUALS"
+
 
     const val  EVENT_DATA = "eventData"
     const val  TEI_ATTRIBUTE = "teiAttribute"
