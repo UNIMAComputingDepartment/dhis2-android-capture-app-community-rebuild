@@ -14,7 +14,7 @@ data class Task(
     val teiTertiary: String,
     val dueDate: String,
     val priority: String,
-    val status: String = "OPEN",
+    val status: String,
     val iconNane : String?,
     val progress: Float = 0.7f
 )

@@ -2,6 +2,7 @@ package org.dhis2.community.tasking.engine
 
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import timber.log.Timber
 import java.util.Date
@@ -30,7 +31,7 @@ class CompletionEvaluator(
 
         tasks.filter{(it.sourceProgramUid == sourceProgramUid ||
                 (configForPg.any {it.secondaryProgramUid == sourceProgramUid} ))
-                && it.status == "open"
+                && it.status == Constants.OPEN
         }
             .forEach { task ->
 
@@ -43,8 +44,8 @@ class CompletionEvaluator(
                     (task.sourceEnrollmentUid == sourceProgramEnrollmentUid
                             || (taskConfig.secondaryProgramUid != null && taskConfig.secondaryProgramUid == sourceProgramUid)
                     ) &&
-                    task.status != "defaulted" &&
-                    task.status != "completed"
+                    task.status != Constants.DEFAULTED &&
+                    task.status != Constants.COMPLETED
                     ){
                     val conditions = evaluateConditions(
                         conditions = taskConfig.completion,
@@ -52,6 +53,12 @@ class CompletionEvaluator(
                         programUid = sourceProgramUid,
                         secondaryProgramUid = taskConfig.secondaryProgramUid
                     )
+
+                    val isComplete = when (taskConfig.completion.combination){
+                        Constants.AND -> conditions.all {it}
+                        Constants.OR -> conditions.any {it}
+                        else -> conditions.any {it}
+                    }
 
                     val progress = if (conditions.isNotEmpty()) {
                         conditions.filter { it }.size.toFloat() / conditions.size.toFloat()
@@ -63,10 +70,10 @@ class CompletionEvaluator(
                         task.teiUid
                     )
 
-                    if(conditions.all{it}) {
+                    if(isComplete) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
-                            "completed",
+                            Constants.COMPLETED,
                             task.teiUid
                         )
 

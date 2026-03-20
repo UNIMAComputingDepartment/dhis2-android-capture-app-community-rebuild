@@ -2,6 +2,7 @@ package org.dhis2.community.tasking.engine
 
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import java.util.Date
 
@@ -23,19 +24,38 @@ class DefaultingEvaluator(
 
         tasks.forEach { task ->
             if (eventUid == task.sourceEventUid &&
-                task.status == "open" &&
+                task.status == Constants.OPEN &&
                 task.sourceTeiUid == sourceTeiUid
             ) {
                 val taskTriggerEventUid = eventUid
-                val taskConfigs = programTaskConfig.taskConfigs.firstOrNull { it.name == task.name } ?: return@forEach
+                val taskConfigs = programTaskConfig.taskConfigs
+                    .firstOrNull { it.name == task.name }
+                    ?: return@forEach
 
-                if (!evaluateConditions(
+               /* if (!evaluateConditions(
                         conditions = taskConfigs.trigger,
                         teiUid = sourceTeiUid,
                         programUid = programUid,
                         eventUid = taskTriggerEventUid,
                     ).all { it }
                 ) {
+                    defaultTask(task)
+                }*/
+
+                val results = evaluateConditions(
+                    conditions = taskConfigs.trigger,
+                    teiUid = sourceTeiUid,
+                    programUid = programUid,
+                    eventUid = taskTriggerEventUid
+                )
+
+                val isTriggered = when(taskConfigs.trigger.combination){
+                    Constants.AND -> results.all {it}
+                    Constants.OR -> results.any {it}
+                    else -> results.any {it}
+                }
+
+                if (!isTriggered){
                     defaultTask(task)
                 }
             }
@@ -60,7 +80,7 @@ class DefaultingEvaluator(
 
         repository.updateTaskAttrValue(
             repository.taskStatusAttributeUid,
-            "defaulted",
+            Constants.DEFAULTED,
             task.teiUid
         )
         repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
@@ -79,7 +99,7 @@ class DefaultingEvaluator(
 
     private fun TaskingRepository.getTasksForTei(teiUid: String): List<Task> {
         return this.getAllTasks()
-            .filter { it.sourceTeiUid == teiUid && it.status != "completed" && it.status != "defaulted" }
+            .filter { it.sourceTeiUid == teiUid && it.status != Constants.COMPLETED && it.status != Constants.DEFAULTED }
     }
 
     fun periodicCheck() {

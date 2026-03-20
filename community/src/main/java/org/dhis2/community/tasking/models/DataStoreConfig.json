@@ -10,6 +10,46 @@
               {
                 "lhs": {
                   "ref": "eventData",
+                  "uid": "ggEeifB2HgC"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Woman Visited Facility"
+                }
+              }
+            ]
+          },
+          "description": "After Birth, Danger Sign Follow up",
+          "name": "CBMNC After Birth Danger Sign Follow-up",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 2
+          },
+          "priority": "high",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "LAfiAKu70JZ"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "true"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
                   "uid": "IFLzAItumUj"
                 },
                 "op": "NOT_NULL",
@@ -35,6 +75,266 @@
                 "lhs": {
                   "ref": "eventData",
                   "uid": "QP43M2iqn5W"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "true"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "combination" : "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "op": "GREATER_THAN",
+                "rhs": {
+                  "value": 1
+                }
+              }
+            ]
+          },
+          "description": "ANC Second Visit - visit before delivery",
+          "name": "CBMNC ANC Second Scheduled Visit",
+          "period": {
+            "anchor": {
+              "ref": "DIFF",
+              "uid": "yZqkFqASNGk"
+            },
+            "dueInDays": 60
+          },
+          "priority": "low",
+          "trigger": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "anchorDate": "",
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "attribute",
+                  "uid": "kgREvBO1JEe"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": ""
+                }
+              }
+            ]
+          },
+          "description": "",
+          "name": "Enroll Neonate into CBMNC - Neonatal Program",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 1
+          },
+          "priority": "medium",
+          "secondaryProgramUid": "J0EYs4wVHDQ",
+          "singleIncomplete": true,
+          "taskTypeId": "Enroll Neonate into CBMNC - Neonatal Program",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "fWG6KdfkJWG"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Q3DzuJsu4FN"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "LHmB4BIhMl4"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "jmeSMUywdfR"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "LTIE8lv5JEL"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "yH0ZVXmKSto"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "live_birth"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "anchorDate": "",
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          },
+          "description": "",
+          "name": "Woman Delivery Follow Up",
+          "period": {
+            "anchor": {
+              "ref": "eventData",
+              "uid": "Ws1LwPpV4Xg"
+            },
+            "dueInDays": 1
+          },
+          "priority": "medium",
+          "singleIncomplete": true,
+          "taskTypeId": "Woman Delivery Follow Up",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "y5alwOfRQDT"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": ""
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc",
+        "teiTertiaryAttribute": "HYlWwg511tF"
+      }
+    },
+    {
+      "programName": "CBMNC - Neonatal Program",
+      "programUid": "J0EYs4wVHDQ",
+      "taskConfigs": [
+        {
+          "completion": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "XDdiFVbF1ha"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Woman Visited Facility"
+                }
+              }
+            ]
+          },
+          "description": "Neonate Danger Sign Follow up",
+          "name": "Neonate Danger Sign Follow-up",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 2
+          },
+          "priority": "high",
+          "trigger": {
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "NFsBwFwvpFF"
                 },
                 "op": "EQUALS",
                 "rhs": {
@@ -820,6 +1120,38 @@
         "teiPrimaryAttribute": "X5UOKXdwvbI",
         "teiSecondaryAttribute": "dkFbZ4zHZZc",
         "teiTertiaryAttribute": "HYlWwg511tF"
+      }
+    },
+    {
+      "programName": "",
+      "programUid": "yzT1RFPDbSL",
+      "taskConfigs": [
+        {
+          "anchorDate": "",
+          "completion": {
+            "condition": []
+          },
+          "description": "",
+          "name": "",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 1
+          },
+          "priority": "medium",
+          "singleIncomplete": false,
+          "taskTypeId": "",
+          "trigger": {
+            "condition": []
+          }
+        }
+      ],
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiSecondaryAttribute": "UZOaWSmTFj6",
+        "teiTertiaryAttribute": "EDjTF6dn75s"
       }
     }
   ],
