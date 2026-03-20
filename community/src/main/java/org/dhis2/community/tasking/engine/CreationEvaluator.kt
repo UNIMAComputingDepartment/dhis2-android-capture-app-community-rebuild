@@ -82,9 +82,10 @@ class CreationEvaluator(
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status == Constants.OPEN &&
+                    ((task.status == Constants.OPEN) || (taskConfig.singleIncomplete && task.status == Constants.COMPLETED)) &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
+
         }
         Timber.d("Task ${taskConfig.name} already exists: $taskAlreadyExist")
         return !taskAlreadyExist

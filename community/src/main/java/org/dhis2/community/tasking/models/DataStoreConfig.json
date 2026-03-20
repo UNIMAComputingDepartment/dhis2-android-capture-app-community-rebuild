@@ -20,7 +20,7 @@
             ]
           },
           "description": "After Birth, Danger Sign Follow up",
-          "name": "CBMNC After Birth Danger Sign Follow-up",
+          "name": "PNC Danger Sign Follow-up",
           "period": {
             "anchor": {
               "ref": "",
@@ -60,7 +60,7 @@
             ]
           },
           "description": "Trigger a follow-up task if danger sign is YES",
-          "name": "CBMNC Danger Sign Follow-up",
+          "name": "ANC Danger Sign Follow-up",
           "period": {
             "anchor": {
               "ref": "",
@@ -86,7 +86,7 @@
         },
         {
           "completion": {
-            "combination" : "AND",
+            "combination": "AND",
             "condition": [
               {
                 "lhs": {
@@ -111,10 +111,10 @@
             ]
           },
           "description": "ANC Second Visit - visit before delivery",
-          "name": "CBMNC ANC Second Scheduled Visit",
+          "name": "ANC Second Scheduled Visit",
           "period": {
             "anchor": {
-              "ref": "DIFF",
+              "ref": "PAST",
               "uid": "yZqkFqASNGk"
             },
             "dueInDays": 60
@@ -138,7 +138,7 @@
                   "ref": "eventData",
                   "uid": "K6TwbtvFNHg"
                 },
-                "op": "EQUALS",
+                "op": "NUM_EQUAL",
                 "rhs": {
                   "value": 1
                 }
@@ -257,7 +257,7 @@
             ]
           },
           "description": "",
-          "name": "Woman Delivery Follow Up",
+          "name": "Delivery Follow Up",
           "period": {
             "anchor": {
               "ref": "eventData",
@@ -286,6 +286,127 @@
                   "uid": "ji4ZJk9B7sv"
                 },
                 "op": "NULL",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "anchorDate": "",
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "op": "NUM_EQUAL",
+                "rhs": {
+                  "value": 1
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          },
+          "description": "",
+          "name": "ANC First Sheduled Visit",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 1
+          },
+          "priority": "high",
+          "taskTypeId": "Sheduled ANC First Visit",
+          "trigger": {
+            "combination": "OR",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": ""
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": ""
+                }
+              }
+            ]
+          }
+        },
+        {
+          "anchorDate": "lVHn7c10EaS",
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventsCount",
+                  "type": "MvNwuuB40gF",
+                  "uid": "Wri2Zw6Qnyo",
+                  "value": "scheduled"
+                },
+                "op": "GREATER_THAN_OR_EQUALS",
+                "rhs": {
+                  "value": 2
+                }
+              }
+            ]
+          },
+          "description": "CHW second PNC visit due 3 days after discharge; complete when there are 2 scheduled 'After Birth' events (count >= 2).",
+          "name": "After Birth Follow Up",
+          "period": {
+            "anchor": {
+              "ref": "eventData",
+              "type": "llP45OWGSGb",
+              "uid": "lVHn7c10EaS"
+            },
+            "dueInDays": 3
+          },
+          "priority": "high",
+          "singleIncomplete": true,
+          "trigger": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "NUM_EQUAL",
+                "rhs": {
+                  "value": 1
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
+                },
+                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
@@ -538,23 +659,33 @@
               {
                 "lhs": { "ref": "eventData", "uid": "XDdiFVbF1ha" },
                 "op": "NOT_NULL",
-                "rhs": { "value": "Woman Visited Facility" }
+                "rhs": {
+                  "value": "Woman Visited Facility"
+                }
               }
             ]
           },
           "description": "Neonate Danger Sign Follow up",
           "name": "Neonate Danger Sign Follow-up",
           "period": {
-            "anchor": { "ref": "", "uid": "" },
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
             "dueInDays": 2
           },
           "priority": "high",
           "trigger": {
             "condition": [
               {
-                "lhs": { "ref": "eventData", "uid": "NFsBwFwvpFF" },
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "NFsBwFwvpFF"
+                },
                 "op": "EQUALS",
-                "rhs": { "value": "true" }
+                "rhs": {
+                  "value": "true"
+                }
               }
             ]
           }
@@ -1390,4 +1521,3 @@
     }
   ]
 }
-

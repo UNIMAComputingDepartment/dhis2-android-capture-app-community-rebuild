@@ -42,11 +42,9 @@ data class TaskingConfig(
             val period: Period,
             val priority: String = "medium",
             val completion: Completion,
-            val singleIncomplete: Boolean,
-            val anchorDate: String,
-            val secondaryProgramUid: String?
+            val singleIncomplete: Boolean = false,
+            val anchorDate: String
         ) {
-
             interface HasConditions {
                 val condition: List<Condition>
             }
