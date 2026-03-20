@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
+import org.dhis2.community.tasking.utils.Constants
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment
@@ -239,12 +240,12 @@ class TaskingRepository(
             teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
             teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
             dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
-            priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
+            priority = tei.getAttributeValue(programConfig?.priorityUid) ?: Constants.MEDIUM,
             iconNane = getSourceProgramIcon(
                 sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)
                     ?: "")
             ),
-            status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
+            status = tei.getAttributeValue(programConfig?.statusUid) ?: Constants.OPEN,
             sourceEventUid = tei.getAttributeValue(programConfig?.taskSourceEventUid) ?: "",
             progress = tei.getAttributeValue(programConfig?.taskProgressUid)?.toFloatOrNull() ?: 0f
         )
@@ -307,7 +308,7 @@ class TaskingRepository(
         }
 
         val taskProgramConfig = this.getTaskingConfig().taskProgramConfig.firstOrNull()
-        this.updateTaskAttrValue(taskProgramConfig?.statusUid ?: "", "open", newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.statusUid ?: "", Constants.OPEN, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.taskNameUid ?: "", task.name, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.priorityUid ?: "", task.priority, newTeiUid)
         this.updateTaskAttrValue(taskProgramConfig?.dueDateUid ?: "", task.dueDate, newTeiUid)

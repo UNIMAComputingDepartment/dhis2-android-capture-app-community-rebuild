@@ -2,6 +2,7 @@ package org.dhis2.community.tasking.engine
 
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import timber.log.Timber
 import java.util.Date
@@ -28,7 +29,7 @@ class CompletionEvaluator(
         val taskProgramUid = taskConf.taskProgramConfig.firstOrNull()?.programUid
 
 
-        tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == "open"}
+        tasks.filter{it.sourceProgramUid == sourceProgramUid && it.status == Constants.OPEN}
             .forEach { task ->
 
                 val taskConfig = configForPg.firstOrNull { it.name == task.name }
@@ -38,8 +39,8 @@ class CompletionEvaluator(
 
                 if (
                     task.sourceEnrollmentUid == sourceProgramEnrollmentUid &&
-                    task.status != "defaulted" &&
-                    task.status != "completed"
+                    task.status != Constants.DEFAULTED &&
+                    task.status != Constants.COMPLETED
                     ){
                     val conditions = evaluateConditions(
                         conditions = taskConfig.completion,
@@ -48,8 +49,8 @@ class CompletionEvaluator(
                     )
 
                     val isComplete = when (taskConfig.completion.combination){
-                        "AND" -> conditions.all {it}
-                        "OR" -> conditions.any {it}
+                        Constants.AND -> conditions.all {it}
+                        Constants.OR -> conditions.any {it}
                         else -> conditions.any {it}
                     }
 
@@ -66,7 +67,7 @@ class CompletionEvaluator(
                     if(isComplete) {
                         repository.updateTaskAttrValue(
                             repository.taskStatusAttributeUid,
-                            "completed",
+                            Constants.COMPLETED,
                             task.teiUid
                         )
 

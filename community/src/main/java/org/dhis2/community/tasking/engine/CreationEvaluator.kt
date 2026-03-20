@@ -5,6 +5,7 @@ import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import timber.log.Timber
 
 
@@ -45,8 +46,8 @@ class CreationEvaluator(
             )
 
             val isTriggered = when (taskConfig.trigger.combination) {
-                "AND" -> evaluationResults.all { it }
-                "OR" -> evaluationResults.any { it }
+                Constants.AND -> evaluationResults.all { it }
+                Constants.OR -> evaluationResults.any { it }
                 else -> evaluationResults.any { it }
             }
 
@@ -81,7 +82,7 @@ class CreationEvaluator(
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status == "open" &&
+                    task.status == Constants.OPEN &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
         }
@@ -119,7 +120,7 @@ class CreationEvaluator(
                 programUid = targetProgramUid
             ).toString(),
             priority = taskConfig.priority,
-            status = "open",
+            status = Constants.OPEN,
             sourceEnrollmentUid = sourceTeiProgramEnrollment,
             sourceTeiUid = sourceTeiUid,
             iconNane = repository.getSourceProgramIcon(targetProgramUid),

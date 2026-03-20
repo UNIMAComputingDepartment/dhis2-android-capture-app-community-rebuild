@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -80,12 +81,12 @@ abstract class TaskingEvaluator(
             val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
 
             when (cond.op) {
-                "EQUALS" -> rhsValue == lhsValue
-                "NUM_EQUAL" -> rhsValue?.toDouble() == lhsValue?.toDouble()
-                "NOT_EQUALS" -> rhsValue != lhsValue
-                "NOT_NULL" -> !lhsValue.isNullOrEmpty()
-                "NULL" -> lhsValue.isNullOrEmpty()
-                "GREATER_THAN" -> {
+                Constants.EQUALS -> rhsValue == lhsValue
+                Constants.NUM_EQUALS -> rhsValue?.toDouble() == lhsValue?.toDouble()
+                Constants.NOT_EQUAL -> rhsValue != lhsValue
+                Constants.NOT_NULL -> !lhsValue.isNullOrEmpty()
+                Constants.NULL -> lhsValue.isNullOrEmpty()
+                Constants.GREATER_THAN -> {
                     val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs > rhs
@@ -126,12 +127,12 @@ abstract class TaskingEvaluator(
             return reference.value.toString()
 
         return when (reference.ref) {
-            "teiAttribute" -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+            Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
                 .byTrackedEntityInstance().eq(teiUid)
                 .byTrackedEntityAttribute().eq(reference.uid)
                 .one().blockingGet()?.value()
 
-            "eventData" -> {
+            Constants.EVENT_DATA -> {
                 val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
@@ -139,7 +140,7 @@ abstract class TaskingEvaluator(
                     ?.value()
             }
 
-            "allEventsData" -> {
+            Constants.ALL_EVENTS_DATA -> {
                 val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
@@ -147,7 +148,7 @@ abstract class TaskingEvaluator(
                     ?.value()
             }
 
-            "static" -> reference.uid
+            Constants.STATIC -> reference.uid
             else -> null
         }
     }
