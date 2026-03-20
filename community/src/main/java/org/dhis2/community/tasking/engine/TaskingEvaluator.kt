@@ -149,6 +149,15 @@ abstract class TaskingEvaluator(
             }
 
             Constants.STATIC -> reference.uid
+            "eventsCount" -> {
+                // reference.value can be used to filter by a specific data value
+                val stageUid = reference.type
+                val expectedValue = reference.value?.toString()
+                val count = repository.countEventsByDataValue(programUid, reference.uid, enrollment.uid(), stageUid, expectedValue)
+                count.toString()
+            }
+
+            "static" -> reference.uid
             else -> null
         }
     }
