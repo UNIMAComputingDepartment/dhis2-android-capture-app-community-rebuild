@@ -35,12 +35,23 @@ class CreationEvaluator (
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            val isTriggered = evaluateConditions(
+            val results = evaluateConditions(
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
-                targetProgramUid,
-                eventUid
-            ).any { it }
+                programUid = targetProgramUid,
+                eventUid = eventUid
+            )
+
+            // Prefer the new 'combination' field (AND/OR). Fallback to legacy 'match' values (ALL/ANY).
+            val combination = taskConfig.trigger.combination?.uppercase()
+            val matchLegacy = taskConfig.trigger.match?.uppercase()
+
+            val isTriggered = when {
+                combination == "AND" -> results.all { it }
+                combination == "OR" -> results.any { it }
+                matchLegacy == "ALL" -> results.all { it }
+                else -> results.any { it }
+            }
 
             if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
                 ) {

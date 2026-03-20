@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.event.Event
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -52,10 +51,10 @@ abstract class TaskingEvaluator(
             val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
 
             when (cond.op) {
-                "EQUALS" -> rhsValue == lhsValue
+                "EQUALS" -> rhsValue?.toDoubleOrNull() == lhsValue?.toDoubleOrNull()
                 "NOT_EQUALS" -> rhsValue != lhsValue
-                "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue >= rhsValue
-                "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue <= rhsValue
+                "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue.toDouble() >= rhsValue.toDouble()
+                "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue.toDouble() <= rhsValue.toDouble()
                 "NOT_NULL" -> !lhsValue.isNullOrEmpty()
                 "NULL" -> lhsValue.isNullOrEmpty()
                 else -> false
@@ -113,6 +112,14 @@ abstract class TaskingEvaluator(
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
                     ?.value()
+            }
+
+            "eventsCount" -> {
+                // reference.value can be used to filter by a specific data value
+                val stageUid = reference.type
+                val expectedValue = reference.value?.toString()
+                val count = repository.countEventsByDataValue(programUid, reference.uid, enrollment.uid(), stageUid, expectedValue)
+                count.toString()
             }
 
             "static" -> reference.uid
