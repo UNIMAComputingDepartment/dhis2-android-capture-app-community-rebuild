@@ -152,7 +152,7 @@
             "condition": [
               {
                 "lhs": {
-                  "ref": "attribute",
+                  "ref": "teiAttribute",
                   "uid": "kgREvBO1JEe"
                 },
                 "op": "NOT_NULL",
@@ -308,8 +308,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "EQUALS", "rhs": { "value": "1" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -317,7 +317,7 @@
           "description": "First home visit for newborn 2500g and above on day 1 after discharge",
           "name": "Normal Birth Weight First Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 1
           },
           "priority": "high",
@@ -326,8 +326,8 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } }
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } }
             ]
           }
         },
@@ -335,8 +335,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -344,7 +344,7 @@
           "description": "Second home visit for newborn 2500g and above on day 3 after discharge",
           "name": "Normal Birth Weight Second Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 3
           },
           "priority": "high",
@@ -353,9 +353,9 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "1" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
           }
@@ -364,8 +364,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -373,7 +373,7 @@
           "description": "Third home visit for newborn 2500g and above on day 8 after discharge",
           "name": "Normal Birth Weight Third Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 8
           },
           "priority": "high",
@@ -382,9 +382,9 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
           }
@@ -393,8 +393,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "EQUALS", "rhs": { "value": "1" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -402,7 +402,7 @@
           "description": "First home visit for infant <2500g on day 1 after discharge",
           "name": "Low Birth Weight First Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 1
           },
           "priority": "high",
@@ -411,8 +411,8 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } }
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } }
             ]
           }
         },
@@ -420,8 +420,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -429,7 +429,7 @@
           "description": "Second home visit for infant <2500g on day 2 after discharge",
           "name": "Low Birth Weight Second Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 2
           },
           "priority": "high",
@@ -438,8 +438,37 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "1" } },
+              { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
+            ]
+          }
+        },
+        {
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
+              { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
+            ]
+          },
+          "description": "Third home visit for infant <2500g on day 3 after discharge",
+          "name": "Low Birth Weight Third Visit",
+          "period": {
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
+            "dueInDays": 3
+          },
+          "priority": "high",
+          "singleIncomplete": true,
+          "taskTypeId": "Low Birth Weight Third Visit",
+          "trigger": {
+            "combination": "AND",
+            "condition": [
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "2" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -449,37 +478,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
-              { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
-            ]
-          },
-          "description": "Third home visit for infant <2500g on day 3 after discharge",
-          "name": "Low Birth Weight Third Visit",
-          "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
-            "dueInDays": 3
-          },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight Third Visit",
-          "trigger": {
-            "combination": "AND",
-            "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
-              { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
-            ]
-          }
-        },
-        {
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "4" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -487,7 +487,7 @@
           "description": "Fourth home visit for infant <2500g on day 8 after discharge",
           "name": "Low Birth Weight Fourth Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 8
           },
           "priority": "high",
@@ -496,9 +496,9 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "4" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "3" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
           }
@@ -507,8 +507,8 @@
           "completion": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
               { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "5" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
@@ -516,7 +516,7 @@
           "description": "Fifth home visit for infant <2500g on day 14 after discharge",
           "name": "Low Birth Weight Fifth Visit",
           "period": {
-            "anchor": { "ref": "attribute", "uid": "Ws1LwPpV4Xg" },
+            "anchor": { "ref": "teiAttribute", "uid": "Ws1LwPpV4Xg" },
             "dueInDays": 14
           },
           "priority": "high",
@@ -525,9 +525,9 @@
           "trigger": {
             "combination": "AND",
             "condition": [
-              { "lhs": { "ref": "attribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
-              { "lhs": { "ref": "attribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": 2500 } },
-              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "5" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "NMdsnU5SaSF" }, "op": "NOT_EQUALS", "rhs": { "value": "2500_to_6000" } },
+              { "lhs": { "ref": "teiAttribute", "uid": "JSUBrlqki6J" }, "op": "LESS_THAN", "rhs": { "value": "2500" } },
+              { "lhs": { "ref": "eventData", "uid": "vGBbxUdRFlG" }, "op": "GREATER_THAN_OR_EQUALS", "rhs": { "value": "4" } },
               { "lhs": { "ref": "eventData", "uid": "Ybo4mhfpt9O" }, "op": "EQUALS", "rhs": { "value": "1" } }
             ]
           }
@@ -1390,3 +1390,4 @@
     }
   ]
 }
+
