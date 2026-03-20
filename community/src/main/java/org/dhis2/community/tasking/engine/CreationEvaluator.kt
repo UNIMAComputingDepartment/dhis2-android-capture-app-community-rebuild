@@ -5,12 +5,13 @@ import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import timber.log.Timber
 
 
-class CreationEvaluator (
+class CreationEvaluator(
     private val repository: TaskingRepository
-) : TaskingEvaluator(repository){
+) : TaskingEvaluator(repository) {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForCreation(
@@ -28,33 +29,35 @@ class CreationEvaluator (
         }
 
         val config = repository.getTaskingConfig()
-        val configsForProgram = config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
+        val configsForProgram =
+            config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
         if (configsForProgram == null) {
             Timber.e("CreationEvaluator: No tasking config found for program $targetProgramUid")
             return
         }
 
         configsForProgram.taskConfigs.forEach { taskConfig ->
-            val results = evaluateConditions(
+
+            val evaluationResults = evaluateConditions(
                 conditions = taskConfig.trigger,
                 teiUid = sourceTeiUid,
-                programUid = targetProgramUid,
-                eventUid = eventUid
+                targetProgramUid,
+                eventUid
             )
 
-            // Prefer the new 'combination' field (AND/OR). Fallback to legacy 'match' values (ALL/ANY).
-            val combination = taskConfig.trigger.combination?.uppercase()
-            val matchLegacy = taskConfig.trigger.match?.uppercase()
-
-            val isTriggered = when {
-                combination == "AND" -> results.all { it }
-                combination == "OR" -> results.any { it }
-                matchLegacy == "ALL" -> results.all { it }
-                else -> results.any { it }
+            val isTriggered = when (taskConfig.trigger.combination) {
+                Constants.AND -> evaluationResults.all { it }
+                Constants.OR -> evaluationResults.any { it }
+                else -> evaluationResults.any { it }
             }
 
-            if (isTriggered && notDuplicateTask(taskConfig, targetProgramUid, sourceTeiProgramEnrollment)
-                ) {
+            val isNotDuplicate = notDuplicateTask(
+                    taskConfig,
+                    targetProgramUid,
+                    sourceTeiProgramEnrollment
+            )
+
+            if (isTriggered && isNotDuplicate){
                 val res = createTaskForTei(
                     taskConfig,
                     configsForProgram.teiView,
@@ -79,7 +82,7 @@ class CreationEvaluator (
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status == "open" &&
+                    task.status == Constants.OPEN &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
         }
@@ -111,9 +114,13 @@ class CreationEvaluator (
             teiPrimary = primary,
             teiSecondary = secondary,
             teiTertiary = tertiary,
-            dueDate = calculateDueDate(taskConfig, sourceTeiUid).toString(),
+            dueDate = calculateDueDate(
+                taskConfig,
+                sourceTeiUid,
+                programUid = targetProgramUid
+            ).toString(),
             priority = taskConfig.priority,
-            status = "OPEN",
+            status = Constants.OPEN,
             sourceEnrollmentUid = sourceTeiProgramEnrollment,
             sourceTeiUid = sourceTeiUid,
             iconNane = repository.getSourceProgramIcon(targetProgramUid),

@@ -51,6 +51,7 @@ import org.dhis2.usescases.development.DevelopmentActivity
 import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.dhis2.usescases.login.LoginActivity
 import org.dhis2.usescases.main.ui.NewVersionDialog
+import org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity
 import org.dhis2.utils.analytics.CLICK
 import org.dhis2.utils.analytics.CLOSE_SESSION
 import org.dhis2.utils.customviews.navigationbar.NavigationPage
@@ -60,6 +61,9 @@ import org.dhis2.utils.granularsync.SyncStatusDialog
 import org.dhis2.utils.session.PIN_DIALOG_TAG
 import org.dhis2.utils.session.PinDialog
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
+import timber.log.Timber
+import org.dhis2.community.tasking.notifications.TaskReminderScheduler
+import org.dhis2.community.tasking.notifications.TaskReminderWorkScheduler
 import java.io.File
 import javax.inject.Inject
 
@@ -198,7 +202,50 @@ class MainActivity :
             ) ?: false,
         )
 
-        val openScreen = intent.getStringExtra(FRAGMENT)
+        // Extract screen name from FRAGMENT extra or from deep link URI
+        var openScreen = intent.getStringExtra(FRAGMENT)
+
+        if (openScreen == null && intent.data != null) {
+            // Handle deep links:
+            // 1. app://tasks/reminders?timestamp=... -> open Tasks tab
+            // 2. app://tei/{sourceTeiUid}/{sourceProgramUid}/{sourceEnrollmentUid} -> open TEI dashboard
+            val uri = intent.data
+            when {
+                uri?.scheme == "app" && uri.host == "tasks" -> {
+                    openScreen = MainNavigator.MainScreen.TASKS.name
+                }
+                uri?.scheme == "app" && uri.host == "tei" -> {
+                    // Extract TEI UIDs from path: /teiUid/programUid/enrollmentUid
+                    val pathSegments = uri.pathSegments
+                    if (pathSegments.size >= 3) {
+                        val teiUid = pathSegments[0]
+                        val programUid = pathSegments[1]
+                        val enrollmentUid = pathSegments[2]
+
+                        Timber.d(
+                            "MainActivity: Handling TEI deep link - TEI: %s, Program: %s, Enrollment: %s",
+                            teiUid, programUid, enrollmentUid
+                        )
+
+                        // Navigate to Tasks tab FIRST to establish proper back stack
+                        // Then launch TEI dashboard from there
+                        changeFragment(mainNavigator.currentNavigationViewItemId(MainNavigator.MainScreen.TASKS.name))
+
+                        // Now launch TEI dashboard with proper back stack
+                        val teiDashboardIntent = Intent(this, TeiDashboardMobileActivity::class.java).apply {
+                            // Use CLEAR_TOP to maintain MainActivity in back stack
+                            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra("TEI_UID", teiUid)
+                            putExtra("PROGRAM_UID", programUid)
+                            putExtra("ENROLLMENT_UID", enrollmentUid)
+                        }
+                        startActivity(teiDashboardIntent)
+                        // Back button will now go to MainActivity with Tasks tab visible
+                        return
+                    }
+                }
+            }
+        }
 
         when {
             openScreen != null || restoreScreenName != null -> {
@@ -234,11 +281,21 @@ class MainActivity :
 
         checkNotificationPermission()
 
+        // Schedule daily task reminder notifications (7 AM Malawi time)
+        // This ensures notifications fire even if app isn't open
+        try {
+            TaskReminderScheduler.scheduleTaskReminder(this)
+            // Also schedule WorkManager as backup for maximum reliability
+            TaskReminderWorkScheduler.scheduleTaskReminderWork(this)
+        } catch (e: Exception) {
+            Timber.w(e, "Failed to schedule task reminders in MainActivity")
+        }
+
         registerOnBackPressedCallback()
     }
 
     private fun checkNotificationPermission() {
-        if (!hasPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) and
+        if (!hasPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS)) &&
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         ) {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)

@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -30,7 +28,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,9 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -70,7 +65,6 @@ import org.hisp.dhis.mobile.ui.designsystem.component.MetadataAvatarSize
 import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2TextStyle
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
-import org.hisp.dhis.mobile.ui.designsystem.theme.dropShadow
 import org.hisp.dhis.mobile.ui.designsystem.theme.getTextStyle
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -92,6 +86,7 @@ fun TaskItem(
     task: TaskingUiModel,
     onTaskClick: (TaskingUiModel) -> Unit,
     showProgramName: Boolean = true,
+    showPatientName: Boolean = true,  // Changed: true = show patient name (list view), false = hide (grouped view)
 ) {
     // State management
     var expanded by remember { mutableStateOf(false) }
@@ -193,19 +188,25 @@ fun TaskItem(
                         verticalAlignment = Alignment.Top
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            val person = task.teiPrimary.takeIf { it.isNotBlank() }
                             val taskName = task.taskName.ifBlank { "Unnamed task" }
 
+                            // In list view, show patient name before task name
+                            // In grouped view (showPatientName = true means don't show), only show task name
                             val annotated = buildAnnotatedString {
-                                person?.let {
-                                    withStyle(style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).toSpanStyle().copy(
-                                        fontSize = taskNameTextSize,
-                                        color = TextColor.OnPrimaryContainer
-                                    )) {
-                                        append(it)
-                                        append(" • ")
+                                // Show patient name only when showPatientName = true (list view)
+                                if (showPatientName) {
+                                    // Show patient name with interpunct
+                                    task.teiPrimary.takeIf { it.isNotBlank() }?.let {
+                                        withStyle(style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).toSpanStyle().copy(
+                                            fontSize = taskNameTextSize,
+                                            color = TextColor.OnPrimaryContainer
+                                        )) {
+                                            append(it)
+                                            append(" • ")
+                                        }
                                     }
                                 }
+                                // Always show task name
                                 withStyle(style = getTextStyle(DHIS2TextStyle.TITLE_LARGE).toSpanStyle().copy(
                                     fontSize = taskNameTextSize,
                                     color = TextColor.OnPrimaryContainer
@@ -404,7 +405,7 @@ private fun DetailRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = "$label",
+            text = label,
             style = getTextStyle(DHIS2TextStyle.BODY_MEDIUM).copy(fontSize = labelTextSize, color = TextColor.OnSurfaceLight),
         )
         Text(

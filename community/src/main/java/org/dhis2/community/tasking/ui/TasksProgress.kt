@@ -36,11 +36,11 @@ fun TaskProgressSection(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 0.dp),
+            .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Column(modifier = Modifier.padding(4.dp)) {
+        Column(modifier = Modifier.padding(2.dp)) {
             // Header row: Title + compact summary
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -48,7 +48,7 @@ fun TaskProgressSection(
             ) {
                 Text(
                     text = "Task Progress",
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextColor.OnSurface
                 )
@@ -59,7 +59,7 @@ fun TaskProgressSection(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = "$completedCount of $totalCount completed ($completionPercentInt%)",
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Normal,
                         color = TextColor.OnSurface
                     )

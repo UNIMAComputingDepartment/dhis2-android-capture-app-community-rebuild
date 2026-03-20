@@ -3,6 +3,7 @@ package org.dhis2.mobile.login.accounts.data.repository
 import org.dhis2.mobile.commons.providers.PreferenceProvider
 import org.dhis2.mobile.login.BuildConfig
 import org.dhis2.mobile.login.accounts.data.credentials.defaultTestingCredentials
+import org.dhis2.mobile.login.accounts.data.credentials.productionDefaultCredentials
 import org.dhis2.mobile.login.accounts.data.credentials.trainingTestingCredentials
 import org.dhis2.mobile.login.accounts.domain.model.AccountModel
 import org.dhis2.mobile.login.main.data.PREF_URLS
@@ -25,7 +26,8 @@ class AccountRepositoryImpl(
             } else if (BuildConfig.FLAVOR == "dhis2Training") {
                 trainingTestingCredentials
             } else {
-                emptyList()
+                //emptyList()
+                productionDefaultCredentials
             }
 
         providedServers.forEach {

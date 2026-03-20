@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.tasking.utils.Constants
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.util.Date
@@ -17,27 +18,56 @@ abstract class TaskingEvaluator(
     internal fun calculateDueDate(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
+        programUid : String,
     ):  String?{
+
+        val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
         if (taskConfig.period.anchor.uid.isNullOrBlank() || teiUid.isBlank()) {
             val date =  Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
             return date.plusDays(taskConfig.period.dueInDays.toLong()).toString()
         }
 
-        val dateOfBirthValue : String? = repository.d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(taskConfig.period.anchor.uid, teiUid)
-            .blockingGet()?.value()
+        val enrollmentUid = repository.getLatestEnrollment(teiUid, programUid)
 
-        if (dateOfBirthValue.isNullOrBlank()) {
-            val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
+        val periodAnchor = repository.getLatestEvent(programUid,
+            taskConfig.period.anchor.uid,
+            enrollmentUid.toString(),
+            null)
+            ?.trackedEntityDataValues()
+            ?.firstOrNull { it.dataElement() == taskConfig.period.anchor.uid }
+            ?.value()
+
+        /*val periodAnchor : String? = repository.d2.trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .value(taskConfig.period.anchor.uid, teiUid)
+            .blockingGet()
+            ?.value()*/
+
+        if (periodAnchor.isNullOrBlank()) {
             return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
         }
 
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val birthDate = dateFormat.parse(dateOfBirthValue)
+        val anchorDate = dateFormat.parse(periodAnchor)
+            ?.toInstant()
+            ?.atZone(ZoneId.systemDefault())
+            ?.toLocalDate()
+            ?: return null
 
-        val dateOfBirth = birthDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+        //val formatedPeriodAnchorValue = anchorDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
 
-        return dateOfBirth?.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        //val dueDate = anchorDate.plusDays(taskConfig.period.dueInDays.toLong())
+
+        return when (taskConfig.period.anchor.ref){
+            //"" -> dueDate.toString()
+            //"DIFF" -> java.time.temporal.ChronoUnit.DAYS.between(anchorDate,dueDate).toString()
+            "PAST" -> anchorDate.minusDays(taskConfig.period.dueInDays.toLong()).toString()
+            else -> anchorDate.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+
+        }
+        //return formatedPeriodAnchorValue?.plusDays(taskConfig.period.dueInDays.toLong()).toString()
     }
 
     internal fun evaluateConditions(
@@ -51,12 +81,16 @@ abstract class TaskingEvaluator(
             val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
 
             when (cond.op) {
-                "EQUALS" -> rhsValue?.toDoubleOrNull() == lhsValue?.toDoubleOrNull()
-                "NOT_EQUALS" -> rhsValue != lhsValue
-                "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue.toDouble() >= rhsValue.toDouble()
-                "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue.toDouble() <= rhsValue.toDouble()
-                "NOT_NULL" -> !lhsValue.isNullOrEmpty()
-                "NULL" -> lhsValue.isNullOrEmpty()
+                Constants.EQUALS -> rhsValue == lhsValue
+                Constants.NUM_EQUALS -> rhsValue?.toDouble() == lhsValue?.toDouble()
+                Constants.NOT_EQUAL -> rhsValue != lhsValue
+                Constants.NOT_NULL -> !lhsValue.isNullOrEmpty()
+                Constants.NULL -> lhsValue.isNullOrEmpty()
+                Constants.GREATER_THAN -> {
+                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
+                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    rhs != null && lhs != null && lhs > rhs
+                }
                 else -> false
             }
         }
@@ -93,12 +127,12 @@ abstract class TaskingEvaluator(
             return reference.value.toString()
 
         return when (reference.ref) {
-            "teiAttribute" -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+            Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
                 .byTrackedEntityInstance().eq(teiUid)
                 .byTrackedEntityAttribute().eq(reference.uid)
                 .one().blockingGet()?.value()
 
-            "eventData" -> {
+            Constants.EVENT_DATA -> {
                 val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
@@ -106,7 +140,7 @@ abstract class TaskingEvaluator(
                     ?.value()
             }
 
-            "allEventsData" -> {
+            Constants.ALL_EVENTS_DATA -> {
                 val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
@@ -114,6 +148,7 @@ abstract class TaskingEvaluator(
                     ?.value()
             }
 
+            Constants.STATIC -> reference.uid
             "eventsCount" -> {
                 // reference.value can be used to filter by a specific data value
                 val stageUid = reference.type

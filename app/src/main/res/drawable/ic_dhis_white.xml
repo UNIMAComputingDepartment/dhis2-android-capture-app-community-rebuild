@@ -4,48 +4,34 @@
     android:viewportWidth="550"
     android:viewportHeight="182">
 
-  <!-- Group used to shift the letters left so they occupy the full launcher area -->
-  <group
-      android:name="letters_group"
-      android:translateX="-210"
-      android:translateY="-30"
-      android:scaleX="1.3"
-      android:scaleY="1.3">
+    <!-- "i" dot -->
+    <path
+        android:pathData="M102,22 h18 v18 h-18 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "i" letter (lowercase i - stem) -->
-  <path
-      android:pathData="M230,61.54h17.76v72.31h-17.76z"
-      android:fillColor="#FFFFFF"/>
+    <!-- "i" stem (lowercase height, starts lower) -->
+    <path
+        android:pathData="M102,62 h18 v96 h-18 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "i" letter (dot) -->
-  <path
-      android:pathData="M238.89,27.67q-5.26,0 -8.13,2.79a10.15,10.15 0,0 0,-2.86 7.6,10.13 10.13,0 0,0 2.86,7.6c1.91,1.86 4.62,2.78 8.13,2.78s6.1,-0.92 8.05,-2.78a10,10 0,0 0,2.94 -7.6,10 10,0 0,0 -2.94,-7.6C265,28.6 262.3,27.67 258.89,27.67Z"
-      android:fillColor="#FFFFFF"/>
+    <!-- "C" uppercase -->
+    <path
+        android:pathData="M142,22 h74 v18 h-56 v100 h56 v18 h-74 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "C" letter (uppercase) -->
-  <path
-      android:pathData="M330,93q0,-17.5 -9.8,-28.6 -9.8,-11.1 -25.2,-11.1 -16.5,0 -26.8,11.3 -10.3,11.3 -10.3,29.4 0,18.1 10.3,29.4 10.3,11.3 26.8,11.3 13.8,0 22.5,-8.2 8.7,-8.2 10.2,-21.5h-18.5q-1.2,7.5 -4.8,11.2 -3.6,3.7 -9.4,3.7 -7.8,0 -12.6,-6.2 -4.8,-6.2 -4.8,-19.7 0,-13.5 4.8,-19.7 4.8,-6.2 12.6,-6.2 5.8,0 9.4,3.5 3.6,3.5 4.8,10.8h18.8z"
-      android:fillColor="#FFFFFF"/>
+    <!-- "H" uppercase -->
+    <path
+        android:pathData="M238,22 h18 v59 h38 v-59 h18 v136 h-18 v-59 h-38 v59 h-18 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "H" letter (uppercase) -->
-  <path
-      android:pathData="M380,59.73q-14.44,0 -22,13.85v-42H340.26V134.85h17.76V101q0.3,-12.65 5.34,-19t12.12,-6.32q7.07,0 11,4.14t3.91,12.27v42.75H408.14V92.1q0,-14.61 -6.85,-23.49T380,59.73Z"
-      android:fillColor="#FFFFFF"/>
+    <!-- "I" uppercase -->
+    <path
+        android:pathData="M334,22 h18 v136 h-18 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "I" letter (uppercase) -->
-  <path
-      android:pathData="M425,61.54h17.76v73.31h-17.76z"
-      android:fillColor="#FFFFFF"/>
+    <!-- "S" uppercase -->
+    <path
+        android:pathData="M374,22 h74 v18 h-56 v41 h56 v77 h-74 v-18 h56 v-41 h-56 z"
+        android:fillColor="#FFFFFF"/>
 
-  <!-- "I" letter (dot / top cap) -->
-  <path
-      android:pathData="M433.89,27.67q-5.26,0 -8.13,2.79a10.15,10.15 0,0 0,-2.86 7.6,10.13 10.13,0 0,0 2.86,7.6c1.91,1.86 4.62,2.78 8.13,2.78s6.1,-0.92 8.05,-2.78a10,10 0,0 0,2.94 -7.6,10 10,0 0,0 -2.94,-7.6C440,28.6 437.3,27.67 433.89,27.67Z"
-      android:fillColor="#FFFFFF"/>
-
-  <!-- "S" letter (uppercase) -->
-  <path
-      android:pathData="M505.39,95.56l-17.31,-6.47q-8.88,-2.57 -8.88,-7.83 0,-3 3.24,-5.35c2.15,-1.55 5.19,-2.33 9.1,-2.33s6.93,0.71 9,2.11A7.38,7.38 0,0 1,504 81.41h16.71a20.11,20.11 0,0 0,-7.91 -15.51q-7.6,-6.17 -21.67,-6.17t-22.43,5.65q-8.36,5.64 -8.36,15 0,14 17.76,20.17l16,5.71a22.53,22.53 0,0 1,7.08 3.32,6.18 6.18,0 0,1 2.25,5.12c0,2.2 -1.23,4.14 -3.68,5.79a16.49,16.49 0,0 1,-9.41 2.48q-14.89,0 -15.21,-10.38H458.58q0.15,11.6 9,18T491.09,137q14.6,0 23.48,-6.92 8.58,-6.63 8.58,-15.65a15.31,15.31 0,0 0,-4.59 -11.52Q514,98.42 505.39,95.56Z"
-      android:fillColor="#FFFFFF"/>
-
-</group>
-    </vector>
+</vector>

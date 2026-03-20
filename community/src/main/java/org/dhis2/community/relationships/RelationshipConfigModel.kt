@@ -7,6 +7,7 @@ data class RelationshipConfig(
 data class Relationship(
     val access: Access,
     val description: String,
+    val maxCount: Int,
     val view: View,
     val relatedProgram: RelatedProgram,
     val attributeMappings: List<AttributeMapping> = emptyList(),

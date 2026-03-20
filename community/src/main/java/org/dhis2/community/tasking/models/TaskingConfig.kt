@@ -51,11 +51,8 @@ data class TaskingConfig(
             data class Trigger(
                 val programName: String,
                 val programUid: String,
-                override val condition: List<Condition>,
-                // NEW: combination supports "AND" or "OR"; default is "OR" for backward compatibility
-                val combination: String? = "OR",
-                // Keep match for backward compatibility with older configs (values like "ALL"/"ANY")
-                val match: String? = null
+                val combination: String,
+                override val condition: List<Condition>
             ): HasConditions
 
             data class Condition(
@@ -78,6 +75,7 @@ data class TaskingConfig(
             )
 
         data class Completion(
+            val combination: String? = null,
             override val condition: List<Condition>
         ): HasConditions
 

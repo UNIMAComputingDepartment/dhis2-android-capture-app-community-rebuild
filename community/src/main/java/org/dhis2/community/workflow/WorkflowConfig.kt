@@ -19,6 +19,7 @@ data class AttributeMapping(
     val sourceAttribute: String,
     val targetAttribute: String,
     val defaultValue: String?,
+    val isDuplicationKey: Boolean = false
 )
 
 data class AutoIncrementAttributes(
