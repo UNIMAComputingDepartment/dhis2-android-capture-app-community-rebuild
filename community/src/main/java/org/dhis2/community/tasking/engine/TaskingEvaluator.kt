@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
@@ -80,23 +81,78 @@ abstract class TaskingEvaluator(
             val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
             val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
 
-            when (cond.op) {
+            // Injecting logs to see exactly what is being compared
+            Log.d("TASK_DEBUG", "EVALUATING Condition: [ref=${cond.lhs.ref}, uid=${cond.lhs.uid}] LHS='$lhsValue' ${cond.op} RHS='$rhsValue'")
+
+            // BIRTH WEIGHT SPECIFIC LOGGING
+            when (cond.lhs.uid) {
+                "NMdsnU5SaSF" -> {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╔════════════════════════════════════════════╗")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ BIRTH WEIGHT CATEGORY CHECK                ║")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╠════════════════════════════════════════════╣")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ TEI: $teiUid")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Birth Weight Category (LHS): '$lhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Expected Weight Category (RHS): '$rhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Operator: ${cond.op}")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╚════════════════════════════════════════════╝")
+                }
+                "vGBbxUdRFlG" -> {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╔════════════════════════════════════════════╗")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ VISIT NUMBER CHECK                         ║")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╠════════════════════════════════════════════╣")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Visit Number (LHS): '$lhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Expected Visit (RHS): '$rhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Operator: ${cond.op}")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╚════════════════════════════════════════════╝")
+                }
+                "Ybo4mhfpt9O" -> {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╔════════════════════════════════════════════╗")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ TYPE OF VISIT CHECK                        ║")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╠════════════════════════════════════════════╣")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Type of Visit (LHS): '$lhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Expected Type (RHS): '$rhsValue'")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "║ Operator: ${cond.op}")
+                    Log.d("BIRTH_WEIGHT_DEBUG", "╚════════════════════════════════════════════╝")
+                }
+            }
+
+            val result = when (cond.op) {
                 "EQUALS" -> rhsValue == lhsValue
-                "NUM_EQUAL" -> rhsValue?.toDouble() == lhsValue?.toDouble()
+                "NUM_EQUAL" -> rhsValue?.toDoubleOrNull() == lhsValue?.toDoubleOrNull()
                 "NOT_EQUALS" -> rhsValue != lhsValue
-                "GREATER_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue >= rhsValue
-                "LESS_THAN_OR_EQUALS" -> lhsValue != null && rhsValue != null && lhsValue <= rhsValue
-                "GREATER_THAN" -> lhsValue != null && rhsValue != null && lhsValue > rhsValue
-                "LESS_THAN" -> lhsValue != null && rhsValue != null && lhsValue < rhsValue
                 "NOT_NULL" -> !lhsValue.isNullOrEmpty()
                 "NULL" -> lhsValue.isNullOrEmpty()
                 "GREATER_THAN" -> {
-                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
-                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    val lhs = lhsValue?.toDoubleOrNull()
+                    val rhs = rhsValue?.toDoubleOrNull()
                     rhs != null && lhs != null && lhs > rhs
+                }
+                "GREATER_THAN_OR_EQUALS" -> {
+                    val lhs = lhsValue?.toDoubleOrNull()
+                    val rhs = rhsValue?.toDoubleOrNull()
+                    if (lhs != null && rhs != null) lhs >= rhs else lhsValue != null && rhsValue != null && lhsValue >= rhsValue
+                }
+                "LESS_THAN_OR_EQUALS" -> {
+                    val lhs = lhsValue?.toDoubleOrNull()
+                    val rhs = rhsValue?.toDoubleOrNull()
+                    if (lhs != null && rhs != null) lhs <= rhs else lhsValue != null && rhsValue != null && lhsValue <= rhsValue
+                }
+                "LESS_THAN" -> {
+                    val lhs = lhsValue?.toDoubleOrNull()
+                    val rhs = rhsValue?.toDoubleOrNull()
+                    if (lhs != null && rhs != null) lhs < rhs else lhsValue != null && rhsValue != null && lhsValue < rhsValue
                 }
                 else -> false
             }
+            
+            Log.d("TASK_DEBUG", "RESULT of condition: $result")
+            
+            // Log result for birth weight conditions
+            if (cond.lhs.uid in listOf("NMdsnU5SaSF", "vGBbxUdRFlG", "Ybo4mhfpt9O")) {
+                Log.d("BIRTH_WEIGHT_DEBUG", "Result: ${if (result) "✓ PASS" else "✗ FAIL"}")
+            }
+            
+            result
         }
     }
 
@@ -131,18 +187,36 @@ abstract class TaskingEvaluator(
         if (reference.uid.isNullOrBlank())
             return reference.value.toString()
 
-        return when (reference.ref) {
-            "attribute" -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
-                .byTrackedEntityInstance().eq(teiUid)
-                .byTrackedEntityAttribute().eq(reference.uid)
-                .one().blockingGet()?.value()
+        val result = when (reference.ref) {
+            "attribute" -> {
+                val attrValue = repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .byTrackedEntityInstance().eq(teiUid)
+                    .byTrackedEntityAttribute().eq(reference.uid)
+                    .one().blockingGet()?.value()
+                
+                // Birth weight category logging
+                if (reference.uid == "NMdsnU5SaSF") {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "🔍 Fetched Birth Weight Category: '$attrValue'")
+                }
+                attrValue
+            }
 
             "eventData" -> {
                 val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
-                latestEvent
+                val eventValue = latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
                     ?.value()
+                
+                // Visit number logging
+                if (reference.uid == "vGBbxUdRFlG") {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "🔍 Fetched Visit Number: '$eventValue'")
+                }
+                // Type of visit logging
+                if (reference.uid == "Ybo4mhfpt9O") {
+                    Log.d("BIRTH_WEIGHT_DEBUG", "🔍 Fetched Type of Visit: '$eventValue'")
+                }
+                eventValue
             }
 
             "allEventsData" -> {
@@ -156,5 +230,8 @@ abstract class TaskingEvaluator(
             "static" -> reference.uid
             else -> null
         }
+        
+        Log.d("TASK_DEBUG", "FETCHED Data for [ref=${reference.ref}, uid=${reference.uid}] -> Value='$result'")
+        return result
     }
 }
