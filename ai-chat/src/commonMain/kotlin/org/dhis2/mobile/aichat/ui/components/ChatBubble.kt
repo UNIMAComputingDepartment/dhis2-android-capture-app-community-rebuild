@@ -2,7 +2,9 @@ package org.dhis2.mobile.aichat.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +37,8 @@ fun ChatBubble(
     Column(
         modifier =
             modifier
+                // Keep bubble measurement stable to avoid extreme width/height constraints in AndroidView markdown.
+                .widthIn(min = 56.dp, max = 340.dp)
                 .background(containerColor, RoundedCornerShape(16.dp))
                 .padding(12.dp),
     ) {
@@ -53,15 +57,21 @@ fun ChatBubble(
                 if (showThinkingBody) {
                     MarkdownText(
                         markdown = parsed.thinking,
-                        modifier = Modifier.padding(bottom = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                     )
                 }
             }
 
             if (parsed.answer.isNotBlank()) {
-                MarkdownText(markdown = parsed.answer)
+                MarkdownText(
+                    markdown = parsed.answer,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             } else if (parsed.thinking.isNullOrBlank()) {
-                MarkdownText(markdown = message.content)
+                MarkdownText(
+                    markdown = message.content,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         } else {
             Text(text = message.content, color = textColor)

@@ -56,15 +56,19 @@ private fun provideAiChatOkHttpClient(): OkHttpClient {
         HttpLoggingInterceptor { message ->
             Timber.tag("AiChatHttp").d(message)
         }.apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // BODY logging can interfere with long-lived SSE streams.
+            level = HttpLoggingInterceptor.Level.HEADERS
         }
 
     return OkHttpClient
         .Builder()
         .connectTimeout(300, TimeUnit.SECONDS)
-        .readTimeout(300, TimeUnit.SECONDS)
+        // Keep SSE streams alive for long model responses.
+        .readTimeout(0, TimeUnit.SECONDS)
         .writeTimeout(300, TimeUnit.SECONDS)
-        .callTimeout(300, TimeUnit.SECONDS)
+        .callTimeout(0, TimeUnit.SECONDS)
+        .pingInterval(30, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .addInterceptor(loggingInterceptor)
         .build()
 }

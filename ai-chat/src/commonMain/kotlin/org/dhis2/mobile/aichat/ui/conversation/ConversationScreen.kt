@@ -28,7 +28,6 @@ import org.dhis2.mobile.aichat.domain.model.ChatRole
 import org.dhis2.mobile.aichat.ui.components.CenteredLoadingState
 import org.dhis2.mobile.aichat.ui.components.ChatBubble
 import org.dhis2.mobile.aichat.ui.components.StreamingIndicator
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 
 @Composable
 fun ConversationScreen(
@@ -36,109 +35,121 @@ fun ConversationScreen(
     onInputChanged: (String) -> Unit,
     onSendClick: () -> Unit,
 ) {
-    DHIS2Theme {
-        when (uiState) {
-            ConversationUiState.Loading -> CenteredLoadingState(message = "Loading conversation...")
-            is ConversationUiState.Error -> Text(
-                uiState.message,
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            is ConversationUiState.Content -> {
-                val listState = rememberLazyListState()
-                val uiMessageCount =
-                    uiState.messages.size +
-                        (if (!uiState.pendingUserMessage.isNullOrBlank()) 1 else 0) +
-                        (if (uiState.sending) 1 else 0)
+    when (uiState) {
+        ConversationUiState.Loading -> CenteredLoadingState(message = "Loading conversation...")
+        is ConversationUiState.Error -> Text(
+            uiState.message,
+            modifier = Modifier.padding(16.dp),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        is ConversationUiState.Content -> {
+            val listState = rememberLazyListState()
+            val showStreamingBubble = uiState.sending || uiState.streamingContent.isNotBlank()
+            val uiMessageCount =
+                uiState.messages.size +
+                    (if (!uiState.pendingUserMessage.isNullOrBlank()) 1 else 0) +
+                    (if (showStreamingBubble) 1 else 0)
 
-                LaunchedEffect(uiMessageCount, uiState.pendingUserMessage, uiState.streamingContent) {
-                    if (uiMessageCount > 0) {
-                        listState.animateScrollToItem(uiMessageCount - 1)
-                    }
+            LaunchedEffect(uiMessageCount, uiState.pendingUserMessage, uiState.streamingContent, uiState.sending) {
+                if (uiMessageCount > 0) {
+                    listState.animateScrollToItem(uiMessageCount - 1)
                 }
+            }
 
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background),
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(uiState.messages) { message ->
-                            val alignEnd = message.role == ChatRole.USER
+                    items(uiState.messages) { message ->
+                        val alignEnd = message.role == ChatRole.USER
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+                        ) {
+                            ChatBubble(message = message)
+                        }
+                    }
+
+                    if (!uiState.pendingUserMessage.isNullOrBlank()) {
+                        item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+                                horizontalArrangement = Arrangement.End,
                             ) {
-                                ChatBubble(message = message)
+                                ChatBubble(
+                                    message =
+                                        ChatMessage(
+                                            id = "pending-user",
+                                            sessionId = "pending",
+                                            role = ChatRole.USER,
+                                            content = uiState.pendingUserMessage,
+                                            createdAt = System.currentTimeMillis(),
+                                        ),
+                                )
                             }
                         }
+                    }
 
-                        if (!uiState.pendingUserMessage.isNullOrBlank()) {
-                            item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End,
-                                ) {
+                    if (showStreamingBubble) {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (uiState.streamingContent.isNotBlank()) {
                                     ChatBubble(
                                         message =
                                             ChatMessage(
-                                                id = "pending-user",
-                                                sessionId = "pending",
-                                                role = ChatRole.USER,
-                                                content = uiState.pendingUserMessage,
+                                                id = "streaming",
+                                                sessionId = "streaming",
+                                                role = ChatRole.ASSISTANT,
+                                                content = uiState.streamingContent,
                                                 createdAt = System.currentTimeMillis(),
                                             ),
+                                        isStreaming = uiState.sending,
                                     )
-                                }
-                            }
-                        }
-
-                        if (uiState.sending) {
-                            item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Start,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (uiState.streamingContent.isNotBlank()) {
+                                } else {
+                                    Column {
                                         ChatBubble(
                                             message =
                                                 ChatMessage(
-                                                    id = "streaming",
-                                                    sessionId = "streaming",
+                                                    id = "typing",
+                                                    sessionId = "typing",
                                                     role = ChatRole.ASSISTANT,
-                                                    content = uiState.streamingContent,
+                                                    content = "Thinking...",
                                                     createdAt = System.currentTimeMillis(),
                                                 ),
                                             isStreaming = true,
                                         )
-                                    } else {
-                                        StreamingIndicator(modifier = Modifier.padding(8.dp))
+                                        StreamingIndicator(modifier = Modifier.padding(start = 12.dp, top = 6.dp))
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.input,
-                            onValueChange = onInputChanged,
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("Ask about your data") },
-                        )
-                        IconButton(onClick = onSendClick, enabled = uiState.input.isNotBlank() && !uiState.sending) {
-                            Icon(imageVector = Icons.Default.Send, contentDescription = "Send message")
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = uiState.input,
+                        onValueChange = onInputChanged,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Ask about your data") },
+                    )
+                    IconButton(onClick = onSendClick, enabled = uiState.input.isNotBlank() && !uiState.sending) {
+                        Icon(imageVector = Icons.Default.Send, contentDescription = "Send message")
                     }
                 }
             }

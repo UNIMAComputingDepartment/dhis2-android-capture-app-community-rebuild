@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,6 +19,7 @@ import org.dhis2.mobile.aichat.domain.model.SelectionItem
 import org.dhis2.mobile.aichat.domain.model.UserProgram
 import org.dhis2.mobile.aichat.ui.components.CenteredLoadingState
 import org.dhis2.mobile.aichat.ui.components.formatDataTypeLabel
+import org.dhis2.mobile.aichat.ui.components.formatPeriodLabel
 import org.dhis2.mobile.aichat.ui.components.formatToken
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItem
 import org.hisp.dhis.mobile.ui.designsystem.component.Button
@@ -64,14 +64,14 @@ fun CreateChatScreen(
                                 options = uiState.availableDataTypes,
                                 selected = uiState.selectedDataType,
                                 onSelected = onDataTypeSelected,
-                                labelMapper = ::formatDataTypeLabel,
+                                labelMapper = { value -> formatDataTypeLabel(value) },
                             )
                         2 ->
                             OptionStep(
                                 options = uiState.availablePeriods,
                                 selected = uiState.selectedPeriod,
                                 onSelected = onPeriodSelected,
-                                labelMapper = ::formatToken,
+                                labelMapper = { value -> formatPeriodLabel(value) },
                             )
                         3 ->
                             OrgUnitStep(
@@ -105,7 +105,7 @@ private fun OptionStep(
     options: List<String>,
     selected: String?,
     onSelected: (String) -> Unit,
-    labelMapper: (String) -> String,
+    labelMapper: @Composable (String) -> String,
 ) {
     val items =
         options.map { item ->
@@ -234,7 +234,7 @@ private fun ConfirmStep(state: CreateChatUiState.Form) {
                         additionalInfoList =
                             listOf(
                                 AdditionalInfoItem(key = "Data type", value = formatDataTypeLabel(state.selectedDataType)),
-                                AdditionalInfoItem(key = "Period", value = state.selectedPeriod?.let(::formatToken) ?: "-"),
+                                AdditionalInfoItem(key = "Period", value = formatPeriodLabel(state.selectedPeriod)),
                                 AdditionalInfoItem(key = "Org unit", value = state.selectedOrgUnitName ?: "-"),
                                 AdditionalInfoItem(key = "Items", value = state.selectedItems.size.toString()),
                             ),

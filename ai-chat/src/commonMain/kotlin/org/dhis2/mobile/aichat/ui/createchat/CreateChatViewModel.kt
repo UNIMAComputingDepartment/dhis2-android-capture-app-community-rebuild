@@ -22,7 +22,19 @@ class CreateChatViewModel(
         CreateChatUiState.Form(
             step = 1,
             availableDataTypes = listOf("aggregate", "indicator", "programIndicator", "event", "tracker"),
-            availablePeriods = listOf("LAST_12_MONTHS", "THIS_YEAR", "LAST_YEAR", "LAST_6_MONTHS", "LAST_4_QUARTERS", "THIS_QUARTER"),
+            availablePeriods =
+                listOf(
+                    "LAST_12_MONTHS",
+                    "THIS_YEAR",
+                    "LAST_YEAR",
+                    "LAST_6_MONTHS",
+                    "LAST_4_QUARTERS",
+                    "THIS_QUARTER",
+                    "LAST_3_YEARS",
+                    "LAST_4_YEARS",
+                    "LAST_5_YEARS",
+                    "LAST_10_YEARS",
+                ),
             availableItems = emptyList(),
         )
 

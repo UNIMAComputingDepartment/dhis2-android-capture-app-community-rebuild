@@ -2,10 +2,13 @@ package org.dhis2.mobile.aichat.ui.conversation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.dhis2.mobile.aichat.domain.model.ChatMessage
 import org.dhis2.mobile.aichat.domain.model.ChatRole
 import org.dhis2.mobile.aichat.domain.usecase.GetChatMessagesUseCase
 import org.dhis2.mobile.aichat.domain.usecase.SendMessageInput
@@ -26,8 +29,7 @@ class ConversationViewModel(
     }
 
     fun onInputChanged(value: String) {
-        val state = _uiState.value as? ConversationUiState.Content ?: return
-        _uiState.value = state.copy(input = value)
+        updateContent { copy(input = value) }
     }
 
     fun send() {
@@ -35,36 +37,58 @@ class ConversationViewModel(
         val messageToSend = state.input.trim()
         if (messageToSend.isBlank() || state.sending) return
 
-        _uiState.value =
-            state.copy(
+        updateContent {
+            copy(
                 sending = true,
                 input = "",
                 streamingContent = "",
                 pendingUserMessage = messageToSend,
             )
+        }
 
         viewModelScope.launch {
             sendMessageUseCase(SendMessageInput(chatId = chatId, message = messageToSend)).fold(
                 onSuccess = { stream ->
-                    stream.collect { chunk ->
-                        val current = _uiState.value as? ConversationUiState.Content ?: return@collect
-                        _uiState.value = current.copy(streamingContent = chunk, sending = true)
+                    runCatching {
+                        stream.collect { chunk ->
+                            updateContent {
+                                val nextStreaming =
+                                    when {
+                                        streamingContent.isBlank() -> chunk
+                                        chunk.startsWith(streamingContent) -> chunk
+                                        else -> appendWithNaturalSpacing(streamingContent, chunk)
+                                    }
+                                copy(
+                                    sending = true,
+                                    streamingContent = nextStreaming,
+                                    pendingUserMessage = pendingUserMessage ?: messageToSend,
+                                )
+                            }
+                        }
+                    }.onSuccess {
+                        updateContent {
+                            copy(
+                                sending = false,
+                                pendingUserMessage = null,
+                            )
+                        }
+                    }.onFailure { throwable ->
+                        if (throwable is CancellationException) throw throwable
+                        updateContent {
+                            copy(
+                                sending = false,
+                                pendingUserMessage = null,
+                            )
+                        }
                     }
-                    val current = _uiState.value as? ConversationUiState.Content ?: return@fold
-                    _uiState.value =
-                        current.copy(
-                            sending = false,
-                            streamingContent = "",
-                            pendingUserMessage = null,
-                        )
                 },
                 onFailure = {
-                    val current = _uiState.value as? ConversationUiState.Content ?: return@fold
-                    _uiState.value =
-                        current.copy(
+                    updateContent {
+                        copy(
                             sending = false,
                             pendingUserMessage = null,
                         )
+                    }
                 },
             )
         }
@@ -77,15 +101,25 @@ class ConversationViewModel(
                 getChatMessagesUseCase(chatId).fold(
                     onSuccess = { flow ->
                         flow.collect { messages ->
-                            val current = _uiState.value as? ConversationUiState.Content
-                            _uiState.value =
+                            _uiState.update { current ->
+                                val currentContent = current as? ConversationUiState.Content
+                                val visibleMessages =
+                                    mergeConsecutiveAssistantMessages(
+                                        messages.filterNot { it.role == ChatRole.SYSTEM },
+                                    )
+                                val streamedText = currentContent?.streamingContent.orEmpty()
+                                val hasPersistedAssistant =
+                                    streamedText.isNotBlank() &&
+                                        visibleMessages.any { it.role == ChatRole.ASSISTANT && it.content.contains(streamedText) }
+
                                 ConversationUiState.Content(
-                                    messages = messages.filterNot { it.role == ChatRole.SYSTEM },
-                                    sending = current?.sending ?: false,
-                                    input = current?.input.orEmpty(),
-                                    streamingContent = current?.streamingContent.orEmpty(),
-                                    pendingUserMessage = current?.pendingUserMessage,
+                                    messages = visibleMessages,
+                                    sending = currentContent?.sending ?: false,
+                                    input = currentContent?.input.orEmpty(),
+                                    streamingContent = if (hasPersistedAssistant) "" else streamedText,
+                                    pendingUserMessage = currentContent?.pendingUserMessage,
                                 )
+                            }
                         }
                     },
                     onFailure = {
@@ -94,4 +128,49 @@ class ConversationViewModel(
                 )
             }
     }
+
+    private inline fun updateContent(
+        transform: ConversationUiState.Content.() -> ConversationUiState.Content,
+    ) {
+        _uiState.update { state ->
+            val content = state as? ConversationUiState.Content ?: return@update state
+            transform(content)
+        }
+    }
+}
+
+private fun mergeConsecutiveAssistantMessages(messages: List<ChatMessage>): List<ChatMessage> {
+    if (messages.isEmpty()) return emptyList()
+
+    val merged = mutableListOf<ChatMessage>()
+    messages.forEach { message ->
+        val last = merged.lastOrNull()
+        val shouldMerge = last?.role == ChatRole.ASSISTANT && message.role == ChatRole.ASSISTANT
+
+        if (!shouldMerge) {
+            merged += message
+        } else {
+            merged[merged.lastIndex] =
+                last.copy(
+                    content = appendWithNaturalSpacing(last.content, message.content),
+                    recommendations = (last.recommendations + message.recommendations).distinct(),
+                )
+        }
+    }
+    return merged
+}
+
+private fun appendWithNaturalSpacing(existing: String, incoming: String): String {
+    if (existing.isEmpty()) return incoming
+    if (incoming.isEmpty()) return existing
+
+    val left = existing.last()
+    val right = incoming.first()
+    val needsSpace =
+        !left.isWhitespace() &&
+            !right.isWhitespace() &&
+            right !in setOf('.', ',', ';', ':', '!', '?', ')', ']', '}') &&
+            left !in setOf('(', '[', '{', '-', '/', '\n')
+
+    return if (needsSpace) "$existing $incoming" else existing + incoming
 }

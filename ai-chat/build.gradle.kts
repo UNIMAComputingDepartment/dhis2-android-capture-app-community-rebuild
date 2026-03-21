@@ -83,7 +83,7 @@ android {
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val remoteDefaultUrl = "https://eef0-102-70-92-154.ngrok-free.app/"
+        val remoteDefaultUrl = "https://ccdev.org/ai/"
         val configuredBaseUrl =
             System.getenv("AI_CHAT_BASE_URL")
                 ?: System.getProperty("ai.chat.baseUrl")

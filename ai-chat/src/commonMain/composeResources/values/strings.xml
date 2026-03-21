@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<resources>
+    <string name="period_last_12_months">Last 12 Months</string>
+    <string name="period_this_year">This Year</string>
+    <string name="period_last_year">Last Year</string>
+    <string name="period_last_6_months">Last 6 Months</string>
+    <string name="period_last_4_quarters">Last 4 Quarters</string>
+    <string name="period_this_quarter">This Quarter</string>
+    <string name="period_last_3_years">Last 3 Years</string>
+    <string name="period_last_4_years">Last 4 Years</string>
+    <string name="period_last_5_years">Last 5 Years</string>
+    <string name="period_last_10_years">Last 10 Years</string>
+</resources>
+

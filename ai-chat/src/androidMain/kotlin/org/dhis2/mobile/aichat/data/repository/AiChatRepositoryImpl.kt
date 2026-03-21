@@ -2,8 +2,10 @@ package org.dhis2.mobile.aichat.data.repository
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -185,7 +187,7 @@ class AiChatRepositoryImpl(
                 }
 
             refreshMessages(chatId)
-        }
+        }.flowOn(Dispatchers.IO)
 
     override suspend fun deleteChat(chatId: String) {
         if (!isLocalChatId(chatId)) {
