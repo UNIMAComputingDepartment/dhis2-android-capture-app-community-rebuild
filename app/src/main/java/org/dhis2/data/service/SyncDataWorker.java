@@ -22,6 +22,7 @@ import org.dhis2.commons.Constants;
 import org.dhis2.commons.date.DateUtils;
 import org.dhis2.commons.network.NetworkUtils;
 import org.dhis2.commons.prefs.PreferenceProvider;
+import org.dhis2.mobile.aichat.sync.SyncAiChatWorker;
 
 import java.util.Calendar;
 import java.util.Objects;
@@ -156,6 +157,7 @@ public class SyncDataWorker extends Worker {
         presenter.startPeriodicDataWork();
 
         presenter.finishSync();
+        SyncAiChatWorker.enqueue(getApplicationContext());
 
         return Result.success(createOutputData(true));
     }

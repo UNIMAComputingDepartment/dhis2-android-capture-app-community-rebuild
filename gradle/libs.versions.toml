@@ -97,6 +97,9 @@ browser = "1.9.0"
 biometric = "1.1.0"
 coil = "3.3.0"
 cyclonedx = "2.1.0"
+room = "2.7.2"
+retrofit = "2.11.0"
+markwon = "4.6.2"
 
 [libraries]
 gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
@@ -150,6 +153,7 @@ google-material3-themeadapter = { group = "com.google.accompanist", name = "acco
 google-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 network-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+network-okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 dates-jodatime = { group = "joda-time", name = "joda-time", version.ref = "jodatime" }
 dagger = { group = "com.google.dagger", name = "dagger", version.ref = "dagger" }
 dagger-compiler = { group = "com.google.dagger", name = "dagger-compiler", version.ref = "dagger" }
@@ -220,6 +224,14 @@ ktxml = { module = "org.kobjects.ktxml:core", version.ref = "ktxml" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil"}
 coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil"}
+network-retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+network-retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
+database-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+database-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+database-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+markdown-markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
+markdown-markwon-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
+markdown-markwon-strikethrough = { group = "io.noties.markwon", name = "ext-strikethrough", version.ref = "markwon" }
 
 [plugins]
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

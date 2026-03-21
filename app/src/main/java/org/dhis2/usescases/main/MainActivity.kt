@@ -47,6 +47,7 @@ import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.databinding.ActivityMainBinding
+import org.dhis2.mobile.aichat.ui.AiChatActivity
 import org.dhis2.usescases.development.DevelopmentActivity
 import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.dhis2.usescases.login.LoginActivity
@@ -732,6 +733,10 @@ class MainActivity :
 
             R.id.menu_home -> {
                 mainNavigator.openHome()
+            }
+
+            R.id.menu_ai_chat -> {
+                startActivity(AiChatActivity.intent(this))
             }
 
             R.id.menu_troubleshooting -> {

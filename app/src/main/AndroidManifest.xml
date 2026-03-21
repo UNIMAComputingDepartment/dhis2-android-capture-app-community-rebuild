@@ -102,6 +102,8 @@
                     android:pathPrefix="/" />
             </intent-filter>
         </activity>
+        <activity android:name="org.dhis2.mobile.aichat.ui.AiChatActivity" />
+
         <activity android:name=".usescases.programEventDetail.ProgramEventDetailActivity" />
         <activity
             android:name=".usescases.searchTrackEntity.SearchTEActivity"

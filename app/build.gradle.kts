@@ -256,6 +256,7 @@ dependencies {
     implementation(project(":aggregates"))
     implementation(project(":commonskmm"))
     implementation(project(":login"))
+    implementation(project(":ai-chat"))
 
     implementation(libs.security.conscrypt)
     implementation(libs.security.rootbeer)
