@@ -19,6 +19,8 @@ import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.medicalHistory.engine.MHEngine
+import org.dhis2.community.medicalHistory.repository.MHRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -166,7 +168,9 @@ class EnrollmentModule(
         eventCollectionRepository: EventCollectionRepository,
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
-        taskingEngine: TaskingEngine
+        taskingEngine: TaskingEngine,
+        mhEngine: MHEngine
+
     ): EnrollmentPresenterImpl  =
         EnrollmentPresenterImpl(
             enrollmentView,
@@ -181,7 +185,8 @@ class EnrollmentModule(
             eventCollectionRepository,
             teiAttributesProvider,
             dateEditionWarningHandler,
-            taskingEngine
+            taskingEngine,
+            mhEngine
         )
 
     @Provides
@@ -272,4 +277,20 @@ class EnrollmentModule(
     ): TaskingEngine {
         return TaskingEngine(repository)
     }
+
+    @Provides
+    @PerActivity
+    fun provideMHRepository(d2:D2): MHRepository{
+        return MHRepository(d2)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideMHEngine(
+        repository: MHRepository
+    ): MHEngine{
+        return MHEngine(repository)
+    }
+
+
 }

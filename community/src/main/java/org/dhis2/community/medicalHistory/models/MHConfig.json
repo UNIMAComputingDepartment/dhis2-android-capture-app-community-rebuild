@@ -1,0 +1,41 @@
+{
+  "medicalHistoryConfig": {
+    "medicalHistoryItem": [
+      {
+        "name": "immunization",
+        "source": [
+          {
+            "sourceProgramUid": "Ur5UakrSEYj",
+            "sourceDEs": [
+              "pOmfBiixrBw",
+              "ETmwrRaI25Y",
+              "Fc3lDKsux3s",
+              "KcyaDxZPnKa",
+              "aoALwwoX4IT"
+            ]
+          },
+          {
+            "sourceProgramUid": "Prog456",
+            "sourceDEs": [
+              "DE_Measles"
+            ]
+          }
+        ],
+        "targetDE": "bkNzUAQWBsS"
+      },
+      {
+        "name": "HIV",
+        "source": [
+          {
+            "sourceProgramUid": "Prog789",
+            "sourceDEs": [
+              "DE_HIV1",
+              "DE_HIV2"
+            ]
+          }
+        ],
+        "targetDE": "DE_HIVStatus"
+      }
+    ]
+  }
+}
