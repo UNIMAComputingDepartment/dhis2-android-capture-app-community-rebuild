@@ -45,8 +45,14 @@ fun ConversationScreen(
         is ConversationUiState.Content -> {
             val listState = rememberLazyListState()
             val showStreamingBubble = uiState.sending || uiState.streamingContent.isNotBlank()
+            val visibleMessages =
+                if (showStreamingBubble) {
+                    dropTrailingAssistantMessages(uiState.messages)
+                } else {
+                    uiState.messages
+                }
             val uiMessageCount =
-                uiState.messages.size +
+                visibleMessages.size +
                     (if (!uiState.pendingUserMessage.isNullOrBlank()) 1 else 0) +
                     (if (showStreamingBubble) 1 else 0)
 
@@ -68,7 +74,7 @@ fun ConversationScreen(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.messages) { message ->
+                    items(visibleMessages) { message ->
                         val alignEnd = message.role == ChatRole.USER
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -155,4 +161,14 @@ fun ConversationScreen(
             }
         }
     }
+}
+
+private fun dropTrailingAssistantMessages(messages: List<ChatMessage>): List<ChatMessage> {
+    if (messages.isEmpty()) return messages
+
+    var index = messages.size - 1
+    while (index >= 0 && messages[index].role == ChatRole.ASSISTANT) {
+        index--
+    }
+    return if (index == messages.size - 1) messages else messages.subList(0, index + 1)
 }
