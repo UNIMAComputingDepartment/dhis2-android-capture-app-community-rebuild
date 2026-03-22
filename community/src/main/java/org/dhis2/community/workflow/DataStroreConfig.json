@@ -80,6 +80,28 @@
       "programUid": "J0EYs4wVHDQ"
     }
   ],
+  "autoEnrollment": [
+    {
+      "triggerProgram": "sXzdrtXMink",
+      "targetProgram": "ZzP0Onn0wgT",
+      "combination": "and",
+      "conditions": [
+        {
+          "sourceType": "attribute",
+          "sourceUid": "sMXnVr16R9k",
+          "condition": "equals",
+          "value": "Female"
+        },
+        {
+          "sourceType": "data_element",
+          "sourceUid": "v3W4f4Y2hWh",
+          "programStageUid": "aDEmoesPO2V",
+          "condition": "greater_than",
+          "value": "12"
+        }
+      ]
+    }
+  ],
   "teiCreatablePrograms": [
     "l2qkPBBghe5"
   ]
