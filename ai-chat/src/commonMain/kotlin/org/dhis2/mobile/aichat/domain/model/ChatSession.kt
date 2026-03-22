@@ -3,6 +3,7 @@ package org.dhis2.mobile.aichat.domain.model
 data class ChatSession(
     val id: String,
     val username: String,
+    val title: String? = null,
     val selection: SelectionPayload,
     val dataDiagnostics: DataDiagnostics? = null,
     val createdAt: Long,
@@ -16,4 +17,3 @@ enum class SyncState {
     PENDING_UPLOAD,
     PENDING_DOWNLOAD,
 }
-

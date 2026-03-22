@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class ChatSessionEntity(
     @PrimaryKey val id: String,
     val username: String,
+    val title: String? = null,
     val dataType: String,
     val period: String,
     val orgUnitId: String,
@@ -18,4 +19,3 @@ data class ChatSessionEntity(
     val lastMessageAt: Long?,
     val syncState: String = "SYNCED",
 )
-

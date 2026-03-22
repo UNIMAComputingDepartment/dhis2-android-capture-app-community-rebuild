@@ -20,6 +20,8 @@ data class ModelInfoDto(
 data class ChatSessionSummaryDto(
     val id: String,
     val username: String,
+    val title: String? = null,
+    val selection: SelectionPayloadDto? = null,
     val dataDiagnostics: DataDiagnosticsDto? = null,
     val created_at: String,
     val message_count: Int,

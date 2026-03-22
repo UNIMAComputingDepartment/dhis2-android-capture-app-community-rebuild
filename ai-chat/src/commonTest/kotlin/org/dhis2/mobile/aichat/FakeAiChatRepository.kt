@@ -31,25 +31,25 @@ class FakeAiChatRepository : AiChatRepository {
                 createdAt = 1L,
                 messageCount = 0,
             )
-    override fun sendMessageStream(chatId: String, message: String): Flow<String> {
+        sessions.value = listOf(chat)
         return chat
     }
 
-    override suspend fun sendMessage(chatId: String, message: String, model: String?): ChatMessage {
+    override fun sendMessageStream(chatId: String, message: String): Flow<String> {
         val chatMessage =
             ChatMessage(
                 id = "msg-1",
                 sessionId = chatId,
                 role = ChatRole.ASSISTANT,
                 content = "ok",
+                createdAt = 1L,
+            )
+        messages.value = listOf(chatMessage)
         return flowOf(chatMessage.content)
     }
 
     override suspend fun deleteChat(chatId: String) {
         sessions.value = sessions.value.filterNot { it.id == chatId }
-            )
-        messages.value = listOf(chatMessage)
-        return chatMessage
     }
 
     override suspend fun listModels(): List<ModelInfo> = emptyList()

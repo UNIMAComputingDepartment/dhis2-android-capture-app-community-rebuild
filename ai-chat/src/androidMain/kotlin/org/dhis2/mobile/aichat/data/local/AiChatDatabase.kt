@@ -7,7 +7,7 @@ import org.dhis2.mobile.aichat.data.local.entities.ChatSessionEntity
 
 @Database(
     entities = [ChatSessionEntity::class, ChatMessageEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AiChatDatabase : RoomDatabase() {
@@ -15,4 +15,3 @@ abstract class AiChatDatabase : RoomDatabase() {
 
     abstract fun chatMessageDao(): ChatMessageDao
 }
-

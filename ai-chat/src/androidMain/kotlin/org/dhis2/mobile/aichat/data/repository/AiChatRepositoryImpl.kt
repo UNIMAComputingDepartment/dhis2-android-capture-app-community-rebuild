@@ -3,10 +3,12 @@ package org.dhis2.mobile.aichat.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -58,27 +60,21 @@ class AiChatRepositoryImpl(
         runCatching {
             val remote = api.listChats(username)
             val entities =
-                remote.map {
+                remote.map { summary ->
+                    val selection = summary.selection?.toDomain() ?: fallbackSelection(summary.dataDiagnostics?.dataType)
                     ChatSessionEntity(
-                        id = it.id,
-                        username = it.username,
-                        dataType = it.dataDiagnostics?.dataType ?: "aggregate",
-                        period = "LAST_12_MONTHS",
-                        orgUnitId = "",
-                        orgUnitName = null,
-                        diagnosticsJson = it.dataDiagnostics?.let { d -> json.encodeToString(d.toDomain()) },
-                        selectionJson =
-                            json.encodeToString(
-                                SelectionPayload(
-                                    dataType = it.dataDiagnostics?.dataType ?: "aggregate",
-                                    period = "LAST_12_MONTHS",
-                                    orgUnit = OrgUnitSelection("", "", true),
-                                    selectedItems = emptyList(),
-                                ),
-                            ),
-                        createdAt = parseInstant(it.created_at),
-                        messageCount = it.message_count,
-                        lastMessageAt = it.last_message_at?.let(::parseInstant),
+                        id = summary.id,
+                        username = summary.username,
+                        title = summary.title,
+                        dataType = selection.dataType,
+                        period = selection.period,
+                        orgUnitId = selection.orgUnit.id,
+                        orgUnitName = selection.orgUnit.displayName.ifBlank { null },
+                        diagnosticsJson = summary.dataDiagnostics?.let { d -> json.encodeToString(d.toDomain()) },
+                        selectionJson = json.encodeToString(selection),
+                        createdAt = parseInstant(summary.created_at),
+                        messageCount = summary.message_count,
+                        lastMessageAt = summary.last_message_at?.let(::parseInstant),
                     )
                 }
             chatSessionDao.upsertAll(entities)
@@ -132,6 +128,7 @@ class AiChatRepositoryImpl(
         return ChatSession(
             id = response.chat_id,
             username = username,
+            title = null,
             selection = selectionPayload,
             dataDiagnostics = response.dataDiagnostics?.toDomain(),
             createdAt = System.currentTimeMillis(),
@@ -145,48 +142,52 @@ class AiChatRepositoryImpl(
             require(!isLocalChatId(chatId)) { "Cannot send message to a local-only chat id." }
 
             var accumulated = ""
-            api
-                .sendMessageStream(
-                    chatId = chatId,
-                    body =
-                        SendMessageRequestDto(
-                            message = message,
-                            options = SendMessageOptionsDto(stream = true),
-                        ),
-                ).use { body ->
-                    val reader = body.charStream().buffered()
-                    val frameLines = mutableListOf<String>()
-                    var done = false
+            try {
+                api
+                    .sendMessageStream(
+                        chatId = chatId,
+                        body =
+                            SendMessageRequestDto(
+                                message = message,
+                                options = SendMessageOptionsDto(stream = true),
+                            ),
+                    ).use { body ->
+                        val reader = body.charStream().buffered()
+                        val frameLines = mutableListOf<String>()
+                        var done = false
 
-                    suspend fun flushFrame() {
-                        if (frameLines.isEmpty()) return
-                        val parsed = parseSseFrame(frameLines)
-                        frameLines.clear()
-                        if (parsed.isDone) {
-                            done = true
-                            return
+                        suspend fun flushFrame() {
+                            if (frameLines.isEmpty()) return
+                            val parsed = parseSseFrame(frameLines)
+                            frameLines.clear()
+                            if (parsed.isDone) {
+                                done = true
+                                return
+                            }
+                            if (!parsed.token.isNullOrEmpty()) {
+                                accumulated += parsed.token
+                                emit(accumulated)
+                            }
                         }
-                        if (!parsed.token.isNullOrBlank()) {
-                            accumulated += parsed.token
-                            emit(accumulated)
-                        }
-                    }
 
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        if (line.isBlank()) {
+                        while (true) {
+                            val line = reader.readLine() ?: break
+                            if (line.isBlank()) {
+                                flushFrame()
+                                if (done) break
+                                continue
+                            }
+                            frameLines += line
+                        }
+                        if (!done) {
                             flushFrame()
-                            if (done) break
-                            continue
                         }
-                        frameLines += line
                     }
-                    if (!done) {
-                        flushFrame()
-                    }
+            } finally {
+                withContext(NonCancellable) {
+                    runCatching { refreshMessages(chatId) }
                 }
-
-            refreshMessages(chatId)
+            }
         }.flowOn(Dispatchers.IO)
 
     override suspend fun deleteChat(chatId: String) {
@@ -249,6 +250,7 @@ private fun ChatSession.toEntity(json: Json): ChatSessionEntity =
     ChatSessionEntity(
         id = id,
         username = username,
+        title = title,
         dataType = selection.dataType,
         period = selection.period,
         orgUnitId = selection.orgUnit.id,
@@ -288,6 +290,7 @@ private fun toDomain(entity: ChatSessionEntity): ChatSession {
     return ChatSession(
         id = entity.id,
         username = entity.username,
+        title = entity.title,
         selection = selection,
         dataDiagnostics = diagnostics,
         createdAt = entity.createdAt,
@@ -296,6 +299,29 @@ private fun toDomain(entity: ChatSessionEntity): ChatSession {
         syncState = SyncState.valueOf(entity.syncState),
     )
 }
+
+private fun org.dhis2.mobile.aichat.data.remote.dto.SelectionPayloadDto.toDomain(): SelectionPayload =
+    SelectionPayload(
+        dataType = dataType,
+        period = period,
+        orgUnit =
+            OrgUnitSelection(
+                id = orgUnit.id,
+                displayName = orgUnit.displayName,
+                includeChildOrgUnits = orgUnit.includeChildOrgUnits,
+            ),
+        selectedItems = selectedItems.map { org.dhis2.mobile.aichat.domain.model.SelectionItem(it.id, it.displayName) },
+        programId = programId,
+    )
+
+private fun fallbackSelection(dataType: String?): SelectionPayload =
+    SelectionPayload(
+        dataType = dataType ?: "aggregate",
+        period = "LAST_12_MONTHS",
+        orgUnit = OrgUnitSelection("", "", true),
+        selectedItems = emptyList(),
+        programId = null,
+    )
 
 private fun toDomain(entity: ChatMessageEntity): ChatMessage {
     val json = Json { ignoreUnknownKeys = true }
@@ -330,26 +356,25 @@ private fun parseSseFrame(lines: List<String>): ParsedSsePayload {
         lines
             .asSequence()
             .filter { it.startsWith("data:") }
-            .map { it.removePrefix("data:").trim() }
+            .map(::extractSseDataValue)
             .joinToString("\n")
-            .trim()
 
+    val normalizedPayload = dataPayload.trim()
     val hasDoneEvent = lines.any { it.startsWith("event:") && it.removePrefix("event:").trim().equals("done", true) }
-    if (hasDoneEvent || dataPayload == "[DONE]") {
+    if (hasDoneEvent || normalizedPayload == "[DONE]") {
         return ParsedSsePayload(token = null, isDone = true)
     }
 
-    if (dataPayload.isBlank()) return ParsedSsePayload(token = null, isDone = false)
+    if (dataPayload.isEmpty()) return ParsedSsePayload(token = null, isDone = false)
     return parseSsePayload(dataPayload)
 }
 
 private fun parseSsePayload(payload: String): ParsedSsePayload {
-    if (payload == "[DONE]") return ParsedSsePayload(token = null, isDone = true)
+    if (payload.trim() == "[DONE]") return ParsedSsePayload(token = null, isDone = true)
 
-    if (!payload.startsWith("{")) {
-        val plain = payload.trim()
-        if (isControlPayload(plain)) return ParsedSsePayload(token = null, isDone = false)
-        return ParsedSsePayload(token = plain, isDone = false)
+    if (!payload.trimStart().startsWith("{")) {
+        if (isControlPayload(payload)) return ParsedSsePayload(token = null, isDone = false)
+        return ParsedSsePayload(token = payload, isDone = false)
     }
 
     val jsonObject = runCatching { Json.parseToJsonElement(payload).jsonObject }.getOrNull()
@@ -385,6 +410,12 @@ private fun parseSsePayload(payload: String): ParsedSsePayload {
 
     if (isControlPayload(token)) return ParsedSsePayload(token = null, isDone = false)
     return ParsedSsePayload(token = token, isDone = false)
+}
+
+private fun extractSseDataValue(line: String): String {
+    if (!line.startsWith("data:")) return line
+    val withoutPrefix = line.removePrefix("data:")
+    return if (withoutPrefix.startsWith(" ")) withoutPrefix.drop(1) else withoutPrefix
 }
 
 private fun isControlPayload(value: String?): Boolean {

@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +32,7 @@ import org.dhis2.mobile.aichat.ui.components.StreamingIndicator
 @Composable
 fun ConversationScreen(
     uiState: ConversationUiState,
+    chatTitle: String? = null,
     onInputChanged: (String) -> Unit,
     onSendClick: () -> Unit,
 ) {
@@ -47,7 +48,7 @@ fun ConversationScreen(
             val showStreamingBubble = uiState.sending || uiState.streamingContent.isNotBlank()
             val visibleMessages =
                 if (showStreamingBubble) {
-                    dropTrailingAssistantMessages(uiState.messages)
+                    hidePersistedStreamingDuplicate(uiState.messages, uiState.streamingContent)
                 } else {
                     uiState.messages
                 }
@@ -74,6 +75,17 @@ fun ConversationScreen(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (!chatTitle.isNullOrBlank()) {
+                        item {
+                            Text(
+                                text = chatTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+                    }
+
                     items(visibleMessages) { message ->
                         val alignEnd = message.role == ChatRole.USER
                         Row(
@@ -155,7 +167,7 @@ fun ConversationScreen(
                         placeholder = { Text("Ask about your data") },
                     )
                     IconButton(onClick = onSendClick, enabled = uiState.input.isNotBlank() && !uiState.sending) {
-                        Icon(imageVector = Icons.Default.Send, contentDescription = "Send message")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.Send, contentDescription = "Send message")
                     }
                 }
             }
@@ -163,12 +175,27 @@ fun ConversationScreen(
     }
 }
 
-private fun dropTrailingAssistantMessages(messages: List<ChatMessage>): List<ChatMessage> {
-    if (messages.isEmpty()) return messages
+private fun hidePersistedStreamingDuplicate(
+    messages: List<ChatMessage>,
+    streamingContent: String,
+): List<ChatMessage> {
+    if (messages.isEmpty() || streamingContent.isBlank()) return messages
 
-    var index = messages.size - 1
-    while (index >= 0 && messages[index].role == ChatRole.ASSISTANT) {
-        index--
-    }
-    return if (index == messages.size - 1) messages else messages.subList(0, index + 1)
+    val lastAssistantIndex = messages.indexOfLast { it.role == ChatRole.ASSISTANT }
+    if (lastAssistantIndex == -1) return messages
+
+    val lastAssistant = messages[lastAssistantIndex]
+    val normalizedPersisted = normalizeMessageForComparison(lastAssistant.content)
+    val normalizedStreaming = normalizeMessageForComparison(streamingContent)
+    val isDuplicate =
+        normalizedPersisted == normalizedStreaming ||
+            normalizedPersisted.startsWith(normalizedStreaming) ||
+            normalizedStreaming.startsWith(normalizedPersisted)
+
+    if (!isDuplicate) return messages
+
+    return messages.filterIndexed { index, _ -> index != lastAssistantIndex }
 }
+
+private fun normalizeMessageForComparison(value: String): String =
+    value.replace("\r\n", "\n").replace(Regex("\\s+"), " ").trim()

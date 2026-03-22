@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.dhis2.mobile.aichat.domain.model.ChatMessage
 import org.dhis2.mobile.aichat.domain.model.ChatRole
 import org.dhis2.mobile.aichat.domain.usecase.GetChatMessagesUseCase
 import org.dhis2.mobile.aichat.domain.usecase.SendMessageInput
@@ -54,9 +53,9 @@ class ConversationViewModel(
                             updateContent {
                                 val nextStreaming =
                                     when {
-                                        streamingContent.isBlank() -> chunk
+                                        chunk.isEmpty() -> streamingContent
                                         chunk.startsWith(streamingContent) -> chunk
-                                        else -> appendWithNaturalSpacing(streamingContent, chunk)
+                                        else -> streamingContent + chunk
                                     }
                                 copy(
                                     sending = true,
@@ -69,6 +68,7 @@ class ConversationViewModel(
                         updateContent {
                             copy(
                                 sending = false,
+                                streamingContent = "",
                                 pendingUserMessage = null,
                             )
                         }
@@ -77,6 +77,7 @@ class ConversationViewModel(
                         updateContent {
                             copy(
                                 sending = false,
+                                streamingContent = "",
                                 pendingUserMessage = null,
                             )
                         }
@@ -86,12 +87,17 @@ class ConversationViewModel(
                     updateContent {
                         copy(
                             sending = false,
+                            streamingContent = "",
                             pendingUserMessage = null,
                         )
                     }
                 },
             )
         }
+    }
+
+    fun manualSync() {
+        observeMessages()
     }
 
     private fun observeMessages() {
@@ -103,14 +109,13 @@ class ConversationViewModel(
                         flow.collect { messages ->
                             _uiState.update { current ->
                                 val currentContent = current as? ConversationUiState.Content
-                                val visibleMessages =
-                                    mergeConsecutiveAssistantMessages(
-                                        messages.filterNot { it.role == ChatRole.SYSTEM },
-                                    )
+                                val visibleMessages = messages.filterNot { it.role == ChatRole.SYSTEM }
                                 val streamedText = currentContent?.streamingContent.orEmpty()
                                 val hasPersistedAssistant =
                                     streamedText.isNotBlank() &&
-                                        visibleMessages.any { it.role == ChatRole.ASSISTANT && it.content.contains(streamedText) }
+                                        visibleMessages.lastOrNull { it.role == ChatRole.ASSISTANT }
+                                            ?.let { normalizeForComparison(it.content).contains(normalizeForComparison(streamedText)) }
+                                            ?: false
 
                                 ConversationUiState.Content(
                                     messages = visibleMessages,
@@ -139,38 +144,5 @@ class ConversationViewModel(
     }
 }
 
-private fun mergeConsecutiveAssistantMessages(messages: List<ChatMessage>): List<ChatMessage> {
-    if (messages.isEmpty()) return emptyList()
-
-    val merged = mutableListOf<ChatMessage>()
-    messages.forEach { message ->
-        val last = merged.lastOrNull()
-        val shouldMerge = last?.role == ChatRole.ASSISTANT && message.role == ChatRole.ASSISTANT
-
-        if (!shouldMerge) {
-            merged += message
-        } else {
-            merged[merged.lastIndex] =
-                last.copy(
-                    content = appendWithNaturalSpacing(last.content, message.content),
-                    recommendations = (last.recommendations + message.recommendations).distinct(),
-                )
-        }
-    }
-    return merged
-}
-
-private fun appendWithNaturalSpacing(existing: String, incoming: String): String {
-    if (existing.isEmpty()) return incoming
-    if (incoming.isEmpty()) return existing
-
-    val left = existing.last()
-    val right = incoming.first()
-    val needsSpace =
-        !left.isWhitespace() &&
-            !right.isWhitespace() &&
-            right !in setOf('.', ',', ';', ':', '!', '?', ')', ']', '}') &&
-            left !in setOf('(', '[', '{', '-', '/', '\n')
-
-    return if (needsSpace) "$existing $incoming" else existing + incoming
-}
+private fun normalizeForComparison(value: String): String =
+    value.replace("\r\n", "\n").replace(Regex("\\s+"), " ").trim()

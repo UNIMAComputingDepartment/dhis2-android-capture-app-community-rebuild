@@ -40,7 +40,6 @@ fun ChatListScreen(
     onCreateChatClick: () -> Unit,
     onSessionClick: (String) -> Unit,
     onDeleteChatClick: (String) -> Unit,
-    onRefresh: () -> Unit,
 ) {
     DHIS2Theme {
         Scaffold(
@@ -89,6 +88,9 @@ private fun ChatSessionCard(
     onSessionClick: (String) -> Unit,
     onDeleteChatClick: (String) -> Unit,
 ) {
+    val chatTitle = session.title?.takeIf { it.isNotBlank() } ?: formatDataTypeLabel(session.selection.dataType)
+    val orgUnitLabel = session.selection.orgUnit.displayName.takeIf { it.isNotBlank() } ?: "-"
+
     Row(
         modifier =
             Modifier
@@ -103,13 +105,13 @@ private fun ChatSessionCard(
                     .clickable { onSessionClick(session.id) },
             listCardState =
                 rememberListCardState(
-                    title = ListCardTitleModel(text = formatDataTypeLabel(session.selection.dataType)),
+                    title = ListCardTitleModel(text = chatTitle),
                     description = ListCardDescriptionModel(text = formatToken(session.selection.period)),
                     additionalInfoColumnState =
                         rememberAdditionalInfoColumnState(
                             additionalInfoList =
                                 listOf(
-                                    AdditionalInfoItem(key = "Org unit", value = session.selection.orgUnit.displayName),
+                                    AdditionalInfoItem(key = "Org unit", value = orgUnitLabel),
                                     AdditionalInfoItem(key = "Messages", value = session.messageCount.toString()),
                                 ),
                             syncProgressItem = AdditionalInfoItem(value = ""),
