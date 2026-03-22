@@ -37,8 +37,8 @@ fun ChatBubble(
     Column(
         modifier =
             modifier
-                // Keep bubble measurement stable to avoid extreme width/height constraints in AndroidView markdown.
-                .widthIn(min = 56.dp, max = 340.dp)
+                // Parent rows constrain bubble to a fraction of width; keep only a minimum for tiny messages.
+                .widthIn(min = 56.dp)
                 .background(containerColor, RoundedCornerShape(16.dp))
                 .padding(12.dp),
     ) {

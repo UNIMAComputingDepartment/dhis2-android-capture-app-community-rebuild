@@ -6,6 +6,5 @@ import androidx.compose.ui.Modifier
 @Composable
 expect fun MarkdownText(
     markdown: String,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 )
-

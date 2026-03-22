@@ -36,6 +36,8 @@ fun ConversationScreen(
     onInputChanged: (String) -> Unit,
     onSendClick: () -> Unit,
 ) {
+    val bubbleWidthFraction = 0.9f
+
     when (uiState) {
         ConversationUiState.Loading -> CenteredLoadingState(message = "Loading conversation...")
         is ConversationUiState.Error -> Text(
@@ -92,7 +94,10 @@ fun ConversationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
                         ) {
-                            ChatBubble(message = message)
+                            ChatBubble(
+                                message = message,
+                                modifier = Modifier.fillMaxWidth(bubbleWidthFraction),
+                            )
                         }
                     }
 
@@ -111,6 +116,7 @@ fun ConversationScreen(
                                             content = uiState.pendingUserMessage,
                                             createdAt = System.currentTimeMillis(),
                                         ),
+                                    modifier = Modifier.fillMaxWidth(bubbleWidthFraction),
                                 )
                             }
                         }
@@ -133,6 +139,7 @@ fun ConversationScreen(
                                                 content = uiState.streamingContent,
                                                 createdAt = System.currentTimeMillis(),
                                             ),
+                                        modifier = Modifier.fillMaxWidth(bubbleWidthFraction),
                                         isStreaming = uiState.sending,
                                     )
                                 } else {
@@ -146,6 +153,7 @@ fun ConversationScreen(
                                                     content = "Thinking...",
                                                     createdAt = System.currentTimeMillis(),
                                                 ),
+                                            modifier = Modifier.fillMaxWidth(bubbleWidthFraction),
                                             isStreaming = true,
                                         )
                                         StreamingIndicator(modifier = Modifier.padding(start = 12.dp, top = 6.dp))
