@@ -1,0 +1,27 @@
+{
+  "baseProgram": [
+    {
+      "baseProgramName": "Personal Register",
+      "baseProgramStageUid": "HcANeJhzIjB",
+      "baseProgramUid": "NFnp1h3IMzl"
+    }
+  ],
+  "medicalHistoryConfig": [
+    {
+      "name": "immunization",
+      "source": [
+        {
+          "sourceDEs": [
+            "pOmfBiixrBw",
+            "BNidQ6DxZpz",
+            "LVOCoQq2vhn"
+          ],
+          "sourceProgramName": "EPI",
+          "sourceProgramStageUid": "qeUfz2UTHNt",
+          "sourceProgramUid": "Ur5UakrSEYj"
+        }
+      ],
+      "targetDE": "bkNzUAQWBsS"
+    }
+  ]
+}

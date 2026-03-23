@@ -62,7 +62,8 @@ class EventCapturePresenterImpl(
 
     private val navigationBarUIState = mutableStateOf(NavigationBarUIState<NavigationPage>())
 
-    override fun observeNavigationBarUIState(): State<NavigationBarUIState<NavigationPage>> = navigationBarUIState
+    override fun observeNavigationBarUIState(): State<NavigationBarUIState<NavigationPage>> =
+        navigationBarUIState
 
     override fun observeActions(): LiveData<EventCaptureAction> = actions
 
@@ -179,7 +180,8 @@ class EventCapturePresenterImpl(
         }
     }
 
-    override fun isDataEntrySelected(): Boolean = navigationBarUIState.value.selectedItem == NavigationPage.DATA_ENTRY
+    override fun isDataEntrySelected(): Boolean =
+        navigationBarUIState.value.selectedItem == NavigationPage.DATA_ENTRY
 
     override fun updateNotesBadge(numberOfNotes: Int) {
         val uiState = navigationBarUIState.value
@@ -239,7 +241,7 @@ class EventCapturePresenterImpl(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun saveAndExit(eventStatus: EventStatus?) {
 
-        if (eventCaptureRepository.getEnrollmentUid() != null){
+        if (eventCaptureRepository.getEnrollmentUid() != null) {
             eventCaptureRepository.getTeiUid()?.let {
                 taskingEngine.evaluateAsync(
                     targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
@@ -286,12 +288,12 @@ class EventCapturePresenterImpl(
         )
     }
 
-    private fun runMHEngine(){
+    private fun runMHEngine() {
         mhEngine.runAsync(
             teiUid = eventCaptureRepository.getTeiUid().toString(),
-            baseProgramUid = eventCaptureRepository.getProgramUid().blockingFirst()
+            baseProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
+            baseProgramStage = programStage()
         )
-
     }
 
     override fun skipEvent() {
@@ -360,7 +362,8 @@ class EventCapturePresenterImpl(
         view.showProgress()
     }
 
-    override fun getCompletionPercentageVisibility(): Boolean = eventCaptureRepository.showCompletionPercentage()
+    override fun getCompletionPercentageVisibility(): Boolean =
+        eventCaptureRepository.showCompletionPercentage()
 
     private val eventStatus: EventStatus
         get() = eventCaptureRepository.eventStatus().blockingFirst()

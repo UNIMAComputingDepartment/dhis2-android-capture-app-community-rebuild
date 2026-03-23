@@ -8,16 +8,11 @@ import org.dhis2.community.medicalHistory.utils.Constants
 class MHSummaries(
 ) {
     suspend fun buildImmunizationSummaries(
-        teiUid: String,
-        repository: MHRepository,
-        baseProgramUid: String
+        teiUid: String, repository: MHRepository, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
 
-        val config = repository.getMedicalHistoryConfigs()
-            .medicalHistoryConfig
-            .filter {
-                it.name == Constants.IMMUNIZATION
-            }
+        val config =
+            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.IMMUNIZATION }
 
         val summaries = mutableMapOf<String, String>()
 
@@ -31,11 +26,11 @@ class MHSummaries(
 
                 source.sourceDEs.forEach { deUId ->
 
-                    val value = repository.getLatestValueFromProgramDeep(
+                    val value = repository.getLatestValueFromProgram(
                         teiUid = teiUid,
-                        sourceProgramUid = programUid,
+                        programUid = programUid,
                         deUid = deUId,
-                        sourceProgramStageUid = programStageUid
+                        programStageUid = programStageUid
                     )
                     print("program value : $value")
 
@@ -53,9 +48,7 @@ class MHSummaries(
                 summaries[item.targetDE] = summaryText
 
                 repository.updateSummaryValues(
-                    teiUid = teiUid,
-                    baseProgramUid = baseProgramUid,
-                    summaries = summaries
+                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
                 )
             }
         }
@@ -63,13 +56,10 @@ class MHSummaries(
     }
 
     suspend fun buildHIVStatusSummary(
-        teiUid: String,
-        repository: MHRepository,
-        baseProgramUid: String
+        teiUid: String, repository: MHRepository, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
-        val config = repository.getMedicalHistoryConfigs()
-            .medicalHistoryConfig
-            .filter { it.name == Constants.HIV_STATUS }
+        val config =
+            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.HIV_STATUS }
 
         val summaries = mutableMapOf<String, String>()
 
@@ -83,19 +73,15 @@ class MHSummaries(
                 val programUStageUid = source.sourceProgramStageUid
 
                 source.sourceDEs.forEach { deUid ->
-                    val value = repository.getLatestValueFromProgramDeep(
+                    val value = repository.getLatestValueFromProgram(
                         teiUid = teiUid,
-                        sourceProgramUid = programUid,
+                        programUid = programUid,
                         deUid = deUid,
-                        sourceProgramStageUid = programUStageUid
+                        programStageUid = programUStageUid
                     )
 
                     val isPositive = when (value?.lowercase()) {
-                        Constants.YES,
-                        Constants.ONE,
-                        Constants.POSITIVE,
-                        Constants.TRUE
-                            -> true
+                        Constants.YES, Constants.ONE, Constants.POSITIVE, Constants.TRUE -> true
 
                         else -> false
                     }
@@ -112,9 +98,7 @@ class MHSummaries(
                 summaries[item.targetDE] = summaryText
 
                 repository.updateSummaryValues(
-                    teiUid = teiUid,
-                    baseProgramUid = baseProgramUid,
-                    summaries = summaries
+                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
                 )
             }
         }

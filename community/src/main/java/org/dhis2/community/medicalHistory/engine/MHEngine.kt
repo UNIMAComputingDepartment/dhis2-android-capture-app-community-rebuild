@@ -21,49 +21,41 @@ class MHEngine(
     fun clear() = (scope.coroutineContext[Job])?.cancel()
 
     suspend fun run(
-        teiUid: String,
-        baseProgramUid: String
+        teiUid: String, baseProgramUid: String, baseProgramStage: String
     ) = withContext(ioDispatchers) {
         runInternal(
-            teiUid = teiUid,
-            baseProgramUid = baseProgramUid
+            teiUid = teiUid, baseProgramUid = baseProgramUid, baseProgramStage = baseProgramStage
         )
     }
 
     fun runAsync(
-        teiUid: String,
-        baseProgramUid: String
+        teiUid: String, baseProgramUid: String, baseProgramStage: String
     ): Job = scope.launch {
         runInternal(
-            teiUid = teiUid,
-            baseProgramUid = baseProgramUid
+            teiUid = teiUid, baseProgramUid = baseProgramUid, baseProgramStage = baseProgramStage
         )
     }
 
     private suspend fun runInternal(
-        teiUid: String,
-        baseProgramUid: String,
+        teiUid: String, baseProgramUid: String, baseProgramStage: String
     ) {
 
-        val configBaseProgramUid = repository.getMedicalHistoryConfigs().baseProgram.
-            firstOrNull()?.baseProgramUid
+        val configBaseProgramUid =
+            repository.getMedicalHistoryConfigs().baseProgram.firstOrNull()?.baseProgramUid
 
-        if (baseProgramUid == configBaseProgramUid){
+        val configBaseProgramStage =
+            repository.getMedicalHistoryConfigs().baseProgram.firstOrNull()?.baseProgramStageUid
+
+        if (baseProgramUid == configBaseProgramUid && baseProgramStage == configBaseProgramStage) {
             try {
 
-
                 summariesBuilder.buildImmunizationSummaries(
-                    teiUid = teiUid,
-                    repository = repository,
-                    baseProgramUid = baseProgramUid
+                    teiUid = teiUid, repository = repository, baseProgramUid = baseProgramUid
                 )
 
                 summariesBuilder.buildHIVStatusSummary(
-                    teiUid = teiUid,
-                    repository = repository,
-                    baseProgramUid = baseProgramUid
+                    teiUid = teiUid, repository = repository, baseProgramUid = baseProgramUid
                 )
-
 
             } catch (t: Throwable) {
                 throw t

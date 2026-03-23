@@ -66,11 +66,13 @@ class EventCaptureModule(
     fun provideFieldMapper(
         context: Context,
         fieldFactory: FieldViewModelFactory,
-    ): EventFieldMapper = EventFieldMapper(fieldFactory, context.getString(R.string.field_is_mandatory))
+    ): EventFieldMapper =
+        EventFieldMapper(fieldFactory, context.getString(R.string.field_is_mandatory))
 
     @Provides
     @PerActivity
-    fun provideRepository(d2: D2?): EventCaptureRepository = EventCaptureRepositoryImpl(eventUid, d2)
+    fun provideRepository(d2: D2?): EventCaptureRepository =
+        EventCaptureRepositoryImpl(eventUid, d2)
 
     @Provides
     @PerActivity
@@ -108,7 +110,8 @@ class EventCaptureModule(
     fun searchTEIRepository(
         d2: D2,
         crashReportController: CrashReportController,
-    ): SearchTEIRepository = SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
+    ): SearchTEIRepository =
+        SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
 
     @get:PerActivity
     @get:Provides
@@ -117,7 +120,8 @@ class EventCaptureModule(
 
     @Provides
     @PerActivity
-    fun pageConfigurator(repository: EventCaptureRepository): NavigationPageConfigurator = EventPageConfigurator(repository, isPortrait)
+    fun pageConfigurator(repository: EventCaptureRepository): NavigationPageConfigurator =
+        EventPageConfigurator(repository, isPortrait)
 
     @Provides
     @PerActivity
@@ -136,7 +140,7 @@ class EventCaptureModule(
 
     @Provides
     @PerActivity
-    fun provideMHRepository(d2:D2): MHRepository{
+    fun provideMHRepository(d2: D2): MHRepository {
         return MHRepository(d2)
     }
 
@@ -144,7 +148,7 @@ class EventCaptureModule(
     @PerActivity
     fun provideMHEngine(
         repository: MHRepository
-    ): MHEngine{
+    ): MHEngine {
         return MHEngine(repository)
     }
 }
