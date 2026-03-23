@@ -289,7 +289,7 @@ class EventCapturePresenterImpl(
     private fun runMHEngine(){
         mhEngine.runAsync(
             teiUid = eventCaptureRepository.getTeiUid().toString(),
-            programUid = eventCaptureRepository.getProgramUid().blockingFirst()
+            baseProgramUid = eventCaptureRepository.getProgramUid().blockingFirst()
         )
 
     }

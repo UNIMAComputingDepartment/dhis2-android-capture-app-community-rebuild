@@ -9,7 +9,8 @@ class MHSummaries(
 ) {
     suspend fun buildImmunizationSummaries(
         teiUid: String,
-        repository: MHRepository
+        repository: MHRepository,
+        baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
 
         val config = repository.getMedicalHistoryConfigs()
@@ -26,14 +27,17 @@ class MHSummaries(
 
             item.source.forEach { source ->
                 val programUid = source.sourceProgramUid
+                val programStageUid = source.sourceProgramStageUid
 
                 source.sourceDEs.forEach { deUId ->
 
-                    val value = repository.getLatestValueFromProgram(
+                    val value = repository.getLatestValueFromProgramDeep(
                         teiUid = teiUid,
-                        programUid = programUid,
-                        deUid = deUId
+                        sourceProgramUid = programUid,
+                        deUid = deUId,
+                        sourceProgramStageUid = programStageUid
                     )
+                    print("program value : $value")
 
                     if (!value.isNullOrBlank()) {
                         val formName = repository.getDataElementDisplayName(deUId)
@@ -47,6 +51,12 @@ class MHSummaries(
                     collected.distinct().joinToString("\n")
                 }
                 summaries[item.targetDE] = summaryText
+
+                repository.updateSummaryValues(
+                    teiUid = teiUid,
+                    baseProgramUid = baseProgramUid,
+                    summaries = summaries
+                )
             }
         }
         summaries
@@ -54,7 +64,8 @@ class MHSummaries(
 
     suspend fun buildHIVStatusSummary(
         teiUid: String,
-        repository: MHRepository
+        repository: MHRepository,
+        baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
         val config = repository.getMedicalHistoryConfigs()
             .medicalHistoryConfig
@@ -69,12 +80,14 @@ class MHSummaries(
             item.source.forEach { source ->
 
                 val programUid = source.sourceProgramUid
+                val programUStageUid = source.sourceProgramStageUid
 
                 source.sourceDEs.forEach { deUid ->
-                    val value = repository.getLatestValueFromProgram(
+                    val value = repository.getLatestValueFromProgramDeep(
                         teiUid = teiUid,
-                        programUid = programUid,
-                        deUid = deUid
+                        sourceProgramUid = programUid,
+                        deUid = deUid,
+                        sourceProgramStageUid = programUStageUid
                     )
 
                     val isPositive = when (value?.lowercase()) {
@@ -88,16 +101,22 @@ class MHSummaries(
                     }
                     results.add(isPositive)
                 }
-            }
 
-            val hasPositive = results.any { it }
-            val summaryText = if (hasPositive) {
-                Constants.HIV_POST_STATUS
-            } else {
-                Constants.HIV_NEG_STATUS
-            }
+                val hasPositive = results.any { it }
+                val summaryText = if (hasPositive) {
+                    Constants.HIV_POST_STATUS
+                } else {
+                    Constants.HIV_NEG_STATUS
+                }
 
-            summaries[item.targetDE] = summaryText
+                summaries[item.targetDE] = summaryText
+
+                repository.updateSummaryValues(
+                    teiUid = teiUid,
+                    baseProgramUid = baseProgramUid,
+                    summaries = summaries
+                )
+            }
         }
 
         summaries

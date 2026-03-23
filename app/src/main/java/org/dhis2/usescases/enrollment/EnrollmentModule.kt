@@ -169,7 +169,7 @@ class EnrollmentModule(
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
         taskingEngine: TaskingEngine,
-        mhEngine: MHEngine
+
 
     ): EnrollmentPresenterImpl  =
         EnrollmentPresenterImpl(
@@ -186,7 +186,6 @@ class EnrollmentModule(
             teiAttributesProvider,
             dateEditionWarningHandler,
             taskingEngine,
-            mhEngine
         )
 
     @Provides
@@ -278,19 +277,6 @@ class EnrollmentModule(
         return TaskingEngine(repository)
     }
 
-    @Provides
-    @PerActivity
-    fun provideMHRepository(d2:D2): MHRepository{
-        return MHRepository(d2)
-    }
-
-    @Provides
-    @PerActivity
-    fun provideMHEngine(
-        repository: MHRepository
-    ): MHEngine{
-        return MHEngine(repository)
-    }
 
 
 }

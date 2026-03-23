@@ -8,7 +8,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.community.medicalHistory.repository.MHRepository
-import org.hisp.dhis.android.core.D2
 
 class MHEngine(
     private val repository: MHRepository,
@@ -23,50 +22,52 @@ class MHEngine(
 
     suspend fun run(
         teiUid: String,
-        programUid: String
-    ) = withContext(ioDispatchers){
-        runInternal(teiUid, programUid)
+        baseProgramUid: String
+    ) = withContext(ioDispatchers) {
+        runInternal(
+            teiUid = teiUid,
+            baseProgramUid = baseProgramUid
+        )
     }
 
     fun runAsync(
         teiUid: String,
-        programUid: String
+        baseProgramUid: String
     ): Job = scope.launch {
         runInternal(
             teiUid = teiUid,
-            programUid = programUid
+            baseProgramUid = baseProgramUid
         )
     }
 
     private suspend fun runInternal(
         teiUid: String,
-        programUid: String,
-    ){
+        baseProgramUid: String,
+    ) {
 
-        try {
+        val configBaseProgramUid = repository.getMedicalHistoryConfigs().baseProgram.
+            firstOrNull()?.baseProgramUid
+
+        if (baseProgramUid == configBaseProgramUid){
+            try {
 
 
-
-            repository.updateSummaryValues(
-                teiUid = teiUid,
-                programUid = programUid,
-                summaries = summariesBuilder.buildImmunizationSummaries(
+                summariesBuilder.buildImmunizationSummaries(
                     teiUid = teiUid,
-                    repository = repository
+                    repository = repository,
+                    baseProgramUid = baseProgramUid
                 )
-            )
 
-            repository.updateSummaryValues(
-                teiUid = teiUid,
-                programUid = programUid,
-                summaries = summariesBuilder.buildHIVStatusSummary(
+                summariesBuilder.buildHIVStatusSummary(
                     teiUid = teiUid,
-                    repository = repository
+                    repository = repository,
+                    baseProgramUid = baseProgramUid
                 )
-            )
 
-        } catch (t: Throwable){
-            throw t
-        }
+
+            } catch (t: Throwable) {
+                throw t
+            }
+        } else return
     }
 }

@@ -36,6 +36,12 @@
         ],
         "targetDE": "DE_HIVStatus"
       }
-    ]
+    ],
+    "baseProgram": [
+      {
+        "baseProgramName": "programUId",
+        "baseProgramUid": "NFnp1h3IMzl"
+      }
+]
   }
 }
