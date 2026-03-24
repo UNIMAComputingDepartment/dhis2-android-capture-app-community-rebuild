@@ -1,47 +1,49 @@
 {
-  "medicalHistoryConfig": {
-    "medicalHistoryItem": [
-      {
-        "name": "immunization",
-        "source": [
-          {
-            "sourceProgramUid": "Ur5UakrSEYj",
-            "sourceDEs": [
-              "pOmfBiixrBw",
-              "ETmwrRaI25Y",
-              "Fc3lDKsux3s",
-              "KcyaDxZPnKa",
-              "aoALwwoX4IT"
-            ]
-          },
-          {
-            "sourceProgramUid": "Prog456",
-            "sourceDEs": [
-              "DE_Measles"
-            ]
-          }
-        ],
-        "targetDE": "bkNzUAQWBsS"
-      },
-      {
-        "name": "HIV",
-        "source": [
-          {
-            "sourceProgramUid": "Prog789",
-            "sourceDEs": [
-              "DE_HIV1",
-              "DE_HIV2"
-            ]
-          }
-        ],
-        "targetDE": "DE_HIVStatus"
-      }
-    ],
-    "baseProgram": [
-      {
-        "baseProgramName": "programUId",
-        "baseProgramUid": "NFnp1h3IMzl"
-      }
-]
-  }
+  "baseProgram": [
+    {
+      "baseProgramName": "Personal Register",
+      "baseProgramStageUid": "HcANeJhzIjB",
+      "baseProgramUid": "NFnp1h3IMzl"
+    }
+  ],
+  "medicalHistoryConfig": [
+    {
+      "name": "immunization",
+      "source": [
+        {
+          "sourceDEs": [
+            "pOmfBiixrBw",
+            "BNidQ6DxZpz",
+            "LVOCoQq2vhn"
+          ],
+          "sourceProgramName": "EPI",
+          "sourceProgramStageUid": "qeUfz2UTHNt",
+          "sourceProgramUid": "Ur5UakrSEYj"
+        }
+      ],
+      "targetDE": "bkNzUAQWBsS"
+    },
+    {
+      "name": "hivStatus",
+      "source": [
+        {
+          "sourceDEs": [
+            "X3FXnnsLu9e"
+          ],
+          "sourceProgramName": "eIDSR Disease Surveillance",
+          "sourceProgramStageUid": "OE7KmULkoLS",
+          "sourceProgramUid": "vqECSqMRSaV"
+        },
+        {
+          "sourceDEs": [
+            "Y0cZfA5WuU4"
+          ],
+          "sourceProgramName": "Personal Register",
+          "sourceProgramStageUid": "cOvFHTZSl9O",
+          "sourceProgramUid": "NFnp1h3IMzl"
+        }
+      ],
+      "targetDE": "qsSNP29muwn"
+    }
+  ]
 }

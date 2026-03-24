@@ -22,6 +22,28 @@
         }
       ],
       "targetDE": "bkNzUAQWBsS"
+    },
+    {
+      "name": "hivStatus",
+      "source": [
+        {
+          "sourceDEs": [
+            "X3FXnnsLu9e"
+          ],
+          "sourceProgramName": "eIDSR Disease Surveillance",
+          "sourceProgramStageUid": "OE7KmULkoLS",
+          "sourceProgramUid": "vqECSqMRSaV"
+        },
+        {
+          "sourceDEs": [
+            "Y0cZfA5WuU4"
+          ],
+          "sourceProgramName": "Personal Register",
+          "sourceProgramStageUid": "cOvFHTZSl9O",
+          "sourceProgramUid": "NFnp1h3IMzl"
+        }
+      ],
+      "targetDE": "qsSNP29muwn"
     }
   ]
 }

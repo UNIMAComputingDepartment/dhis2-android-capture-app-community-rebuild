@@ -6,7 +6,7 @@ import org.dhis2.community.medicalHistory.repository.MHRepository
 import org.dhis2.community.medicalHistory.utils.Constants
 
 class MHSummaries(
-) {
+)  {
     suspend fun buildImmunizationSummaries(
         teiUid: String, repository: MHRepository, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
@@ -59,7 +59,7 @@ class MHSummaries(
         teiUid: String, repository: MHRepository, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
         val config =
-            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.HIV_STATUS }
+            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.HIV_STATUS_CONF }
 
         val summaries = mutableMapOf<String, String>()
 
@@ -80,19 +80,28 @@ class MHSummaries(
                         programStageUid = programUStageUid
                     )
 
-                    val isPositive = when (value?.lowercase()) {
-                        Constants.YES, Constants.ONE, Constants.POSITIVE, Constants.TRUE -> true
+                    if (value.isNullOrBlank()) {
+                        val nullSummaryText = ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
+                        summaries[item.targetDE] = nullSummaryText
+                        return@forEach
+                    }
 
+                    val isPositive = when (value.lowercase()) {
+                        Constants.YES, Constants.ONE, Constants.POSITIVE, Constants.TRUE -> true
+                        Constants.UNKNOWN_STATUS -> {
+                            val nullSummaryText = ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
+                            summaries[item.targetDE] = nullSummaryText
+                            return@forEach
+                        }
                         else -> false
                     }
                     results.add(isPositive)
                 }
 
                 val hasPositive = results.any { it }
-                val summaryText = if (hasPositive) {
-                    Constants.HIV_POST_STATUS
-                } else {
-                    Constants.HIV_NEG_STATUS
+                val summaryText = when (hasPositive){
+                    true -> ("${Constants.HIV_STATUS}: ${Constants.POST_STATUS}")
+                    false -> ("${Constants.HIV_STATUS}: ${Constants.NEG_STATUS}")
                 }
 
                 summaries[item.targetDE] = summaryText
