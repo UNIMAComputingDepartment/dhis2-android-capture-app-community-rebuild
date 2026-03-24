@@ -14,7 +14,6 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -45,8 +44,7 @@ class EventCaptureModule(
         preferences: PreferenceProvider,
         pageConfigurator: NavigationPageConfigurator,
         resourceManager: ResourceManager,
-        taskingEngine: TaskingEngine,
-        workflowRepository: WorkflowRepository,
+        taskingEngine: TaskingEngine
     ): EventCaptureContract.Presenter =
         EventCapturePresenterImpl(
             view,
@@ -56,8 +54,7 @@ class EventCaptureModule(
             preferences,
             pageConfigurator,
             resourceManager,
-            taskingEngine,
-            workflowRepository,
+            taskingEngine
         )
 
     @Provides
@@ -131,11 +128,5 @@ class EventCaptureModule(
         d2: D2,
     ): TaskingEngine {
         return TaskingEngine(repository)
-    }
-
-    @Provides
-    @PerActivity
-    fun provideWorkflowRepository(d2: D2): WorkflowRepository {
-        return WorkflowRepository(d2)
     }
 }
