@@ -65,7 +65,8 @@ class MHSummaries(
 
         config.forEach { item ->
 
-            val results = mutableListOf<Boolean>()
+            var hasPositive = false
+            var hasNegative = false
 
             item.source.forEach { source ->
 
@@ -80,37 +81,40 @@ class MHSummaries(
                         programStageUid = programUStageUid
                     )
 
-                    if (value.isNullOrBlank()) {
-                        val nullSummaryText = ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
-                        summaries[item.targetDE] = nullSummaryText
-                        return@forEach
-                    }
+                    when {
+                        value.isNullOrBlank() -> {}
 
-                    val isPositive = when (value.lowercase()) {
-                        Constants.YES, Constants.ONE, Constants.POSITIVE, Constants.TRUE -> true
-                        Constants.UNKNOWN_STATUS -> {
-                            val nullSummaryText = ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
-                            summaries[item.targetDE] = nullSummaryText
-                            return@forEach
+                        value.equals(Constants.UNKNOWN_STATUS, ignoreCase = true) -> {}
+
+                        value.lowercase() in listOf(
+                            Constants.YES,
+                            Constants.ONE,
+                            Constants.POSITIVE,
+                            Constants.TRUE
+                        ) -> {
+                            hasPositive = true
                         }
-                        else -> false
+
+                        else -> {
+                            hasNegative = true
+                        }
                     }
-                    results.add(isPositive)
                 }
-
-                val hasPositive = results.any { it }
-                val summaryText = when (hasPositive){
-                    true -> ("${Constants.HIV_STATUS}: ${Constants.POST_STATUS}")
-                    false -> ("${Constants.HIV_STATUS}: ${Constants.NEG_STATUS}")
-                }
-
-                summaries[item.targetDE] = summaryText
-
-                repository.updateSummaryValues(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
-                )
             }
+
+            val summaryText = when {
+                //hasPositive && hasNegative -> ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
+                hasPositive -> ("${Constants.HIV_STATUS}: ${Constants.POST_STATUS}")
+                hasNegative -> ("${Constants.HIV_STATUS}: ${Constants.NEG_STATUS}")
+                else -> ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
+            }
+
+            summaries[item.targetDE] = summaryText
         }
+
+        repository.updateSummaryValues(
+            teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
+        )
 
         summaries
     }
