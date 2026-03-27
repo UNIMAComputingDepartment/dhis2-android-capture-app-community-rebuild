@@ -15,7 +15,7 @@ class MHEngine(
     private val ioDispatchers: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val TAG = MHEngine::class.java.simpleName
-    private val summariesBuilder = MHSummaries()
+    private val summariesBuilder = MHSummaries(repository)
     private val scope = CoroutineScope(SupervisorJob() + ioDispatchers)
 
     fun clear() = (scope.coroutineContext[Job])?.cancel()
@@ -50,11 +50,15 @@ class MHEngine(
             try {
 
                 summariesBuilder.buildImmunizationSummaries(
-                    teiUid = teiUid, repository = repository, baseProgramUid = baseProgramUid
+                    teiUid = teiUid, baseProgramUid = baseProgramUid
                 )
 
                 summariesBuilder.buildHIVStatusSummary(
-                    teiUid = teiUid, repository = repository, baseProgramUid = baseProgramUid
+                    teiUid = teiUid, baseProgramUid = baseProgramUid
+                )
+
+                summariesBuilder.buildNCDSummaries(
+                    teiUid = teiUid, baseProgramUid = baseProgramUid
                 )
 
             } catch (t: Throwable) {

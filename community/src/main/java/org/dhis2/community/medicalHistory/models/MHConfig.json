@@ -44,6 +44,23 @@
         }
       ],
       "targetDE": "qsSNP29muwn"
+    },
+    {
+      "name": "chronicConditions",
+      "source": [
+        {
+          "sourceDEs": [
+            "jpipAsYQ1k2",
+            "JgoITvPkXVr",
+            "s6E1GNhMWru",
+            "i5YltrU2ClS"
+          ],
+          "sourceProgramName": "eIDSR - Disease Surveillance",
+          "sourceProgramStageUid": "rWoGwBZYFpG",
+          "sourceProgramUid": "vqECSqMRSaV"
+        }
+      ],
+      "targetDE": "Cr133YqFaRW"
     }
   ]
 }

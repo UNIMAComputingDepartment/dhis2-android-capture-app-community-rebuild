@@ -6,9 +6,10 @@ import org.dhis2.community.medicalHistory.repository.MHRepository
 import org.dhis2.community.medicalHistory.utils.Constants
 
 class MHSummaries(
+    private val repository: MHRepository
 )  {
     suspend fun buildImmunizationSummaries(
-        teiUid: String, repository: MHRepository, baseProgramUid: String
+        teiUid: String, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
 
         val config =
@@ -36,7 +37,12 @@ class MHSummaries(
 
                     if (!value.isNullOrBlank()) {
                         val formName = repository.getDataElementDisplayName(deUId)
-                        collected.add("$formName: $value")
+                        val formatedValue = when (value.lowercase()) {
+                            Constants.TRUE -> Constants.YES
+                            Constants.FALSE -> Constants.NO
+                            else -> value
+                        }
+                        collected.add("$formName: $formatedValue")
                     }
                 }
 
@@ -56,7 +62,7 @@ class MHSummaries(
     }
 
     suspend fun buildHIVStatusSummary(
-        teiUid: String, repository: MHRepository, baseProgramUid: String
+        teiUid: String, baseProgramUid: String
     ): Map<String, String> = withContext(Dispatchers.IO) {
         val config =
             repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.HIV_STATUS_CONF }
@@ -104,9 +110,9 @@ class MHSummaries(
 
             val summaryText = when {
                 //hasPositive && hasNegative -> ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
-                hasPositive -> ("${Constants.HIV_STATUS}: ${Constants.POST_STATUS}")
-                hasNegative -> ("${Constants.HIV_STATUS}: ${Constants.NEG_STATUS}")
-                else -> ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
+                hasPositive -> (Constants.POST_STATUS)
+                hasNegative -> (Constants.NEG_STATUS)
+                else -> (Constants.UNKNOWN_STATUS)
             }
 
             summaries[item.targetDE] = summaryText
@@ -116,6 +122,60 @@ class MHSummaries(
             teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
         )
 
+        summaries
+    }
+
+    suspend fun buildNCDSummaries(
+        teiUid: String, baseProgramUid: String
+    ): Map<String, String> = withContext(Dispatchers.IO) {
+
+        val config =
+            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.CHRONIC_CONDITIONS }
+
+        val summaries = mutableMapOf<String, String>()
+
+        config.forEach { item ->
+
+            val collected = mutableListOf<String>()
+
+            item.source.forEach { source ->
+                val programUid = source.sourceProgramUid
+                val programStageUid = source.sourceProgramStageUid
+
+                source.sourceDEs.forEach { deUId ->
+
+                    val value = repository.getLatestValueFromProgram(
+                        teiUid = teiUid,
+                        programUid = programUid,
+                        deUid = deUId,
+                        programStageUid = programStageUid
+                    )
+                    print("program value : $value")
+
+                    if (!value.isNullOrBlank()) {
+                        val formName = repository.getDataElementDisplayName(deUId)
+                        val formatedValue = when (value.lowercase()) {
+                            Constants.TRUE -> Constants.YES
+                            Constants.FALSE -> Constants.NO
+                            else -> value
+                        }
+                        val formatedFormName = formName.trim().removeSuffix("?")
+                        collected.add("$formatedFormName: $formatedValue")
+                    }
+                }
+
+                val summaryText = if (collected.isEmpty()) {
+                    "None recorded"
+                } else {
+                    collected.distinct().joinToString("\n")
+                }
+                summaries[item.targetDE] = summaryText
+
+                repository.updateSummaryValues(
+                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
+                )
+            }
+        }
         summaries
     }
 }
