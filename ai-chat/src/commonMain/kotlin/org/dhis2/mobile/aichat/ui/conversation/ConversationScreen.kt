@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,8 @@ fun ConversationScreen(
     chatTitle: String? = null,
     onInputChanged: (String) -> Unit,
     onSendClick: () -> Unit,
+    selectedAssistantMessageIds: Set<String> = emptySet(),
+    onAssistantMessageSelectionChange: (messageId: String, selected: Boolean) -> Unit = { _, _ -> },
 ) {
     val bubbleWidthFraction = 0.9f
 
@@ -93,7 +96,16 @@ fun ConversationScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            if (message.role == ChatRole.ASSISTANT) {
+                                Checkbox(
+                                    checked = selectedAssistantMessageIds.contains(message.id),
+                                    onCheckedChange = { checked ->
+                                        onAssistantMessageSelectionChange(message.id, checked)
+                                    },
+                                )
+                            }
                             ChatBubble(
                                 message = message,
                                 modifier = Modifier.fillMaxWidth(bubbleWidthFraction),

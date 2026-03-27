@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -17,6 +20,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +31,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
+import org.dhis2.mobile.aichat.domain.model.ChatRole
 import org.dhis2.mobile.aichat.ui.chatlist.ChatListScreen
 import org.dhis2.mobile.aichat.ui.chatlist.ChatListViewModel
 import org.dhis2.mobile.aichat.ui.conversation.ConversationScreen
@@ -79,11 +86,15 @@ private fun decodeRouteArg(value: String?): String? {
 @Composable
 fun AiChatNavGraph(
     onOpenOrgUnitSelector: (String?, (String, String) -> Unit) -> Unit = { _, _ -> },
+    onExportConversationPdf: suspend (chatId: String, chatTitle: String?, assistantMessages: List<String>) -> Result<String> = { _, _, _ -> Result.failure(IllegalStateException("Export not available")) },
     onExit: () -> Unit = {},
 ) {
     DHIS2Theme {
         val navController = rememberNavController()
         var onSyncAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        var onExportAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+        val snackbarHostState = remember { SnackbarHostState() }
+        val scope = rememberCoroutineScope()
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = currentBackStackEntry?.destination?.route
         val showBack = currentRoute != AiChatRoutes.CHAT_LIST
@@ -103,6 +114,7 @@ fun AiChatNavGraph(
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 TopBar(
                     navigationIcon = {
@@ -116,6 +128,14 @@ fun AiChatNavGraph(
                         }
                     },
                     actions = {
+                        if (currentRoute?.startsWith("conversation/") == true) {
+                            TopBarActionIcon(
+                                icon = Icons.Default.PictureAsPdf,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                contentDescription = "Export conversation responses as PDF",
+                                onClick = { onExportAction?.invoke() },
+                            )
+                        }
                         TopBarActionIcon(
                             icon = Icons.Default.Refresh,
                             tint = MaterialTheme.colorScheme.onPrimary,
@@ -151,7 +171,11 @@ fun AiChatNavGraph(
 
                     DisposableEffect(Unit) {
                         onSyncAction = viewModel::refresh
-                        onDispose { if (onSyncAction === viewModel::refresh) onSyncAction = null }
+                        onExportAction = null
+                        onDispose {
+                            if (onSyncAction === viewModel::refresh) onSyncAction = null
+                            if (onExportAction != null) onExportAction = null
+                        }
                     }
 
                     ChatListScreen(
@@ -172,6 +196,11 @@ fun AiChatNavGraph(
                 composable(AiChatRoutes.CREATE_CHAT) {
                     val viewModel: CreateChatViewModel = koinViewModel()
                     val state by viewModel.uiState.collectAsState()
+
+                    DisposableEffect(Unit) {
+                        onExportAction = null
+                        onDispose { if (onExportAction != null) onExportAction = null }
+                    }
 
                     CreateChatScreen(
                         uiState = state,
@@ -216,10 +245,53 @@ fun AiChatNavGraph(
                     val chatTitle = decodeRouteArg(backStackEntry.arguments?.getString(AiChatRoutes.CHAT_TITLE_ARG))
                     val viewModel: ConversationViewModel = koinViewModel(parameters = { parametersOf(chatId) })
                     val state by viewModel.uiState.collectAsState()
+                    val currentConversationState = rememberUpdatedState(state)
+                    var selectedAssistantMessageIds by remember(chatId) { mutableStateOf(emptySet<String>()) }
 
-                    DisposableEffect(chatId) {
+                    LaunchedEffect(state) {
+                        val contentState = state as? org.dhis2.mobile.aichat.ui.conversation.ConversationUiState.Content
+                        val validAssistantIds =
+                            contentState
+                                ?.messages
+                                ?.filter { it.role == ChatRole.ASSISTANT }
+                                ?.map { it.id }
+                                ?.toSet()
+                                .orEmpty()
+                        selectedAssistantMessageIds = selectedAssistantMessageIds.intersect(validAssistantIds)
+                    }
+
+                    DisposableEffect(chatId, selectedAssistantMessageIds) {
                         onSyncAction = viewModel::manualSync
-                        onDispose { if (onSyncAction === viewModel::manualSync) onSyncAction = null }
+                        onExportAction = exportAction@{
+                            val contentState = currentConversationState.value as? org.dhis2.mobile.aichat.ui.conversation.ConversationUiState.Content
+                            val assistantMessages =
+                                contentState
+                                    ?.messages
+                                    ?.filter { it.role == ChatRole.ASSISTANT && selectedAssistantMessageIds.contains(it.id) }
+                                    ?.map { it.content }
+                                    .orEmpty()
+
+                            if (assistantMessages.isEmpty()) {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Select assistant messages to export")
+                                }
+                                return@exportAction
+                            }
+
+                            scope.launch {
+                                onExportConversationPdf(chatId, chatTitle, assistantMessages)
+                                    .onSuccess { feedback ->
+                                        snackbarHostState.showSnackbar(feedback)
+                                    }
+                                    .onFailure { error ->
+                                        snackbarHostState.showSnackbar(error.message ?: "Failed to export PDF")
+                                    }
+                            }
+                        }
+                        onDispose {
+                            if (onSyncAction === viewModel::manualSync) onSyncAction = null
+                            onExportAction = null
+                        }
                     }
 
                     ConversationScreen(
@@ -227,6 +299,15 @@ fun AiChatNavGraph(
                         chatTitle = chatTitle,
                         onInputChanged = viewModel::onInputChanged,
                         onSendClick = viewModel::send,
+                        selectedAssistantMessageIds = selectedAssistantMessageIds,
+                        onAssistantMessageSelectionChange = { messageId, selected ->
+                            selectedAssistantMessageIds =
+                                if (selected) {
+                                    selectedAssistantMessageIds + messageId
+                                } else {
+                                    selectedAssistantMessageIds - messageId
+                                }
+                        },
                     )
                 }
             }
