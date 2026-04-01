@@ -7,6 +7,10 @@ import org.dhis2.commons.bindings.dataElement
 import org.dhis2.community.medicalHistory.models.MedicalHistoryConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.event.Event
+import org.hisp.dhis.android.core.event.EventCreateProjection
+import org.hisp.dhis.android.core.event.EventStatus
+import java.util.Calendar
+import java.util.Date
 
 class MHRepository(
     private val d2: D2
@@ -132,5 +136,79 @@ class MHRepository(
     ): String {
         return d2.dataElement(deUid)
             ?.displayFormName().toString()
+    }
+
+    //TODO: this create new event function need to be looked at carefully.
+    fun createNewEvent(
+        teiUid: String,
+        programUid: String,
+        programStageUid: String,
+        orgUnitUid: String,
+        date: Date
+    ): String {
+
+        val eventUid = d2.eventModule().events().blockingAdd(
+            EventCreateProjection.builder()
+                .program(programUid)
+                .programStage(programStageUid)
+                .organisationUnit(orgUnitUid)
+                .build()
+        )
+
+        d2.eventModule().events()
+            .uid(eventUid)
+            .setEventDate(date)
+
+        return eventUid
+    }
+
+    fun isSameQuarter(date1: Date, date2: Date): Boolean {
+        val cal1 = Calendar.getInstance().apply { time = date1 }
+        val cal2 = Calendar.getInstance().apply { time = date2 }
+
+        val quarter1 = cal1.get(Calendar.MONTH) / 3
+        val quarter2 = cal2.get(Calendar.MONTH) / 3
+
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                quarter1 == quarter2
+    }
+
+    suspend fun getOrCreateQuarterlyEvent(
+        teiUid: String,
+        programUid: String,
+        programStageUid: String,
+        orgUnitUid: String
+    ): String = withContext(Dispatchers.IO) {
+
+        val now = Date()
+
+        // 1. Get active event
+        val currentEvent = getLatestEvent(teiUid, programUid, programStageUid)
+
+        if (currentEvent == null) {
+            // No event → create new
+            return@withContext createNewEvent(
+                teiUid, programUid, programStageUid, orgUnitUid, now
+            )
+        }
+
+        val eventDate = currentEvent.eventDate() ?: now
+
+        return@withContext if (isSameQuarter(eventDate, now)) {
+            // ✅ Still valid → return existing
+            currentEvent.uid()
+        } else {
+            // ❌ Outdated → complete + create new
+
+            // complete old event
+            d2.eventModule().events()
+                .uid(currentEvent.uid())
+                .setStatus(EventStatus.COMPLETED)
+
+            // create new event
+            createNewEvent(
+                teiUid, programUid, programStageUid, orgUnitUid, now
+            )
+        }
     }
 }
