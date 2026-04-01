@@ -98,6 +98,12 @@ class MainActivity :
 
     private var backDropActive = false
 
+    // TEI notification pending data - stored to launch in onResume after MainActivity init
+    private var pendingTeiUid: String? = null
+    private var pendingProgramUid: String? = null
+    private var pendingEnrollmentUid: String? = null
+    private var shouldLaunchTeiAfterInit = false
+
     private val requestWritePermissions =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -218,30 +224,19 @@ class MainActivity :
                     // Extract TEI UIDs from path: /teiUid/programUid/enrollmentUid
                     val pathSegments = uri.pathSegments
                     if (pathSegments.size >= 3) {
-                        val teiUid = pathSegments[0]
-                        val programUid = pathSegments[1]
-                        val enrollmentUid = pathSegments[2]
+                        // STORE TEI DATA - DON'T LAUNCH YET
+                        pendingTeiUid = pathSegments[0]
+                        pendingProgramUid = pathSegments[1]
+                        pendingEnrollmentUid = pathSegments[2]
+                        shouldLaunchTeiAfterInit = true
 
                         Timber.d(
-                            "MainActivity: Handling TEI deep link - TEI: %s, Program: %s, Enrollment: %s",
-                            teiUid, programUid, enrollmentUid
+                            "MainActivity: Queued TEI launch for onResume - TEI: %s, Program: %s, Enrollment: %s",
+                            pendingTeiUid, pendingProgramUid, pendingEnrollmentUid
                         )
 
-                        // Navigate to Tasks tab FIRST to establish proper back stack
-                        // Then launch TEI dashboard from there
-                        changeFragment(mainNavigator.currentNavigationViewItemId(MainNavigator.MainScreen.TASKS.name))
-
-                        // Now launch TEI dashboard with proper back stack
-                        val teiDashboardIntent = Intent(this, TeiDashboardMobileActivity::class.java).apply {
-                            // Use CLEAR_TOP to maintain MainActivity in back stack
-                            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra("TEI_UID", teiUid)
-                            putExtra("PROGRAM_UID", programUid)
-                            putExtra("ENROLLMENT_UID", enrollmentUid)
-                        }
-                        startActivity(teiDashboardIntent)
-                        // Back button will now go to MainActivity with Tasks tab visible
-                        return
+                        // Load Tasks tab but DON'T return early - let MainActivity finish init
+                        openScreen = MainNavigator.MainScreen.TASKS.name
                     }
                 }
             }
@@ -315,11 +310,45 @@ class MainActivity :
             presenter.initFilters()
             binding.totalFilters = FilterManager.getInstance().totalFilters
         }
+
+        // Launch TEI dashboard if pending from notification deep link
+        if (shouldLaunchTeiAfterInit && pendingTeiUid != null && pendingProgramUid != null && pendingEnrollmentUid != null) {
+            Timber.d("MainActivity.onResume: Launching queued TEI dashboard - TEI: %s", pendingTeiUid)
+            launchTeiDashboard(pendingTeiUid!!, pendingProgramUid!!, pendingEnrollmentUid!!)
+
+            // Clear pending data
+            shouldLaunchTeiAfterInit = false
+            pendingTeiUid = null
+            pendingProgramUid = null
+            pendingEnrollmentUid = null
+        }
     }
 
     override fun onPause() {
         presenter.onDetach()
         super.onPause()
+    }
+
+    /**
+     * Launch TEI dashboard with provided UIDs.
+     * Called from onResume() after MainActivity is fully initialized and Tasks tab is visible.
+     *
+     * @param teiUid Tracked Entity Instance UID
+     * @param programUid Program UID
+     * @param enrollmentUid Enrollment UID
+     */
+    private fun launchTeiDashboard(teiUid: String, programUid: String, enrollmentUid: String) {
+        try {
+            val teiDashboardIntent = Intent(this, TeiDashboardMobileActivity::class.java).apply {
+                putExtra("TEI_UID", teiUid)
+                putExtra("PROGRAM_UID", programUid)
+                putExtra("ENROLLMENT_UID", enrollmentUid)
+            }
+            startActivity(teiDashboardIntent)
+            Timber.d("MainActivity: Launched TEI dashboard for TEI: %s", teiUid)
+        } catch (e: Exception) {
+            Timber.e(e, "MainActivity: Error launching TEI dashboard")
+        }
     }
 
     private fun setUpDevelopmentMode() {

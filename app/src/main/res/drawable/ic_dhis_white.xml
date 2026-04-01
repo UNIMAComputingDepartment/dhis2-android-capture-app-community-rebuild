@@ -1,22 +1,36 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="192dp"
-    android:height="58dp"
+    android:width="162dp"
+    android:height="38dp"
     android:viewportWidth="550"
     android:viewportHeight="182">
 
-    <!-- "i" dot -->
+    <!-- "i" dot (rounded) -->
     <path
-        android:pathData="M102,22 h18 v18 h-18 z"
+        android:pathData="M111,22 C116,22 120,26 120,31 C120,36 116,40 111,40 C106,40 102,36 102,31 C102,26 106,22 111,22 Z"
         android:fillColor="#FFFFFF"/>
 
-    <!-- "i" stem (lowercase height, starts lower) -->
+    <!-- "i" stem -->
     <path
         android:pathData="M102,62 h18 v96 h-18 z"
         android:fillColor="#FFFFFF"/>
 
-    <!-- "C" uppercase -->
+    <!-- "C" uppercase (curved corners) -->
     <path
-        android:pathData="M142,22 h74 v18 h-56 v100 h56 v18 h-74 z"
+        android:pathData="
+            M160,22 L198,22
+            Q216,22 216,31
+            Q216,40 198,40
+            L178,40
+            Q160,40 160,58
+            L160,122
+            Q160,140 178,140
+            L198,140
+            Q216,140 216,149
+            Q216,158 198,158
+            L160,158
+            Q142,158 142,140
+            L142,40
+            Q142,22 160,22 Z"
         android:fillColor="#FFFFFF"/>
 
     <!-- "H" uppercase -->
@@ -29,9 +43,31 @@
         android:pathData="M334,22 h18 v136 h-18 z"
         android:fillColor="#FFFFFF"/>
 
-    <!-- "S" uppercase -->
+    <!-- "S" uppercase (curved corners) -->
     <path
-        android:pathData="M374,22 h74 v18 h-56 v41 h56 v77 h-74 v-18 h56 v-41 h-56 z"
+        android:pathData="
+            M392,22 L430,22
+            Q448,22 448,31
+            Q448,40 430,40
+            L410,40
+            Q392,40 392,58
+            L392,63
+            Q392,81 410,81
+            L430,81
+            Q448,81 448,99
+            L448,140
+            Q448,158 430,158
+            L392,158
+            Q374,158 374,149
+            Q374,140 392,140
+            L412,140
+            Q430,140 430,122
+            L430,117
+            Q430,99 412,99
+            L392,99
+            Q374,99 374,81
+            L374,40
+            Q374,22 392,22 Z"
         android:fillColor="#FFFFFF"/>
 
 </vector>

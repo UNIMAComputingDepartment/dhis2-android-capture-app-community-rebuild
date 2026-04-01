@@ -6,19 +6,6 @@ import android.content.Intent
 import androidx.core.net.toUri
 import timber.log.Timber
 
-/**
- * BroadcastReceiver that handles notification action clicks.
- * Intercepts "Open Task" button clicks from task notifications
- * and navigates to the TEI dashboard.
- *
- * When user clicks "Open Task" on a child notification, this receiver:
- * 1. Extracts the TEI, Program, and Enrollment UIDs from the Intent extras
- * 2. Creates an Intent to open the TEI dashboard
- * 3. Launches the activity with proper flags
- *
- * This ensures the notification click is handled properly and navigates
- * to the correct TEI dashboard in the enrolled program.
- */
 class NotificationActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
