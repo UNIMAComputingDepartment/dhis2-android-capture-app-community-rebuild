@@ -45,6 +45,8 @@ public class SyncGranularRxWorker extends RxWorker {
 //        Objects.requireNonNull(((App) getApplicationContext()).userComponent()).plus(new SyncGranularRxModule()).inject(this);
         String uid = getInputData().getString(UID);
         ConflictType conflictType = ConflictType.valueOf(getInputData().getString(CONFLICT_TYPE));
+
+        presenter.taskingDefault();
         switch (conflictType) {
             case PROGRAM:
                 return Single.fromObservable(presenter.syncGranularProgram(uid)).map(d2Progress -> {

@@ -1,7 +1,6 @@
 package org.dhis2.usescases.main.program
 
-import org.dhis2.android.rtsm.data.AppConfig
-import org.dhis2.ui.MetadataIconData
+import org.dhis2.mobile.commons.model.MetadataIconData
 import org.hisp.dhis.android.core.common.State
 import java.util.Date
 
@@ -17,24 +16,27 @@ data class ProgramUiModel(
     val onlyEnrollOnce: Boolean,
     val accessDataWrite: Boolean,
     val state: State,
-    val hasOverdueEvent: Boolean,
     val filtersAreActive: Boolean,
     val downloadState: ProgramDownloadState,
     val downloadActive: Boolean = false,
-    val stockConfig: AppConfig?,
+    val isStockUseCase: Boolean = false,
     val lastUpdated: Date,
 ) {
     fun countDescription() = "%s %s".format(count, typeName)
 
     fun isDownloading() = downloadActive || downloadState == ProgramDownloadState.DOWNLOADING
 
-    fun getAlphaValue() = if (isDownloading()) {
-        0.4f
-    } else {
-        1f
-    }
+    fun getAlphaValue() =
+        if (isDownloading()) {
+            0.4f
+        } else {
+            1f
+        }
 }
 
 enum class ProgramDownloadState {
-    DOWNLOADING, DOWNLOADED, ERROR, NONE
+    DOWNLOADING,
+    DOWNLOADED,
+    ERROR,
+    NONE,
 }

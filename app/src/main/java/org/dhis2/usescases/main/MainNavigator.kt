@@ -1,5 +1,6 @@
 package org.dhis2.usescases.main
 
+import android.content.Context
 import android.transition.ChangeBounds
 import android.view.View
 import androidx.annotation.IdRes
@@ -15,15 +16,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.R
 import org.dhis2.community.tasking.ui.TaskingFragment
-// import org.dhis2.TaskingFragment
+import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.usescases.about.AboutFragment
 import org.dhis2.usescases.main.program.ProgramFragment
 import org.dhis2.usescases.qrReader.QrReaderFragment
 import org.dhis2.usescases.settings.SyncManagerFragment
+import org.dhis2.usescases.teiDashboard.TeiDashboardMobileActivity
 import org.dhis2.usescases.troubleshooting.TroubleshootingFragment
 
 class MainNavigator(
-    private val dispatcherProvider: dispatch.core.DispatcherProvider,
+    private val dispatcherProvider: DispatcherProvider,
     private val fragmentManager: FragmentManager,
     private val onTransitionStart: () -> Unit,
     private val onScreenChanged: (
@@ -33,7 +35,10 @@ class MainNavigator(
     ) -> Unit,
     private val onTabChanged: (menuItemId: Int) -> Unit
 ) {
-    enum class MainScreen(@StringRes val title: Int, @IdRes val navViewId: Int) {
+    enum class MainScreen(
+        @StringRes val title: Int,
+        @IdRes val navViewId: Int,
+    ) {
         PROGRAMS(R.string.done_task, R.id.menu_home),
         TASKS(R.string.navigation_tasks, R.id.menu_tasks),
         VISUALIZATIONS(R.string.done_task, R.id.menu_home),
@@ -55,14 +60,11 @@ class MainNavigator(
 
     fun isVisualizations(): Boolean = currentScreen.value == MainScreen.VISUALIZATIONS
 
-    fun getCurrentIfProgram(): ProgramFragment? {
-        return currentFragment?.takeIf { it is ProgramFragment } as ProgramFragment
-    }
+    fun getCurrentIfProgram(): ProgramFragment? = currentFragment?.takeIf { it is ProgramFragment } as? ProgramFragment
 
     fun currentScreenName() = currentScreen.value?.name
 
-    fun currentNavigationViewItemId(screenName: String): Int =
-        MainScreen.valueOf(screenName).navViewId
+    fun currentNavigationViewItemId(screenName: String): Int = MainScreen.valueOf(screenName).navViewId
 
     fun openHome() {
         when {
@@ -73,11 +75,12 @@ class MainNavigator(
 
     fun openPrograms() {
         val programFragment = ProgramFragment()
-        val sharedView = if (isVisualizations()) {
-            (currentFragment as GroupAnalyticsFragment).sharedView()
-        } else {
-            null
-        }
+        val sharedView =
+            if (isVisualizations()) {
+                (currentFragment as GroupAnalyticsFragment).sharedView()
+            } else {
+                null
+            }
         if (sharedView != null) {
             programFragment.sharedElementEnterTransition = ChangeBounds()
             programFragment.sharedElementReturnTransition = ChangeBounds()
@@ -89,7 +92,10 @@ class MainNavigator(
         )
     }
 
-    fun restoreScreen(screenToRestoreName: String, languageSelectorOpened: Boolean = false) {
+    fun restoreScreen(
+        screenToRestoreName: String,
+        languageSelectorOpened: Boolean = false,
+    ) {
         when (MainScreen.valueOf(screenToRestoreName)) {
             MainScreen.PROGRAMS -> openPrograms()
             MainScreen.VISUALIZATIONS -> openVisualizations()
@@ -136,7 +142,16 @@ class MainNavigator(
 
     fun openTasks() {
         beginTransaction(
-            TaskingFragment(),
+            TaskingFragment { context: Context, teiUid, programUid, enrollmentUid ->
+                context.startActivity(
+                    TeiDashboardMobileActivity.intent(
+                        context,
+                        teiUid,
+                        programUid,
+                        enrollmentUid,
+                    ),
+                )
+            },
             MainScreen.TASKS,
             useFadeInTransition = false
         )
@@ -153,25 +168,25 @@ class MainNavigator(
             currentScreen.value = screen
             currentFragment = fragment
             onTabChanged(screen.navViewId)
-            CoroutineScope(dispatcherProvider.main).launch {
-                withContext(dispatcherProvider.io) {
+            CoroutineScope(dispatcherProvider.ui()).launch {
+                withContext(dispatcherProvider.io()) {
                     val transaction: FragmentTransaction = fragmentManager.beginTransaction()
-                    transaction.apply {
-                        if (sharedView == null) {
-                            val (enterAnimation, exitAnimation) = getEnterExitAnimation(useFadeInTransition)
-                            val (enterPopAnimation, exitPopAnimation) = getEnterExitPopAnimation(useFadeInTransition)
-                            setCustomAnimations(
-                                enterAnimation,
-                                exitAnimation,
-                                enterPopAnimation,
-                                exitPopAnimation,
-                            )
-                        } else {
-                            setReorderingAllowed(true)
-                            addSharedElement(sharedView, "contenttest")
-                        }
-                    }
-                        .replace(R.id.fragment_container, fragment, fragment::class.simpleName)
+                    transaction
+                        .apply {
+                            if (sharedView == null) {
+                                val (enterAnimation, exitAnimation) = getEnterExitAnimation(useFadeInTransition)
+                                val (enterPopAnimation, exitPopAnimation) = getEnterExitPopAnimation(useFadeInTransition)
+                                setCustomAnimations(
+                                    enterAnimation,
+                                    exitAnimation,
+                                    enterPopAnimation,
+                                    exitPopAnimation,
+                                )
+                            } else {
+                                setReorderingAllowed(true)
+                                addSharedElement(sharedView, "contenttest")
+                            }
+                        }.replace(R.id.fragment_container, fragment, fragment::class.simpleName)
                         .commitAllowingStateLoss()
                 }
                 onScreenChanged(
@@ -183,21 +198,19 @@ class MainNavigator(
         }
     }
 
-    private fun getEnterExitPopAnimation(useFadeInTransition: Boolean): Pair<Int, Int> {
-        return if (useFadeInTransition) {
+    private fun getEnterExitPopAnimation(useFadeInTransition: Boolean): Pair<Int, Int> =
+        if (useFadeInTransition) {
             Pair(android.R.anim.fade_in, android.R.anim.fade_out)
         } else {
             Pair(R.anim.fragment_enter_left, R.anim.fragment_exit_right)
         }
-    }
 
-    private fun getEnterExitAnimation(useFadeInTransition: Boolean): Pair<Int, Int> {
-        return if (useFadeInTransition) {
+    private fun getEnterExitAnimation(useFadeInTransition: Boolean): Pair<Int, Int> =
+        if (useFadeInTransition) {
             Pair(android.R.anim.fade_in, android.R.anim.fade_out)
         } else {
             Pair(R.anim.fragment_enter_right, R.anim.fragment_exit_left)
         }
-    }
 
     private fun shouldShowFilter(screen: MainScreen): Boolean {
         return when (screen) {

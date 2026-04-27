@@ -18,8 +18,6 @@ import org.dhis2.data.service.SyncMetadataWorkerComponent;
 import org.dhis2.data.service.SyncMetadataWorkerModule;
 import org.dhis2.usescases.about.AboutComponent;
 import org.dhis2.usescases.about.AboutModule;
-import org.dhis2.usescases.datasets.dataSetTable.DataSetTableComponent;
-import org.dhis2.usescases.datasets.dataSetTable.DataSetTableModule;
 import org.dhis2.usescases.datasets.datasetDetail.DataSetDetailComponent;
 import org.dhis2.usescases.datasets.datasetDetail.DataSetDetailModule;
 import org.dhis2.usescases.datasets.datasetInitial.DataSetInitialComponent;
@@ -60,8 +58,6 @@ import org.dhis2.usescases.searchTrackEntity.SearchTEComponent;
 import org.dhis2.usescases.searchTrackEntity.SearchTEModule;
 import org.dhis2.usescases.settings.SyncManagerComponent;
 import org.dhis2.usescases.settings.SyncManagerModule;
-import org.dhis2.usescases.settingsprogram.ProgramSettingsComponent;
-import org.dhis2.usescases.settingsprogram.SettingsProgramModule;
 import org.dhis2.usescases.sms.SmsComponent;
 import org.dhis2.usescases.sms.SmsModule;
 import org.dhis2.usescases.sync.SyncComponent;
@@ -74,8 +70,6 @@ import org.dhis2.usescases.teiDashboard.dialogs.scheduling.SchedulingComponent;
 import org.dhis2.usescases.teiDashboard.dialogs.scheduling.SchedulingModule;
 import org.dhis2.usescases.teiDashboard.teiProgramList.TeiProgramListComponent;
 import org.dhis2.usescases.teiDashboard.teiProgramList.TeiProgramListModule;
-import org.dhis2.utils.optionset.OptionSetComponent;
-import org.dhis2.utils.optionset.OptionSetModule;
 import org.dhis2.utils.session.PinModule;
 import org.dhis2.utils.session.SessionComponent;
 
@@ -137,9 +131,6 @@ public interface UserComponent {
     DataSetInitialComponent plus(DataSetInitialModule dataSetInitialModule);
 
     @NonNull
-    DataSetTableComponent plus(DataSetTableModule dataSetTableModule);
-
-    @NonNull
     ReservedValueComponent plus(ReservedValueModule reservedValueModule);
 
     @NonNull
@@ -169,17 +160,12 @@ public interface UserComponent {
     @NonNull
     ScheduledEventComponent plus(ScheduledEventModule scheduledEventModule);
 
-    @NonNull
-    OptionSetComponent plus(OptionSetModule optionSetModule);
 
     @NonNull
     NotesComponent plus(NotesModule notesModule);
 
     @NonNull
     NoteDetailComponent plus(NoteDetailModule noteDetailModule);
-
-    @NonNull
-    ProgramSettingsComponent plus(SettingsProgramModule settingsProgramModule);
 
     @NonNull
     ScanComponent plus(ScanModule scanModule);

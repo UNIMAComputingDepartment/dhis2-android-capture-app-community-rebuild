@@ -2,139 +2,107 @@ package org.dhis2.community.tasking.engine
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import org.dhis2.community.tasking.models.EvaluationResult
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
-import timber.log.Timber
+import org.dhis2.community.tasking.utils.Constants
+import java.text.SimpleDateFormat
+import java.time.ZoneId
+import java.util.Date
+import java.util.Locale
 
-open class TaskingEvaluator(
-    private val d2: D2,
+abstract class TaskingEvaluator(
     private val repository: TaskingRepository
 ) {
+
     @RequiresApi(Build.VERSION_CODES.O)
-    fun evaluateForTie(
-        sourceTieUid: String?,
-        programUid: String,
-        sourceTieOrgUnit: String
-    ): List<EvaluationResult> {
-        if (sourceTieUid == null) return emptyList()
-
-        val config = repository.getTaskingConfig()
-        require(config.programTasks.isNotEmpty()) { "Tasking Config is Empty" }
-
-        val configsForProgram =
-            config.programTasks.firstOrNull() { it.programUid == programUid } ?: return emptyList()
-        // if (configsForProgram ) return emptyList()
-
-        val results = mutableListOf<EvaluationResult>()
-
-        val ties =
-            repository.getAllTrackedEntityInstances(programUid, sourceTieUid, sourceTieOrgUnit)
-        ties.forEach { tei ->
-            configsForProgram.taskConfigs.forEach { taskConfig ->
-                // Evaluate all conditions and return a list of results
-                val evalResults = evaluateConditions(taskConfig = taskConfig, tei.uid(), programUid)
-                evalResults.filter { it.isTriggered }.forEach { result ->
-                    val dueDate = repository.calculateDueDate(taskConfig, tei.uid(), programUid)
-                        ?: return@forEach
-                    val tieAttrs = getTieAttributes(tei.uid(), configsForProgram.teiView)
-                    val taskTieOrgUnit = d2.enrollmentModule().enrollments()
-                        .byTrackedEntityInstance().eq(tei.uid())
-                        .blockingGet()
-                        .firstOrNull()?.organisationUnit()
-
-                    results += result.copy(
-                        dueDate = dueDate,
-                        tieAttrs = tieAttrs,
-                        orgUnit = taskTieOrgUnit
-                    )
-                }
-            }
-        }
-
-        Timber.tag("CREATED_TASK_EVALUATION").d(results.toString())
-        return results
-    }
-
-    private fun evaluateConditions(
+    internal fun calculateDueDate(
         taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
         teiUid: String,
-        programUid: String
-    ): List<EvaluationResult> {
-        val result = taskConfig.trigger.condition.map { cond ->
-            val lhsValue =
-                resolvedReference(taskConfig.trigger, teiUid, cond.lhs.uid.toString(), programUid)
-            val rhsValue = cond.rhs.value
+        programUid : String,
+    ):  String?{
+
+        val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
+        if (taskConfig.period.anchor.uid.isNullOrBlank() || teiUid.isBlank()) {
+            val date =  Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+            return date.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        }
+
+        val enrollmentUid = repository.getLatestEnrollment(teiUid, programUid)
+
+
+        val periodAnchor = repository.getLatestEvent(programUid,
+            taskConfig.period.anchor.uid,
+            enrollmentUid.toString(),
+            null)
+            ?.trackedEntityDataValues()
+            ?.firstOrNull { it.dataElement() == taskConfig.period.anchor.uid }
+            ?.value()
+
+        /*val periodAnchor : String? = repository.d2.trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .value(taskConfig.period.anchor.uid, teiUid)
+            .blockingGet()
+            ?.value()*/
+
+        if (periodAnchor.isNullOrBlank()) {
+            return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        }
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val anchorDate = dateFormat.parse(periodAnchor)
+            ?.toInstant()
+            ?.atZone(ZoneId.systemDefault())
+            ?.toLocalDate()
+            ?: return null
+
+        //val formatedPeriodAnchorValue = anchorDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
+
+        //val dueDate = anchorDate.plusDays(taskConfig.period.dueInDays.toLong())
+
+        return when (taskConfig.period.anchor.ref){
+            //"" -> dueDate.toString()
+            //"DIFF" -> java.time.temporal.ChronoUnit.DAYS.between(anchorDate,dueDate).toString()
+            "PAST" -> anchorDate.minusDays(taskConfig.period.dueInDays.toLong()).toString()
+            else -> anchorDate.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+
+        }
+        //return formatedPeriodAnchorValue?.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+    }
+
+    internal fun evaluateConditions(
+        conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
+        teiUid: String,
+        programUid: String,
+        eventUid: String? = null,
+        secondaryProgramUid: String? = null
+    ): List<Boolean> {
+        return conditions.condition.map { cond ->
+            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
+            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
 
             when (cond.op) {
-                "EQUALS" -> lhsValue == rhsValue
-                "NOT_EQUALS" -> lhsValue != rhsValue
-                "NOT_NULL" -> !lhsValue.isNullOrEmpty()
-                "NULL" -> lhsValue.isNullOrEmpty()
+                Constants.EQUALS -> rhsValue == lhsValue
+                Constants.NUM_EQUALS -> rhsValue?.toDouble() == lhsValue?.toDouble()
+                Constants.NOT_EQUAL -> rhsValue != lhsValue
+                Constants.NOT_NULL -> !lhsValue.isNullOrEmpty()
+                Constants.NULL -> lhsValue.isNullOrEmpty()
+                Constants.GREATER_THAN -> {
+                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
+                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    rhs != null && lhs != null && lhs > rhs
+                }
                 else -> false
             }
         }
-
-        val isTriggered = result.any { it }
-
-        val results =  if (isTriggered) {
-            listOf(
-                EvaluationResult(
-                    taskingConfig = taskConfig,
-                    teiUid = teiUid,
-                    programUid = programUid,
-                    isTriggered = true,
-                    dueDate = null, // to be filled later
-                    tieAttrs = Triple("", "", ""),
-                    orgUnit = null
-                )
-            )
-        } else emptyList()
-
-        return  results
     }
 
-    private fun resolvedReference(
-        trigger: TaskingConfig.ProgramTasks.TaskConfig.Trigger,
-        teiUid: String,
-        attrOrDataElementUid: String,
-        programUid: String
-    ): String? {
-        return trigger.condition.firstNotNullOfOrNull { cond ->
-            when (cond.lhs.ref) {
-                "teiAttribute" -> d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .byTrackedEntityInstance().eq(teiUid)
-                    .byTrackedEntityAttribute().eq(attrOrDataElementUid)
-                    .one().blockingGet()?.value()
-
-                "eventData" -> {
-                    val enrollment = repository.getLatestEnrollment(teiUid, programUid)
-                        ?: return@firstNotNullOfOrNull null
-
-                    val events = d2.eventModule().events()
-                        .byEnrollmentUid().eq(enrollment.uid())
-                        .withTrackedEntityDataValues()
-                        .blockingGet()
-
-                    events.asSequence()
-                        .flatMap { it.trackedEntityDataValues() ?: emptyList() }
-                        .firstOrNull { it.dataElement() == attrOrDataElementUid }
-                        ?.value()
-                }
-
-                "static" -> cond.lhs.uid
-                else -> null
-            }
-        }
-    }
-
-    private fun getTieAttributes(
+    internal fun getTeiAttributes(
         tieUid: String,
         tieView: TaskingConfig.ProgramTasks.TeiView
     ): Triple<String, String, String> {
         fun getAttr(uid: String) =
-            d2.trackedEntityModule().trackedEntityAttributeValues()
+            repository.d2.trackedEntityModule().trackedEntityAttributeValues()
                 .byTrackedEntityInstance().eq(tieUid)
                 .byTrackedEntityAttribute().eq(uid)
                 .one().blockingGet()?.value() ?: ""
@@ -146,13 +114,53 @@ open class TaskingEvaluator(
         )
     }
 
-    fun isTriggerActive(
-        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
+    fun resolvedReference(
+        reference: TaskingConfig.ProgramTasks.TaskConfig.Reference,
         teiUid: String,
-        programUid: String
-    ): Boolean {
-        val results = evaluateConditions(taskConfig, teiUid, programUid)
-        return results.any { it.isTriggered }
-    }
+        programUid: String,
+        eventUid: String? = null,
+        secondaryProgramUid: String?
+    ): String? {
 
+        val enrollment = repository.getLatestEnrollment(teiUid, programUid)
+            ?: secondaryProgramUid?.let { repository.getLatestEnrollment(teiUid, it) } ?: return null
+
+        if (reference.uid.isNullOrBlank())
+            return reference.value.toString()
+
+        return when (reference.ref) {
+            Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+                .byTrackedEntityInstance().eq(teiUid)
+                .byTrackedEntityAttribute().eq(reference.uid)
+                .one().blockingGet()?.value()
+
+            Constants.EVENT_DATA -> {
+                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                latestEvent
+                    ?.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == reference.uid }
+                    ?.value()
+            }
+
+            Constants.ALL_EVENTS_DATA -> {
+                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                latestEvent
+                    ?.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == reference.uid }
+                    ?.value()
+            }
+
+            Constants.STATIC -> reference.uid
+            "eventsCount" -> {
+                // reference.value can be used to filter by a specific data value
+                val stageUid = reference.type
+                val expectedValue = reference.value?.toString()
+                val count = repository.countEventsByDataValue(programUid, reference.uid, enrollment.uid(), stageUid, expectedValue)
+                count.toString()
+            }
+
+            "static" -> reference.uid
+            else -> null
+        }
+    }
 }

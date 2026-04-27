@@ -2,6 +2,7 @@ package org.dhis2.usescases.sync
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View.GONE
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.databinding.DataBindingUtil
 import androidx.work.WorkInfo
@@ -18,8 +19,9 @@ import org.dhis2.utils.extension.navigateTo
 import org.dhis2.utils.extension.share
 import javax.inject.Inject
 
-class SyncActivity : ActivityGlobalAbstract(), SyncView {
-
+class SyncActivity :
+    ActivityGlobalAbstract(),
+    SyncView {
     lateinit var binding: ActivitySynchronizationBinding
 
     @Inject
@@ -102,14 +104,18 @@ class SyncActivity : ActivityGlobalAbstract(), SyncView {
     }
 
     override fun setFlag(flagName: String?) {
-        binding.logoFlag.setImageResource(
-            resources.getIdentifier(flagName, "drawable", packageName),
-        )
-        animations.startFlagAnimation { value: Float? ->
-            binding.apply {
-                logoFlag.alpha = value!!
-                dhisLogo.alpha = 0f
+        flagName?.takeIf { it.isNotBlank() }?.let {
+            val flagRes = resources.getIdentifier(flagName, "drawable", packageName)
+            binding.logoFlag.setImageResource(flagRes)
+            animations.startFlagAnimation { value ->
+                binding.apply {
+                    logoFlag.alpha = value
+                    dhisLogo.alpha = 0f
+                }
             }
+        } ?: run {
+            // Hide flag if no valid name provided
+            binding.logoFlag.visibility = GONE
         }
     }
 

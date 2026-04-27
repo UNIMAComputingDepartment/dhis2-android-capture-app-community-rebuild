@@ -1,79 +1,131 @@
 package org.dhis2.community.tasking.repositories
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.Gson
-import io.reactivex.Observable
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
+import org.dhis2.community.tasking.utils.Constants
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment
+import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
+import org.hisp.dhis.android.core.event.Event
+import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
-import org.hisp.dhis.android.core.trackedentity.search.TrackedEntityInstanceQueryScopeOrderColumn.attribute
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
 
 @Singleton
 class TaskingRepository(
-    private val d2: D2,
+    internal val d2: D2,
 ) {
-
-    private val dataElementChangedSubject = PublishSubject.create<String>()
-    fun observeDataElementChanges(): Observable<String> =
-        dataElementChangedSubject.hide()
-
-    private fun notifyDataElementChanged(dataElement: String) {
-        dataElementChangedSubject.onNext(dataElement)
-    }
 
     private var cachedConfig: TaskingConfig? = null
 
-    val taskStatusAttributeUid =
-        getCachedConfig()?.taskProgramConfig?.firstOrNull()?.statusUid ?: ""
+    val taskStatusAttributeUid: String
+        get() = getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid.orEmpty()
+    val taskProgressAttributeUid: String
+        get() = getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid.orEmpty()
+
+    private val programDisplayNames = mutableMapOf<String, String?>()
 
     fun getCachedConfig() = cachedConfig
+
+    @Synchronized
     fun getTaskingConfig(): TaskingConfig {
-        cachedConfig?.let { return it }
+        Timber.d("getTaskingConfig() called - START")
+        cachedConfig?.takeIf { it.hasAnyConfig() }?.let {
+            Timber.d("Returning cached tasking config")
+            return it
+        }
 
-        val entries = d2.dataStoreModule().dataStore()
-            .byNamespace().eq("community_redesign")
-            .blockingGet()
+        val config = try {
+            val entries = d2.dataStoreModule().dataStore()
+                .byNamespace().eq("community_redesign")
+                .blockingGet()
 
-        val config = entries.firstOrNull { it.key() == "tasking" }
-            ?.let { Gson().fromJson(it.value(), TaskingConfig::class.java) }
-            ?: TaskingConfig(
+            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+
+            val taskingEntry = entries.firstOrNull { it.key() == "tasking" }
+
+            if (taskingEntry == null) {
+                Timber.w("No tasking entry found in dataStore")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            Timber.d("Found tasking entry: ${taskingEntry.key()}")
+
+            val rawValue = taskingEntry.value()
+            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
+            Timber.d("Raw tasking config value (first 200 chars): ${rawValue?.take(200)}")
+
+            if (rawValue.isNullOrBlank()) {
+                Timber.w("Tasking config value is null or blank")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            // Extract JSON from JsonWrapper format if needed
+            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
+                Timber.d("Detected JsonWrapper format, extracting JSON")
+                // Remove "JsonWrapper(json=" prefix and trailing ")"
+                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
+            } else {
+                rawValue
+            }
+
+            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
+
+            if (!value.trim().startsWith("{")) {
+                Timber.w("Tasking config value does not start with '{': ${value.take(100)}")
+                return TaskingConfig(
+                    programTasks = emptyList(),
+                    taskProgramConfig = emptyList()
+                )
+            }
+
+            val config = Gson().fromJson(value, TaskingConfig::class.java)
+            Timber.d("Successfully parsed tasking config: ${config.taskProgramConfig.size} task programs")
+            config
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing tasking config")
+            TaskingConfig(
                 programTasks = emptyList(),
                 taskProgramConfig = emptyList()
             )
+        }
 
-        cachedConfig = config
+        // Avoid permanently pinning an empty config due to startup timing races.
+        if (config.hasAnyConfig()) {
+            cachedConfig = config
+        }
+
         return config
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun calculateDueDate(
-        taskConfig: TaskingConfig.ProgramTasks.TaskConfig,
-        teiUid: String,
-        programUid: String
-    ): String? {
-        val enrollment = getLatestEnrollment(teiUid, programUid) ?: return null
+    private fun TaskingConfig.hasAnyConfig(): Boolean {
+        return programTasks.isNotEmpty() || taskProgramConfig.isNotEmpty()
+    }
 
-        val anchorDate = enrollment.incidentDate() ?: enrollment.enrollmentDate() ?: return null
-        val localDate = anchorDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-        val dueDate = localDate.plusDays(taskConfig.period.dueInDays.toLong())
-
-        Timber.d("DueDate for TEI=${teiUid} task=${taskConfig.name} is $dueDate")
-
-        return dueDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+    fun getOrgUnit(taskTeiUid: String): String? {
+        val tei = d2.trackedEntityModule().trackedEntityInstances()
+            .uid(taskTeiUid)
+            .blockingGet()
+        return tei?.organisationUnit()
     }
 
     fun getLatestEnrollment(teiUid: String, programUid: String): Enrollment? {
-        val v = d2.enrollmentModule().enrollments()
+        val enrollment = d2.enrollmentModule().enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
             .byStatus().eq(EnrollmentStatus.ACTIVE)
@@ -81,7 +133,7 @@ class TaskingRepository(
             .blockingGet()
         //.maxByOrNull { it.enrollmentDate()?.time ?: 0 }
 
-        return v
+        return enrollment
     }
 
     fun getProgramName(programUid: String): String {
@@ -90,7 +142,7 @@ class TaskingRepository(
             .blockingGet()?.displayName() ?: ""
     }
 
-    fun getSourceProgramIcon(sourceProgramUid: String) : String?{
+    fun getSourceProgramIcon(sourceProgramUid: String): String? {
         val program = d2.programModule().programs()
             .uid(sourceProgramUid).blockingGet()
 
@@ -100,101 +152,67 @@ class TaskingRepository(
     fun getSourceProgramColor(sourceProgramUid: String): String? {
         val program = d2.programModule().programs()
             .uid(sourceProgramUid).blockingGet()
+
         return program?.style()?.color()
     }
 
-    fun getTieByType(
-        trackedEntityTypeUid: String,
-        orgUnitUid: String,
-        programUid: String
-    ): List<TrackedEntityInstance> {
-        var query = d2.trackedEntityModule().trackedEntityInstances()
-            .byTrackedEntityType().eq(trackedEntityTypeUid)
 
-        if (programUid.isNotEmpty()) query = query.byProgramUids(listOf(programUid))
-        if (orgUnitUid.isNotEmpty()) query = query.byOrganisationUnitUid().eq(orgUnitUid)
-
-        return query.blockingGet()
-    }
-
-
-    fun getTaskTei(
-        orgUnitUid: String
-    ): List<TrackedEntityInstance> {
-        val taskTeiUid = cachedConfig?.taskProgramConfig?.firstOrNull()?.teiTypeUid
-        if (taskTeiUid.isNullOrEmpty()) return emptyList()
-
-        return d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
-            .eq(taskTeiUid)
-            .withTrackedEntityAttributeValues()
-            .blockingGet()
-    }
-
-    fun getTasksPerOrgUnit(
-//        tieTypeUid: String,
-        orgUnitUid: String = currentOrgUnits.first(),
-        //thisProgramUid: String,
-    ): List<Task> {
-        val teis = getTaskTei(orgUnitUid)
-
-        // Find the config for this program
-        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
-        //taskingConfig.taskConfigs
-        //.firstOrNull { it.programUid == programUid }
-
-        return teis.map { tei ->
-            val sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: ""
-            Task(
-                name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
-                description = tei.getAttributeValue(programConfig?.description) ?: "",
-                sourceProgramUid = sourceProgramUid,
-                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid) ?: "",
-                sourceProgramName = programConfig?.programName ?: "",
-                teiUid = tei.uid(),
-                teiPrimary = tei.getAttributeValue(taskConfig?.teiView?.teiPrimaryAttribute) ?: "",
-                teiSecondary = tei.getAttributeValue(taskConfig?.teiView?.teiSecondaryAttribute) ?: "",
-                teiTertiary = tei.getAttributeValue(taskConfig?.teiView?.teiTertiaryAttribute) ?: "",
-                dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
-                priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
-                iconNane = getSourceProgramIcon(sourceProgramUid = sourceProgramUid),
-                iconColor = getSourceProgramColor(sourceProgramUid = sourceProgramUid)
-            )
-        }
-    }
-
-    fun getAllTasks() : List<Task>{
+    fun getTaskTei(): List<TrackedEntityInstance> {
         val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
 
-        val allTies = d2.trackedEntityModule().trackedEntityInstances().byTrackedEntityType()
-            .eq(taskTeiUid)
-            .withTrackedEntityAttributeValues()
+        val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
+
+        val activeEnrollments = d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
             .blockingGet()
 
-        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
-        val taskConfig = getCachedConfig()?.programTasks?.firstOrNull() //{it.programUid == thisProgramUid}
+        val activeTeiUids =
+            activeEnrollments.map { it.trackedEntityInstance() as String }
 
-        return allTies.map { tei ->
-            val sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: ""
-            Task(
-                name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
-                description = tei.getAttributeValue(programConfig?.description) ?: "",
-                sourceProgramUid = sourceProgramUid,
-                sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
-                    ?: "",
-                sourceProgramName = programConfig?.programName ?: "",
-                teiUid = tei.uid(),
-                teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
-                teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
-                teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
-                dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
-                priority = tei.getAttributeValue(programConfig?.priorityUid) ?: "Normal",
-                iconNane = getSourceProgramIcon(sourceProgramUid = sourceProgramUid),
-                iconColor = getSourceProgramColor(sourceProgramUid = sourceProgramUid),
-                status = tei.getAttributeValue(programConfig?.statusUid) ?: "OPEN",
-            )
+        if (activeTeiUids.isNullOrEmpty()) return emptyList()
+
+        return d2.trackedEntityModule().trackedEntityInstances()
+            .byUid().`in`(activeTeiUids)
+            .withTrackedEntityAttributeValues()
+            .orderByLastUpdated(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+    }
+
+    fun getTasks(): List<Task> {
+        val teis = getTaskTei()
+
+        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
+
+        return teis.map { tei: TrackedEntityInstance ->
+            teiToTask(tei, programConfig)
+        }
+    }
+
+    fun getAllTasks(): List<Task> {
+        val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
+        val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
+        if (taskTeiUid.isNullOrEmpty()) return emptyList()
+
+        val activeEnrollments = d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        val activeTeiUids =
+            activeEnrollments.map { it.trackedEntityInstance() as String }
+
+        if (activeTeiUids.isNullOrEmpty()) return emptyList()
+
+        val allTies = d2.trackedEntityModule().trackedEntityInstances()
+            .byUid().`in`(activeTeiUids)
+            .withTrackedEntityAttributeValues()
+            .orderByLastUpdated(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+
+        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
+
+        return allTies.map { tei: TrackedEntityInstance ->
+            teiToTask(tei, programConfig)
         }
 
     }
@@ -202,37 +220,246 @@ class TaskingRepository(
     fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
         if (attributeUid.isNullOrEmpty()) return null
         return this.trackedEntityAttributeValues()
-            ?.firstOrNull {it.trackedEntityAttribute() == attributeUid}
+            ?.firstOrNull { it.trackedEntityAttribute() == attributeUid }
             ?.value()
     }
 
+    private fun teiToTask(
+        tei: TrackedEntityInstance,
+        programConfig: TaskingConfig.TaskProgramConfig?
+    ): Task {
+        return Task(
+            name = tei.getAttributeValue(programConfig?.taskNameUid) ?: "Unnamed Task",
+            description = tei.getAttributeValue(programConfig?.description) ?: "",
+            sourceProgramUid = tei.getAttributeValue(programConfig?.taskSourceProgramUid) ?: "",
+            sourceEnrollmentUid = tei.getAttributeValue(programConfig?.taskSourceEnrollmentUid)
+                ?: "",
+            sourceProgramName = programConfig?.programName ?: "",
+            sourceTeiUid = tei.getAttributeValue(programConfig?.taskSourceTeiUid) ?: "",
+            teiUid = tei.uid(),
+            teiPrimary = tei.getAttributeValue(programConfig?.taskPrimaryAttrUid) ?: "",
+            teiSecondary = tei.getAttributeValue(programConfig?.taskSecondaryAttrUid) ?: "",
+            teiTertiary = tei.getAttributeValue(programConfig?.taskTertiaryAttrUid) ?: "",
+            dueDate = tei.getAttributeValue(programConfig?.dueDateUid) ?: "",
+            priority = tei.getAttributeValue(programConfig?.priorityUid) ?: Constants.MEDIUM,
+            iconNane = getSourceProgramIcon(
+                sourceProgramUid = (tei.getAttributeValue(programConfig?.taskSourceProgramUid)
+                    ?: "")
+            ),
+            status = tei.getAttributeValue(programConfig?.statusUid) ?: Constants.OPEN,
+            sourceEventUid = tei.getAttributeValue(programConfig?.taskSourceEventUid) ?: "",
+            progress = tei.getAttributeValue(programConfig?.taskProgressUid)?.toFloatOrNull() ?: 0f
+        )
+    }
 
-    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String, taskTieUid: String) {
-        if (taskAttrUid != null)
+
+    fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String?, taskTieUid: String, retries: Int = 0) {
+        if (taskAttrUid.isNullOrBlank()) {
+            Timber.tag("TaskingRepository").w("Skipping task attribute update because attribute UID is blank")
+            return
+        }
+
+        try {
             d2.trackedEntityModule().trackedEntityAttributeValues()
                 .value(taskAttrUid, taskTieUid)
-                .blockingSet(newTaskAttrValue)
+                .blockingSet(newTaskAttrValue ?: "")
+        } catch (ex: Exception) {
+            Timber.tag("TaskingRepository").e(ex, "Error updating task attribute value")
+            if (retries < 3 && taskTieUid.isNotEmpty()) {
+                updateTaskAttrValue(taskAttrUid, newTaskAttrValue, taskTieUid, retries + 1)
+            }
+        }
+
     }
 
     val currentOrgUnits = d2.organisationUnitModule().organisationUnits().byOrganisationUnitScope(
-        OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+        OrganisationUnit.Scope.SCOPE_DATA_CAPTURE
+    )
         .blockingGet().map { it.uid() }
 
-    fun getAllTrackedEntityInstances(
-        programUid: String,
-        sourceTieUid: String?,
-        sourceTieOrgUnit: String
-    ): List<TrackedEntityInstance> {
-        val enrollments = d2.enrollmentModule().enrollments()
-            .byOrganisationUnit().eq(sourceTieOrgUnit)
-            .byProgram().eq(programUid)
-            .byTrackedEntityInstance().eq(sourceTieUid)
-            .blockingGet()
-
-        return enrollments.mapNotNull { uid ->
-            d2.trackedEntityModule().trackedEntityInstances()
-                .uid(uid.trackedEntityInstance())
-                .blockingGet()
+    fun getProgramDisplayName(programUid: String): String? {
+        programDisplayNames[programUid]?.let { return it }
+        return try {
+            programDisplayNames[programUid] = d2.programModule().programs()
+                .byUid().eq(programUid).one()
+                .blockingGet()?.displayName()
+            programDisplayNames[programUid]
+        } catch (e: Exception) {
+            Timber.tag("TaskingRepository")
+                .e(e, "Error fetching program display name for UID: $programUid")
+            null
         }
     }
+
+
+    // ===== CACHING FOR PERFORMANCE =====
+    private val _allTasksCache = MutableStateFlow<List<Task>>(emptyList())
+    private val allTasksCacheTimestamp = AtomicReference<Long>(0)
+    private val CACHE_TTL_TASKS = 30 * 1000L // 30 seconds for task list
+
+    @Synchronized
+    fun createTask(
+        task: Task,
+        sourceTeiOrgUnitUid: String,
+        taskTEITypeUid: String,
+        taskProgramUid: String
+    ): Boolean {
+        val newTeiUid = try {
+            d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+                TrackedEntityInstanceCreateProjection.builder()
+                    .organisationUnit(sourceTeiOrgUnitUid)
+                    .trackedEntityType(taskTEITypeUid)
+                    .build()
+            )
+        } catch (e: D2Error) {
+            Timber.tag("CreationEvaluator")
+                .e("TEI creation failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            return false
+        }
+
+        val taskProgramConfig = this.getTaskingConfig().taskProgramConfig.firstOrNull()
+        this.updateTaskAttrValue(taskProgramConfig?.statusUid ?: "", Constants.OPEN, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.taskNameUid ?: "", task.name, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.priorityUid ?: "", task.priority, newTeiUid)
+        this.updateTaskAttrValue(taskProgramConfig?.dueDateUid ?: "", task.dueDate, newTeiUid)
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskTertiaryAttrUid ?: "",
+            task.teiTertiary,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskSecondaryAttrUid ?: "",
+            task.teiSecondary,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskPrimaryAttrUid ?: "",
+            task.teiPrimary,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskSourceProgramUid ?: "",
+            task.sourceProgramUid,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskSourceEnrollmentUid ?: "",
+            task.sourceEnrollmentUid,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskSourceTeiUid ?: "",
+            task.sourceTeiUid,
+            newTeiUid
+        )
+        this.updateTaskAttrValue(
+            taskProgramConfig?.taskSourceEventUid ?: "",
+            task.sourceEventUid,
+            newTeiUid
+        )
+
+        try {
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(newTeiUid)
+                    .program(taskProgramUid)
+                    .organisationUnit(sourceTeiOrgUnitUid)
+                    .build()
+            )
+            if (enrollmentUid.isEmpty()) {
+                Timber.tag("CreationEvaluator").e("Enrollment creation failed: enrollmentUid is null")
+                return false
+            }
+            val today = Date()
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(today)
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(today)
+            d2.enrollmentModule().enrollments().uid(enrollmentUid)
+                .setStatus(EnrollmentStatus.ACTIVE)
+            return true
+        } catch (e: D2Error) {
+            Timber.tag("CreationEvaluator")
+                .e("Enrollment failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            return false
+        }
+    }
+
+    fun getLatestEvent(
+        programUid: String,
+        dataElementUid: String,
+        enrollmentUd: String,
+        eventUid: String?
+    ): Event? {
+        val stage = d2.programModule().programStages().byProgramUid()
+            .eq(programUid).blockingGet()
+            .firstOrNull {
+                d2.programModule().programStageDataElements()
+                    .byProgramStage().eq(it.uid())
+                    .byDataElement().eq(dataElementUid)
+                    .blockingGet().isNotEmpty()
+            } ?: return null
+
+        val events = if (eventUid == null)
+            d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollmentUd)
+                .byProgramStageUid().eq(stage.uid())
+                .withTrackedEntityDataValues()
+                .blockingGet()
+        else
+            d2.eventModule().events()
+                .byUid().eq(eventUid)
+                .withTrackedEntityDataValues()
+                .blockingGet()
+
+        return events
+            .maxByOrNull {
+                it.created() ?: it.eventDate() ?: Date(0)
+            }
+    }
+
+    fun countEventsByDataValue(
+        programUid: String,
+        dataElementUid: String,
+        enrollmentUid: String,
+        stageUid: String? = null,
+        expectedValue: String? = null
+    ): Int {
+        try {
+            val stage = if (!stageUid.isNullOrBlank()) {
+                d2.programModule().programStages().byUid().eq(stageUid).one().blockingGet()
+            } else {
+                d2.programModule().programStages().byProgramUid()
+                    .eq(programUid).blockingGet()
+                    .firstOrNull {
+                        d2.programModule().programStageDataElements()
+                            .byProgramStage().eq(it.uid())
+                            .byDataElement().eq(dataElementUid)
+                            .blockingGet().isNotEmpty()
+                    }
+            } ?: return 0
+
+            val events = d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollmentUid)
+                .byProgramStageUid().eq(stage.uid())
+                .withTrackedEntityDataValues()
+                .blockingGet()
+
+            val count = events.count { ev ->
+                ev.trackedEntityDataValues()?.any { dv ->
+                    dv.dataElement() == dataElementUid && (expectedValue == null || dv.value() == expectedValue)
+                } ?: false
+            }
+
+            return count
+        } catch (e: Exception) {
+            Timber.tag("TaskingRepository").e(e, "Error counting events for data element: $dataElementUid")
+            return 0
+        }
+    }
+
+    fun getTasksForPgEnrollment(enrollmentUID: String): List<Task> {
+        return getAllTasks().filter { it.sourceEnrollmentUid == enrollmentUID }
+    }
+
+    fun getEnrollment(enrollmentUid: String) =
+        d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
 }

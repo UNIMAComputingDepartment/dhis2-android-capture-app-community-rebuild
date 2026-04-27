@@ -1,417 +1,367 @@
 package org.dhis2.community.tasking.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ViewList
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import org.dhis2.community.IchisPrimary
 import org.dhis2.community.tasking.filters.TaskFilterState
-import org.dhis2.community.tasking.filters.ui.*
-import org.dhis2.community.tasking.models.Task
-import org.hisp.dhis.mobile.ui.designsystem.component.*
-import org.hisp.dhis.mobile.ui.designsystem.component.state.*
-import org.hisp.dhis.mobile.ui.designsystem.theme.*
-import java.text.SimpleDateFormat
-import java.util.*
+import org.dhis2.community.tasking.filters.ui.DueDateFilterBottomSheet
+import org.dhis2.community.tasking.filters.ui.PriorityFilterBottomSheet
+import org.dhis2.community.tasking.filters.ui.ProgramFilterBottomSheet
+import org.dhis2.community.tasking.filters.ui.StatusFilterBottomSheet
+import org.dhis2.community.tasking.filters.ui.TaskFilterBar
+import org.dhis2.community.tasking.notifications.TaskReminderScheduler
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import timber.log.Timber
 
 const val TASKING_ITEMS = "TASKING_ITEMS"
 
+enum class TaskListViewType {
+    LIST, GROUPED
+}
+
+data class PatientTaskGroup(
+    val patientName: String,
+    val patientUid: String,
+    val taskCount: Int,
+    val tasks: List<TaskingUiModel>
+)
+
 @Composable
 fun TaskingUi(
-    tasks: List<TaskingUiModel>,
     onTaskClick: (TaskingUiModel) -> Unit,
     viewModel: TaskingViewModelContract,
     filterState: TaskFilterState,
-    onOrgUnitFilterSelected: () -> Unit
+    onOrgUnitFilterSelected: () -> Unit,
+    showFilterBar: Boolean
 ) {
-    Timber.d("TaskingUi composable rendered with ${tasks.size} tasks")
+    val snackbarHostState = remember { SnackbarHostState() }
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
+    var viewType by remember { mutableStateOf(TaskListViewType.GROUPED) }  // Default to GROUPED view
 
     // Collect tasks from viewModel's StateFlow
     val filteredTasks by viewModel.filteredTasks.collectAsState()
-    Timber.d("TaskingUi filteredTasks count: ${filteredTasks.size}")
 
-    // Calculate progress variables at the top scope
-    val allTasksForProgress = viewModel.allTasksForProgress.ifEmpty { tasks }
-    val completedTaskCount = allTasksForProgress.count { it.status == TaskingStatus.COMPLETED }
-    val totalTaskCount = allTasksForProgress.size
-    val completionPercentage = if (totalTaskCount > 0) {
-        (completedTaskCount * 100) / totalTaskCount
-    } else 0
-    Timber.d("TaskingUi progress: $completedTaskCount/$totalTaskCount completed ($completionPercentage%)")
-    Column(
+    // Collect progress tasks from ViewModel's StateFlow
+    val progressTasks by viewModel.progressTasks.collectAsState()
+
+    // Calculate progress bar data
+    val completedTaskCount = progressTasks.count { it.status == TaskingStatus.COMPLETED }
+    val totalTaskCount = progressTasks.size
+
+    // Group tasks by patient (TEI) for grouped view
+    val groupedTasks = remember(filteredTasks) {
+        filteredTasks.groupBy { it.teiPrimary }
+            .map { (patientName, tasks) ->
+                PatientTaskGroup(
+                    patientName = patientName.takeIf { it.isNotBlank() } ?: "Unknown Patient",
+                    patientUid = tasks.firstOrNull()?.teiUid ?: "",
+                    taskCount = tasks.size,
+                    tasks = tasks
+                )
+            }
+            .sortedBy { it.patientName }
+    }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    containerColor = TextColor.OnSurface,
+                    content = {
+                        Text(
+                            text = data.visuals.message,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                    }
+                )
+            }
+        },
         modifier = Modifier
             .fillMaxSize()
             .testTag(TASKING_ITEMS)
             .padding(6.dp)
-    ) {
-        // Filter Bar
-        TaskFilterBar(
-            filterState = filterState.uiState,
-            onProgramFilterClick = {
-                Timber.d("Program filter clicked")
-                activeFilterSheet = FilterSheetType.PROGRAM
-            },
-            onOrgUnitFilterClick = {
-                Timber.d("OrgUnit filter clicked")
-                //activeFilterSheet = FilterSheetType.ORG_UNIT
-                onOrgUnitFilterSelected()
-            },
-            onPriorityFilterClick = {
-                Timber.d("Priority filter clicked")
-                activeFilterSheet = FilterSheetType.PRIORITY
-            },
-            onStatusFilterClick = {
-                Timber.d("Status filter clicked")
-                activeFilterSheet = FilterSheetType.STATUS
-            },
-            onDueDateFilterClick = {
-                Timber.d("DueDate filter clicked")
-                activeFilterSheet = FilterSheetType.DUE_DATE
-            },
-            onClearAllFilters = {
-                Timber.d("Clear all filters clicked")
-                filterState.clearAllFilters()
-                viewModel.onFilterChanged()
-            }
-        )
-
-        // Task Progress Section
-        Row(
+    ) { contentPadding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .fillMaxSize()
+                .padding(contentPadding)
+                .background(Color.White)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Task Progress",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextColor.OnSurface
-                    )
-                    Text(
-                        text = "$completedTaskCount of $totalTaskCount completed ($completionPercentage%)",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = TextColor.OnSurface
-                    )
-                }
-                ProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(16.dp)
-                        .padding(top = 8.dp),
-                    type = ProgressIndicatorType.LINEAR,
-                    progress = if (totalTaskCount > 0) {
-                        completedTaskCount.toFloat() / totalTaskCount
-                    } else 0f
-                )
-            }
-        }
-
-        // Show bottom sheets for filters
-        when (activeFilterSheet) {
-            FilterSheetType.PROGRAM -> {
-                ProgramFilterBottomSheet(
-                    programs = viewModel.programs,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = { selected ->
-                        filterState.updateProgramFilters(selected)
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
-                    }
-                )
-            }
-            FilterSheetType.ORG_UNIT -> {
-                OrgUnitFilterBottomSheet(
-                    orgUnits = viewModel.orgUnits,
-                    selectedOrgUnits = filterState.currentFilter.orgUnitFilters,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = {
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
+            // Filter Bar with Animation
+            AnimatedVisibility(visible = showFilterBar) {
+                TaskFilterBar(
+                    filterState = filterState.uiState,
+                    onProgramFilterClick = {
+                        activeFilterSheet = FilterSheetType.PROGRAM
                     },
-                    onItemSelected = { uid, checked ->
-                        val updated = if (checked) filterState.currentFilter.orgUnitFilters + uid else filterState.currentFilter.orgUnitFilters - uid
-                        filterState.updateOrgUnitFilters(updated)
-                    }
-                )
-            }
-            FilterSheetType.PRIORITY -> {
-                PriorityFilterBottomSheet(
-                    priorities = viewModel.priorities,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = { selected ->
-                        filterState.updatePriorityFilters(selected)
-                        activeFilterSheet = null
+                    onOrgUnitFilterClick = {
+                        onOrgUnitFilterSelected()
+                    },
+                    onPriorityFilterClick = {
+                        activeFilterSheet = FilterSheetType.PRIORITY
+                    },
+                    onStatusFilterClick = {
+                        activeFilterSheet = FilterSheetType.STATUS
+                    },
+                    onDueDateFilterClick = {
+                        activeFilterSheet = FilterSheetType.DUE_DATE
+                    },
+                    onClearAllFilters = {
+                        filterState.clearAllFilters()
                         viewModel.onFilterChanged()
                     }
                 )
             }
-            FilterSheetType.STATUS -> {
-                StatusFilterBottomSheet(
-                    statuses = viewModel.statuses,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = { selected ->
-                        filterState.updateStatusFilters(selected)
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
-                    }
-                )
-            }
-            FilterSheetType.DUE_DATE -> {
-                DueDateFilterBottomSheet(
-                    selectedRange = filterState.uiState.selectedDateRange,
-                    onDismiss = { activeFilterSheet = null },
-                    onApplyFilters = { selectedRange ->
-                        filterState.updateDueDateFilter(selectedRange ?: return@DueDateFilterBottomSheet)
-                        activeFilterSheet = null
-                        viewModel.onFilterChanged()
-                    }
-                )
-            }
-            null -> {}
-        }
 
-        // Display filtered tasks
-        if (filteredTasks.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No tasks available",
-                    color = TextColor.OnSurface
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filteredTasks) { task ->
-                    val statusColor = task.status.color
-                    val additionalInfoList = listOf(
-                        AdditionalInfoItem(
-                            key = "Name",
-                            value = task.teiPrimary,
-                            color = TextColor.OnSurface,
-                            truncate = false,
-                            isConstantItem = true
-                        ),
-                        AdditionalInfoItem(
-                            key = "Details",
-                            value = task.teiSecondary,
-                            color = TextColor.OnSurface,
-                            truncate = false,
-                            isConstantItem = true
-                        ),
-                        AdditionalInfoItem(
-                            key = "Date of Birth",
-                            value = task.teiTertiary,
-                            color = TextColor.OnSurface,
-                            truncate = false,
-                            isConstantItem = true
-                        ),
-                        AdditionalInfoItem(
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Flag,
-                                    contentDescription = null,
-                                    tint = task.priority.color,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            value = task.priority.label,
-                            color = task.priority.color,
-                            truncate = false,
-                            isConstantItem = true
-                        ),
-                        AdditionalInfoItem(
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Event,
-                                    contentDescription = null,
-                                    tint = statusColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            value = task.status.label,
-                            color = statusColor,
-                            truncate = false,
-                            isConstantItem = true
-                        )
-                    )
+            // Progress Section with View Toggle (Sticky)
+            TaskProgressSectionWithToggle(
+                completedCount = completedTaskCount,
+                totalCount = totalTaskCount,
+                currentViewType = viewType,
+                onViewTypeChanged = { viewType = it }
+            )
 
-                    val additionalInfoState = rememberAdditionalInfoColumnState(
-                        additionalInfoList = additionalInfoList,
-                        syncProgressItem = AdditionalInfoItem(
-                            value = "",
-                            color = TextColor.OnSurface,
-                            isConstantItem = true
-                        ),
-                        minItemsToShow = 2,
-                        scrollableContent = false
-                    )
-
-                    val listCardState = rememberListCardState(
-                        title = ListCardTitleModel(
-                            text = task.taskName,
-                            color = SurfaceColor.Primary
-                        ),
-                        description = ListCardDescriptionModel(
-                            text = task.sourceProgramName,
-                            color = TextColor.OnSurface
-                        ),
-                        lastUpdated = task.dueDate?.let {
-                            "Due: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)}"
-                        },
-                        additionalInfoColumnState = additionalInfoState,
-                        loading = false,
-                        shadow = true,
-                        expandable = false,
-                        itemVerticalPadding = 8.dp,
-                        selectionState = SelectionState.NONE
-                    )
-
-                    ListCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        listCardState = listCardState,
-                        listAvatar = {
-                            Avatar(
-                                style = AvatarStyleData.Metadata(
-                                    imageCardData = task.metadataIconData.imageCardData,
-                                    avatarSize = MetadataAvatarSize.S(),
-                                    tintColor = task.metadataIconData.color
-                                )
-                            )
-                        },
-                        onCardClick = {
-                            onTaskClick(task)
+            // Show bottom sheets for filters
+            when (activeFilterSheet) {
+                FilterSheetType.PROGRAM -> {
+                    ProgramFilterBottomSheet(
+                        programs = viewModel.programs.map { it.copy(checked = filterState.currentFilter.programFilters.contains(it.uid)) },
+                        onDismiss = { activeFilterSheet = null },
+                        onApplyFilters = { selected ->
+                            filterState.updateProgramFilters(selected)
+                            activeFilterSheet = null
+                            viewModel.onFilterChanged()
                         }
                     )
                 }
+                FilterSheetType.PRIORITY -> {
+                    PriorityFilterBottomSheet(
+                        priorities = viewModel.priorities.map { it.copy(checked = filterState.currentFilter.priorityFilters.any { p -> p.label == it.uid }) },
+                        onDismiss = { activeFilterSheet = null },
+                        onApplyFilters = { selected ->
+                            filterState.updatePriorityFilters(selected)
+                            activeFilterSheet = null
+                            viewModel.onFilterChanged()
+                        }
+                    )
+                }
+                FilterSheetType.STATUS -> {
+                    StatusFilterBottomSheet(
+                        statuses = viewModel.statuses.map { it.copy(checked = filterState.currentFilter.statusFilters.any { s -> s.label == it.uid }) },
+                        onDismiss = { activeFilterSheet = null },
+                        onApplyFilters = { selected ->
+                            filterState.updateStatusFilters(selected)
+                            activeFilterSheet = null
+                            viewModel.onFilterChanged()
+                        }
+                    )
+                }
+                FilterSheetType.DUE_DATE -> {
+                    DueDateFilterBottomSheet(
+                        selectedRange = filterState.uiState.selectedDateRange,
+                        onDismiss = { activeFilterSheet = null },
+                        onApplyFilters = { selectedRange ->
+                            if (selectedRange != null) {
+                                filterState.updateDueDateFilter(selectedRange)
+                            } else {
+                                filterState.clearDueDateFilter()
+                            }
+                            activeFilterSheet = null
+                            viewModel.onFilterChanged()
+                        }
+                    )
+                }
+                null -> {}
+            }
+
+            // Display filtered tasks or empty state
+            when {
+                filteredTasks.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No tasks available",
+                            textAlign = TextAlign.Center,
+                            color = TextColor.OnSurface
+                        )
+                    }
+                }
+                viewType == TaskListViewType.LIST -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(filteredTasks) {
+                            TaskItem(it, onTaskClick = {
+                                onTaskClick(it)
+                            })
+                        }
+                    }
+                }
+                else -> {
+                    // Grouped view
+                    TaskListGroupedView(
+                        groups = groupedTasks,
+                        onTaskClick = onTaskClick
+                    )
+                }
             }
         }
     }
 }
 
-private enum class FilterSheetType { PROGRAM, ORG_UNIT, PRIORITY, STATUS, DUE_DATE }
+@Composable
+private fun TaskProgressSectionWithToggle(
+    completedCount: Int,
+    totalCount: Int,
+    currentViewType: TaskListViewType,
+    onViewTypeChanged: (TaskListViewType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
 
-fun getDummyTasks() : List<TaskingUiModel> {
-    return listOf(
-        TaskingUiModel(
-            task = Task(
-                name = "BCG Immunization Due",
-                description = "BCG Immunization for newborn",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll1",
-                sourceProgramName = "Expanded Programme on Immunization - EPI",
-                teiUid = "tei1",
-                teiPrimary = "James Phiri",
-                teiSecondary = "2025-08-15",
-                teiTertiary = "Male",
-                dueDate = "2025-09-06",
-                priority = "Low",
-                status = "OPEN",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "ANC Follow-up Visit",
-                description = "Scheduled antenatal care follow-up",
-                sourceProgramUid = "WSGAb5XwJ3Y",
-                sourceEnrollmentUid = "enroll2",
-                sourceProgramName = "CBMNC - Woman Program",
-                teiUid = "tei2",
-                teiPrimary = "Mary Banda",
-                teiSecondary = "W123",
-                teiTertiary = "MAT456",
-                dueDate = "2025-09-10",
-                priority = "Medium",
-                status = "DUE_SOON",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "Post-delivery Follow-up",
-                description = "Neonatal check-up required",
-                sourceProgramUid = "uy2gU8kT1jF",
-                sourceEnrollmentUid = "enroll3",
-                sourceProgramName = "CBMNC - Neonatal Program",
-                teiUid = "tei3",
-                teiPrimary = "Baby Tembo",
-                teiSecondary = "2025-09-01",
-                teiTertiary = "MAT789",
-                dueDate = "2025-09-01",
-                priority = "High",
-                status = "OVERDUE",
-                iconNane = ""
-            ),
-            orgUnit = ""
-        ),
-        TaskingUiModel(
-            task = Task(
-                name = "OPV-1 Vaccination",
-                description = "First dose of Oral Polio Vaccine",
-                sourceProgramUid = "IpHINAT79UW",
-                sourceEnrollmentUid = "enroll4",
-                sourceProgramName = "EPI",
-                teiUid = "tei4",
-                teiPrimary = "Sarah Mwanza",
-                teiSecondary = "2025-09-20",
-                teiTertiary = "Female",
-                dueDate = "2025-09-20",
-                priority = "High",
-                status = "COMPLETED",
-                iconNane = ""
-            ),
-            orgUnit = ""
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 6.dp, vertical = 6.dp)
+    ) {
+        // Progress section
+        TaskProgressSection(
+            completedCount = completedCount,
+            totalCount = totalCount,
+            modifier = Modifier
         )
-    )
 
-    /*val filterState = remember { TaskFilterState() }
+        // View toggle segmented buttons below progress bar
+        SingleChoiceSegmentedButtonRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 4.dp)
+        ) {
+            // Reordered: GROUPED on left (index 0), LIST on right (index 1)
+            val viewOptions = listOf(TaskListViewType.GROUPED, TaskListViewType.LIST)
+            val selectedIndex = if (currentViewType == TaskListViewType.GROUPED) 0 else 1
 
-    val filteredPreviewTasks = fakeTasks.filter {
-        it.status != TaskingStatus.COMPLETED
+            viewOptions.forEachIndexed { index, viewType ->
+                SegmentedButton(
+                    shape = SegmentedButtonDefaults.itemShape(
+                        index = index,
+                        count = viewOptions.size
+                    ),
+                    onClick = { onViewTypeChanged(viewType) },
+                    selected = index == selectedIndex,
+                    colors = SegmentedButtonDefaults.colors(
+                        activeContainerColor = IchisPrimary,
+                        activeContentColor = Color.White,
+                        activeBorderColor = IchisPrimary,
+                        inactiveContainerColor = Color.Transparent,
+                        inactiveContentColor = TextColor.OnSurfaceLight,
+                        inactiveBorderColor = TextColor.OnSurfaceLight.copy(alpha = 0.3f)
+                    ),
+                    label = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (viewType == TaskListViewType.GROUPED) {
+                                    Icons.Default.ViewAgenda
+                                } else {
+                                    Icons.AutoMirrored.Filled.ViewList
+                                },
+                                contentDescription = if (viewType == TaskListViewType.GROUPED) "Grouped View" else "List View",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = if (viewType == TaskListViewType.GROUPED) "Grouped" else "List"
+                            )
+                        }
+                    }
+                )
+            }
+        }
     }
-
-    val previewViewModel = object : TaskingViewModelContract {
-        override val filteredTasks = MutableStateFlow(filteredPreviewTasks)
-        override val programs = emptyList<CheckBoxData>()
-        override val orgUnits = emptyList<OrgTreeItem>()
-        override val priorities = emptyList<CheckBoxData>()
-        override val statuses = emptyList<CheckBoxData>()
-        override val allTasksForProgress: List<TaskingUiModel> = fakeTasks
-        override fun onFilterChanged() {}
-    }
-
-    TaskingUi(
-        tasks = fakeTasks,
-        onTaskClick = {},
-        viewModel = previewViewModel,
-        filterState = filterState
-    )*/
 }
+
+@Composable
+private fun TaskListGroupedView(
+    groups: List<PatientTaskGroup>,
+    onTaskClick: (TaskingUiModel) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Track expanded state for only ONE group at a time (accordion behavior)
+    // Store the UID of the currently expanded group (null if none expanded)
+    val expandedGroupUid = remember { mutableStateOf<String?>(null) }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        items(groups.size, key = { groupIndex -> groups[groupIndex].patientUid }) { groupIndex ->
+            val group = groups[groupIndex]
+            // Check if THIS group is the currently expanded one
+            val isExpanded = expandedGroupUid.value == group.patientUid
+
+            Timber.d("TaskListGroupedView: Rendering group ${group.patientName}, expanded=$isExpanded")
+
+            PatientGroupSection(
+                group = group,
+                onTaskClick = onTaskClick,
+                isExpanded = isExpanded,
+                onExpandedChange = { expanded ->
+                    Timber.d("TaskListGroupedView: onExpandedChange for ${group.patientName}: $expanded")
+                    // Accordion behavior: only one group can be expanded at a time
+                    if (expanded) {
+                        // Opening this group - close any previously open group
+                        expandedGroupUid.value = group.patientUid
+                    } else {
+                        // Closing this group
+                        expandedGroupUid.value = null
+                    }
+                }
+            )
+        }
+    }
+}
+
+private enum class FilterSheetType { PROGRAM, PRIORITY, STATUS, DUE_DATE }

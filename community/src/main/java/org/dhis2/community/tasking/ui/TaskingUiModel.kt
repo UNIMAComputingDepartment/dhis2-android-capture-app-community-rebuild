@@ -4,20 +4,21 @@ import androidx.compose.ui.graphics.Color
 import org.dhis2.community.tasking.models.Task
 import org.hisp.dhis.mobile.ui.designsystem.component.ImageCardData
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
-import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import java.text.SimpleDateFormat
 import java.util.*
-import timber.log.Timber
+import androidx.core.graphics.toColorInt
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 data class TaskingUiModel(
     val task: Task,
-    val orgUnit: String?
+    val orgUnit: String?,
+    val repository: org.dhis2.community.tasking.repositories.TaskingRepository? = null
 ) {
     // Delegate properties from Task
     val taskName: String get() = task.name
-    val taskDescription: String get() = task.description
     val sourceProgramUid: String get() = task.sourceProgramUid
     val sourceProgramName: String get() = task.sourceProgramName
+    val sourceEnrollmentUid: String get() = task.sourceEnrollmentUid
     val teiUid: String get() = task.teiUid
     val teiPrimary: String get() = task.teiPrimary
     val teiSecondary: String get() = task.teiSecondary
@@ -25,13 +26,15 @@ data class TaskingUiModel(
     val dueDate: Date? get() = parseDueDate(task.dueDate)
     val priority: TaskingPriority get() = TaskingPriority.fromLabel(task.priority)
     val status: TaskingStatus get() = calculateStatus(task.status, dueDate)
+    val progress: Float get() = task.progress.toFloat()
     val metadataIconData: MetadataIconData
         get() {
             val iconName = task.iconNane?.takeIf { it.isNotBlank() }
             val iconRes = iconName?.let { "dhis2_" + it } ?: "dhis2_default"
-            val color = task.iconColor?.takeIf { it.isNotBlank() }?.let {
+            val colorString = repository?.getSourceProgramColor(task.sourceProgramUid)
+            val color = colorString?.takeIf { it.isNotBlank() }?.let {
                 try {
-                    Color(android.graphics.Color.parseColor(it))
+                    Color(it.toColorInt())
                 } catch (e: Exception) {
                     SurfaceColor.Primary
                 }
@@ -47,57 +50,63 @@ data class TaskingUiModel(
             )
         }
 
+    val displayProgramName: String get() = repository?.getProgramDisplayName(sourceProgramUid) ?: sourceProgramName
+    val sourceTeiUid: String get() = task.sourceTeiUid
+
     private fun parseDueDate(dueDate: String?): Date? {
-        Timber.d("parseDueDate called with: '$dueDate'")
 
         if (dueDate.isNullOrBlank()) {
-            Timber.d("Due date is null or blank")
             return null
         }
 
         // Check if this looks like an attribute ID (starts with letter)
         if (dueDate.matches(Regex("[a-zA-Z].*"))) {
-            Timber.e("ERROR: This looks like an attribute ID, not a date: $dueDate")
             return null
         }
 
         val dateRegex = Regex("\\d{4}-\\d{2}-\\d{2}")
         if (!dateRegex.matches(dueDate)) {
-            Timber.e("DueDate value is not a valid date format: $dueDate")
             return null
         }
 
         return try {
             SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dueDate)
         } catch (e: Exception) {
-            Timber.e(e, "Error parsing dueDate: $dueDate")
             null
         }
     }
 
     private fun calculateStatus(apiStatus: String, dueDate: Date?): TaskingStatus {
-        Timber.d("calculateStatus called with apiStatus: $apiStatus, dueDate: $dueDate")
-        return when (apiStatus) {
-            "COMPLETED" -> TaskingStatus.COMPLETED
-            "DEFAULTED" -> TaskingStatus.DEFAULTED
-            "OVERDUE" -> TaskingStatus.OVERDUE
-            "DUE_TODAY" -> TaskingStatus.DUE_TODAY
-            "DUE_SOON" -> TaskingStatus.DUE_SOON
-            "OPEN" -> TaskingStatus.OPEN
-            else -> {
-                // Fallback to date logic if status is unknown
+        val statusLower = apiStatus.trim().lowercase(Locale.US)
+        return when (statusLower) {
+            "completed" -> TaskingStatus.COMPLETED
+            "defaulted" -> TaskingStatus.DEFAULTED
+            "open" -> {
+                // Only "open" status gets date-based calculation
                 if (dueDate == null) return TaskingStatus.OPEN
-                val today = Calendar.getInstance()
-                val due = Calendar.getInstance().apply { time = dueDate }
-                when {
+                val today = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val due = Calendar.getInstance().apply {
+                    time = dueDate
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                return when {
                     due.before(today) -> TaskingStatus.OVERDUE
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                             due.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) -> TaskingStatus.DUE_TODAY
                     due.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                            due.get(Calendar.DAY_OF_YEAR) <= today.get(Calendar.DAY_OF_YEAR) + 3 -> TaskingStatus.DUE_SOON
+                            due.get(Calendar.DAY_OF_YEAR) in (today.get(Calendar.DAY_OF_YEAR) + 1)..(today.get(Calendar.DAY_OF_YEAR) + 3) -> TaskingStatus.DUE_SOON
                     else -> TaskingStatus.OPEN
                 }
             }
+            else -> TaskingStatus.OPEN
         }
     }
 }
@@ -141,7 +150,7 @@ enum class TaskingStatus(
 ) {
     OPEN(
         "Open",
-        SurfaceColor.Primary
+        TextColor.OnPrimaryContainer
     ),
     DUE_TODAY(
         "Due Today",
@@ -161,7 +170,7 @@ enum class TaskingStatus(
     ),
     DEFAULTED(
         "Defaulted",
-        TextColor.OnSurfaceVariant
+        Color.Gray
     )
 }
 

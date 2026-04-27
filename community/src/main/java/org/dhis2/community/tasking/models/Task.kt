@@ -1,28 +1,20 @@
 package org.dhis2.community.tasking.models
 
-data class EvaluationResult(
-    val taskingConfig: TaskingConfig.ProgramTasks.TaskConfig,
-    val teiUid: String, //source tei
-    val programUid: String,
-    val isTriggered: Boolean,
-    val dueDate: String? = null,
-    val tieAttrs: Triple<String, String, String>? = null,
-    val orgUnit: String?
-)
-
 data class Task(
     val name: String,
     val description: String,
     val sourceProgramUid: String,
     val sourceEnrollmentUid: String,
     val sourceProgramName: String,
+    val sourceTeiUid: String,
+    val sourceEventUid: String?,
     val teiUid: String, //source teiUid
     val teiPrimary: String,
     val teiSecondary: String,
     val teiTertiary: String,
     val dueDate: String,
     val priority: String,
-    val status: String = "OPEN",
+    val status: String,
     val iconNane : String?,
-    val iconColor: String? = null
+    val progress: Float = 0.7f
 )

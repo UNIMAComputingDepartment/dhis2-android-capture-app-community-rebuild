@@ -1,4 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ========================================
+         PERMISSIONS FOR BACKGROUND NOTIFICATIONS
+         ======================================== -->
+
+    <!-- Required for scheduling exact alarms (Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Required for receiving boot completion event -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Required for posting notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Optional but recommended for foreground services (future enhancement) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application>
+        <!-- ========================================
+             BROADCAST RECEIVER FOR TASK REMINDERS
+             Handles daily 7 AM alarms and boot events
+             ======================================== -->
+        <receiver
+            android:name="org.dhis2.community.tasking.notifications.TaskReminderBroadcastReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <!-- Receive device boot completion to reschedule alarms -->
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <!-- Receive custom alarm action -->
+            <intent-filter>
+                <action android:name="org.dhis2.community.tasking.ALARM_ACTION" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ========================================
+             BROADCAST RECEIVER FOR NOTIFICATION ACTIONS
+             Handles "Open Task" button clicks
+             ======================================== -->
+        <receiver
+            android:name="org.dhis2.community.tasking.notifications.NotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <!-- Receive notification action clicks -->
+            <intent-filter>
+                <action android:name="org.dhis2.community.tasking.OPEN_TASK_ACTION" />
+            </intent-filter>
+        </receiver>
+    </application>
+
 </manifest>

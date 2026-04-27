@@ -4,12 +4,14 @@ package org.dhis2.usescases.teiDashboard.teiProgramList;
 import android.os.Build;
 import android.widget.DatePicker;
 
+import androidx.annotation.NonNull;
+
 import org.dhis2.R;
 import org.dhis2.commons.dialogs.calendarpicker.CalendarPicker;
 import org.dhis2.commons.dialogs.calendarpicker.OnDatePickerListener;
 import org.dhis2.commons.orgunitselector.OUTreeFragment;
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope;
 import org.dhis2.community.workflow.WorkflowRepository;
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.usescases.main.program.ProgramDownloadState;
 import org.dhis2.usescases.main.program.ProgramUiModel;
@@ -22,6 +24,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -31,10 +34,6 @@ import io.reactivex.processors.PublishProcessor;
 import io.reactivex.schedulers.Schedulers;
 import kotlin.Unit;
 import timber.log.Timber;
-
-/**
- * QUADRAM. Created by Cristian on 06/03/2018.
- */
 
 public class TeiProgramListInteractor implements TeiProgramListContract.Interactor {
 
@@ -181,7 +180,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
-                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
+                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.getProgramName().compareToIgnoreCase(enrollment2.getProgramName()));
                             view.setActiveEnrollments(enrollments);
                         },
                         Timber::d)
@@ -193,7 +192,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(enrollments -> {
-                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.programName().compareToIgnoreCase(enrollment2.programName()));
+                            Collections.sort(enrollments, (enrollment1, enrollment2) -> enrollment1.getProgramName().compareToIgnoreCase(enrollment2.getProgramName()));
                             view.setOtherEnrollments(enrollments);
                         },
                         Timber::d)
@@ -252,7 +251,7 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
         );
     }
 
-    private void deleteRepeatedPrograms(List<ProgramUiModel> allPrograms, List<Program> alreadyEnrolledPrograms) {
+    private void deleteRepeatedPrograms(@NonNull List<ProgramUiModel> allPrograms, List<Program> alreadyEnrolledPrograms) {
         ArrayList<ProgramUiModel> programListToPrint = new ArrayList<>();
         for (ProgramUiModel programUiModel : allPrograms) {
             boolean isAlreadyEnrolled = false;
@@ -270,18 +269,21 @@ public class TeiProgramListInteractor implements TeiProgramListContract.Interact
         Collections.sort(programListToPrint, (program1, program2) -> program1.getTitle().compareToIgnoreCase(program2.getTitle()));
         compositeDisposable.add(
                 Single.fromCallable(() -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                List<String> uids = programListToPrint.stream().map(ProgramUiModel::getUid).toList();
-                                return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
+                            List<String> uids = new ArrayList<>();
+                            for (ProgramUiModel programUiModel : programListToPrint) {
+                                uids.add(programUiModel.getUid());
                             }
-                            return null;
+                            return workflowRepository.enrollAblePrograms(uids, trackedEntityId);
                         }).subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(programUid ->{
-
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                                view.setPrograms(programListToPrint.stream().filter(e -> programUid.contains(e.getUid())).toList());
+                        .subscribe(programUid -> {
+                            List<ProgramUiModel> filteredPrograms = new ArrayList<>();
+                            for (ProgramUiModel programUiModel : programListToPrint) {
+                                if (programUid.contains(programUiModel.getUid())) {
+                                    filteredPrograms.add(programUiModel);
+                                }
                             }
+                            view.setPrograms(filteredPrograms);
                         },Timber ::d)
         );
     }

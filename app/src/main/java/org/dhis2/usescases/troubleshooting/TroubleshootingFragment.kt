@@ -15,13 +15,12 @@ import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.main.MainActivity
 import org.dhis2.usescases.main.MainNavigator
 import org.dhis2.usescases.troubleshooting.ui.TroubleshootingScreen
-import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
+import org.dhis2.community.IchisTheme
 import javax.inject.Inject
 
 const val OPEN_LANGUAGE_SECTION = "OPEN_LANGUAGE_SECTION"
 
 class TroubleshootingFragment : FragmentGlobalAbstract() {
-
     @Inject
     lateinit var troubleshootingViewModelFactory: TroubleshootingViewModelFactory
 
@@ -30,23 +29,24 @@ class TroubleshootingFragment : FragmentGlobalAbstract() {
     }
 
     companion object {
-        fun instance(languageSelectorOpen: Boolean = false): TroubleshootingFragment {
-            return TroubleshootingFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean(OPEN_LANGUAGE_SECTION, languageSelectorOpen)
-                }
+        fun instance(languageSelectorOpen: Boolean = false): TroubleshootingFragment =
+            TroubleshootingFragment().apply {
+                arguments =
+                    Bundle().apply {
+                        putBoolean(OPEN_LANGUAGE_SECTION, languageSelectorOpen)
+                    }
             }
-        }
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is MainActivity) {
-            context.mainComponent.plus(
-                TroubleshootingModule(
-                    arguments?.getBoolean(OPEN_LANGUAGE_SECTION) ?: false,
-                ),
-            ).inject(this)
+            context.mainComponent
+                .plus(
+                    TroubleshootingModule(
+                        arguments?.getBoolean(OPEN_LANGUAGE_SECTION) ?: false,
+                    ),
+                ).inject(this)
         }
     }
 
@@ -56,20 +56,19 @@ class TroubleshootingFragment : FragmentGlobalAbstract() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View {
-        return ComposeView(requireContext()).apply {
+    ): View =
+        ComposeView(requireContext()).apply {
             setContent {
                 setViewCompositionStrategy(
                     ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
                 )
-                DHIS2Theme {
+                IchisTheme {
                     TroubleshootingScreen(troubleshootingViewModel) {
                         refreshScreenLanguageChange()
                     }
                 }
             }
         }
-    }
 
     private fun refreshScreenLanguageChange() {
         startActivity(

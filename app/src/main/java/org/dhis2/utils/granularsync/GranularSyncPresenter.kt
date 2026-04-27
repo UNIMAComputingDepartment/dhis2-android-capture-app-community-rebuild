@@ -33,7 +33,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkInfo
-import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +61,6 @@ import org.dhis2.data.service.workManager.WorkerItem
 import org.dhis2.data.service.workManager.WorkerType
 import org.dhis2.usescases.sms.SmsSendingService
 import org.hisp.dhis.android.core.D2
-import org.hisp.dhis.android.core.arch.helpers.UidsHelper
 import org.hisp.dhis.android.core.common.State
 import timber.log.Timber
 
@@ -76,7 +74,6 @@ class GranularSyncPresenter(
     private val workManagerController: WorkManagerController,
     private val smsSyncProvider: SMSSyncProvider,
 ) : ViewModel() {
-
     private val workerName: String
     private var disposable: CompositeDisposable = CompositeDisposable()
     private lateinit var states: MutableLiveData<List<SmsSendingService.SendingStatus>>
@@ -94,9 +91,10 @@ class GranularSyncPresenter(
 
     private fun loadSyncInfo(forcedState: State? = null) {
         viewModelScope.launch(dispatcher.io()) {
-            val syncState = async {
-                repository.getUiState(forcedState)
-            }.await()
+            val syncState =
+                async {
+                    repository.getUiState(forcedState)
+                }.await()
             val dismissOnUpdate = refreshing && syncState.syncState == State.SYNCED
             refreshing = false
             _currentState.update {
@@ -110,12 +108,10 @@ class GranularSyncPresenter(
         loadSyncInfo()
     }
 
-    fun isSMSEnabled(showSms: Boolean): Boolean {
-        return smsSyncProvider.isSMSEnabled(syncContext.conflictType() == TEI) && showSms
-    }
+    fun isSMSEnabled(): Boolean = smsSyncProvider.isSMSEnabled(syncContext.conflictType() == TEI)
 
-    fun canSendSMS(): Boolean {
-        return when (syncContext.conflictType()) {
+    fun canSendSMS(): Boolean =
+        when (syncContext.conflictType()) {
             ALL,
             PROGRAM,
             DATA_SET,
@@ -126,69 +122,74 @@ class GranularSyncPresenter(
             DATA_VALUES,
             -> true
         }
-    }
 
     fun initGranularSync(): LiveData<List<WorkInfo>> {
-        var conflictTypeData: ConflictType? = null
-        var dataToDataValues: Data? = null
-        when (syncContext.conflictType()) {
-            PROGRAM -> conflictTypeData = PROGRAM
-            TEI -> conflictTypeData = TEI
-            EVENT -> conflictTypeData = EVENT
-            DATA_SET -> conflictTypeData = DATA_SET
-            DATA_VALUES ->
-                with(syncContext as SyncContext.DataSetInstance) {
-                    dataToDataValues = Data.Builder().putString(UID, recordUid())
-                        .putString(CONFLICT_TYPE, DATA_VALUES.name)
-                        .putString(ORG_UNIT, orgUnitUid)
-                        .putString(PERIOD_ID, periodId)
-                        .putString(ATTRIBUTE_OPTION_COMBO, attributeOptionComboUid)
-                        .putStringArray(
-                            CATEGORY_OPTION_COMBO,
-                            getDataSetCatOptCombos().blockingGet().toTypedArray(),
-                        )
-                        .build()
+        viewModelScope.launch(dispatcher.io()) {
+            var conflictTypeData: ConflictType? = null
+            var dataToDataValues: Data? = null
+
+            when (syncContext.conflictType()) {
+                PROGRAM -> conflictTypeData = PROGRAM
+                TEI -> conflictTypeData = TEI
+                EVENT -> conflictTypeData = EVENT
+                DATA_SET -> conflictTypeData = DATA_SET
+                DATA_VALUES ->
+                    with(syncContext as SyncContext.DataSetInstance) {
+                        dataToDataValues =
+                            Data
+                                .Builder()
+                                .putString(UID, recordUid())
+                                .putString(CONFLICT_TYPE, DATA_VALUES.name)
+                                .putString(ORG_UNIT, orgUnitUid)
+                                .putString(PERIOD_ID, periodId)
+                                .putString(ATTRIBUTE_OPTION_COMBO, attributeOptionComboUid)
+                                .putStringArray(
+                                    CATEGORY_OPTION_COMBO,
+                                    getDataSetCatOptCombos().toTypedArray(),
+                                ).build()
+                    }
+
+                ALL -> { // Do nothing
+                }
+            }
+            if (syncContext.conflictType() != ALL) {
+                if (dataToDataValues == null) {
+                    dataToDataValues =
+                        Data
+                            .Builder()
+                            .putString(UID, syncContext.recordUid())
+                            .putString(CONFLICT_TYPE, conflictTypeData!!.name)
+                            .build()
                 }
 
-            ALL -> { // Do nothing
-            }
-        }
-        if (syncContext.conflictType() != ALL) {
-            if (dataToDataValues == null) {
-                dataToDataValues = Data.Builder()
-                    .putString(UID, syncContext.recordUid())
-                    .putString(CONFLICT_TYPE, conflictTypeData!!.name)
-                    .build()
-            }
+                val workerItem =
+                    WorkerItem(
+                        workerName,
+                        WorkerType.GRANULAR,
+                        data = dataToDataValues,
+                        policy = ExistingWorkPolicy.KEEP,
+                    )
 
-            val workerItem =
-                WorkerItem(
-                    workerName,
-                    WorkerType.GRANULAR,
-                    data = dataToDataValues,
-                    policy = ExistingWorkPolicy.KEEP,
-                )
-
-            workManagerController.beginUniqueWork(workerItem)
-        } else {
-            workManagerController.syncDataForWorker(Constants.DATA_NOW, Constants.INITIAL_SYNC)
+                workManagerController.beginUniqueWork(workerItem)
+            } else {
+                workManagerController.syncDataForWorker(Constants.DATA_NOW, Constants.INITIAL_SYNC)
+            }
         }
         return observeWorkInfo()
     }
 
-    fun observeWorkInfo() =
-        workManagerController.getWorkInfosForUniqueWorkLiveData(workerName)
+    fun observeWorkInfo() = workManagerController.getWorkInfosForUniqueWorkLiveData(workerName)
 
-    private fun workerName(): String {
-        return when (syncContext.conflictType()) {
+    private fun workerName(): String =
+        when (syncContext.conflictType()) {
             ALL -> Constants.INITIAL_SYNC
-            DATA_VALUES -> with(syncContext as SyncContext.DataSetInstance) {
-                orgUnitUid + "_" + periodId + "_" + attributeOptionComboUid
-            }
+            DATA_VALUES ->
+                with(syncContext as SyncContext.DataSetInstance) {
+                    orgUnitUid + "_" + periodId + "_" + attributeOptionComboUid
+                }
 
             else -> syncContext.recordUid()
         }
-    }
 
     // NO PLAY SERVICES
     fun initSMSSync(): LiveData<List<SmsSendingService.SendingStatus>> {
@@ -196,7 +197,8 @@ class GranularSyncPresenter(
         states = MutableLiveData()
 
         disposable.add(
-            smsSyncProvider.getConvertTask()
+            smsSyncProvider
+                .getConvertTask()
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.io())
                 .subscribe(
@@ -246,14 +248,13 @@ class GranularSyncPresenter(
     // PLAY SERVICES
     private fun initSMSSyncPlayServices() {
         disposable.add(
-            smsSyncProvider.getConvertTask()
+            smsSyncProvider
+                .getConvertTask()
                 .filter {
                     it is ConvertTaskResult.Message
-                }
-                .map { result ->
+                }.map { result ->
                     (result as ConvertTaskResult.Message).smsMessage
-                }
-                .subscribeOn(schedulerProvider.io())
+                }.subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
                     { message ->
@@ -266,17 +267,17 @@ class GranularSyncPresenter(
 
     fun sendSMS() {
         disposable.add(
-            smsSyncProvider.sendSms(
-                doOnNext = { sendingStatus: SmsSendingService.SendingStatus ->
-                    if (!isLastSendingStateTheSame(sendingStatus.sent, sendingStatus.total)) {
-                        updateStateList(sendingStatus)
-                    }
-                },
-                doOnNewState = {
-                    updateStateList(it)
-                },
-            )
-                .subscribeOn(schedulerProvider.io())
+            smsSyncProvider
+                .sendSms(
+                    doOnNext = { sendingStatus: SmsSendingService.SendingStatus ->
+                        if (!isLastSendingStateTheSame(sendingStatus.sent, sendingStatus.total)) {
+                            updateStateList(sendingStatus)
+                        }
+                    },
+                    doOnNewState = {
+                        updateStateList(it)
+                    },
+                ).subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.io())
                 .subscribe(
                     {
@@ -319,7 +320,10 @@ class GranularSyncPresenter(
         smsSyncProvider.smsSender.markAsSentViaSMS().blockingAwait()
     }
 
-    private fun isLastSendingStateTheSame(sent: Int, total: Int): Boolean {
+    private fun isLastSendingStateTheSame(
+        sent: Int,
+        total: Int,
+    ): Boolean {
         if (statesList.isEmpty()) return false
         val last = statesList[statesList.size - 1]
         return last.state == SmsSendingService.State.SENDING &&
@@ -348,7 +352,10 @@ class GranularSyncPresenter(
         }
     }
 
-    fun onSmsManuallySent(context: Context, confirmationCallback: (LiveData<Boolean?>) -> Unit) {
+    fun onSmsManuallySent(
+        context: Context,
+        confirmationCallback: (LiveData<Boolean?>) -> Unit,
+    ) {
         if (smsSyncProvider.expectsResponseSMS()) {
             smsSyncProvider.waitForSMSResponse(
                 context,
@@ -385,25 +392,39 @@ class GranularSyncPresenter(
         restartSmsSender()
     }
 
-    private fun getDataSetCatOptCombos(): Single<List<String>> {
-        return d2.dataSetModule().dataSets().withDataSetElements().uid(syncContext.recordUid())
-            .get()
-            .map {
-                it.dataSetElements()?.mapNotNull { dataSetElement ->
+    private suspend fun getDataSetCatOptCombos(): List<String> {
+        val dataSet =
+            d2
+                .dataSetModule()
+                .dataSets()
+                .withDataSetElements()
+                .uid(syncContext.recordUid())
+                .blockingGet()
+
+        val catCombos =
+            dataSet
+                ?.dataSetElements()
+                ?.mapNotNull { dataSetElement ->
                     if (dataSetElement.categoryCombo() != null) {
                         dataSetElement.categoryCombo()?.uid()
                     } else {
-                        d2.dataElementModule()
+                        d2
+                            .dataElementModule()
                             .dataElements()
                             .uid(dataSetElement.dataElement().uid())
-                            .blockingGet()?.categoryComboUid()
+                            .blockingGet()
+                            ?.categoryCombo()
+                            ?.uid()
                     }
                 }?.distinct()
-            }
-            .flatMap {
-                d2.categoryModule().categoryOptionCombos().byCategoryComboUid().`in`(it).get()
-            }
-            .map { UidsHelper.getUidsList(it) }
+        val catOptionComboUidList =
+            d2
+                .categoryModule()
+                .categoryOptionCombos()
+                .byCategoryComboUid()
+                .`in`(catCombos)
+                .blockingGetUids()
+        return catOptionComboUidList
     }
 
     fun onDettach() {

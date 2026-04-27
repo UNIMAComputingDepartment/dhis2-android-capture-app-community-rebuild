@@ -1,18 +1,23 @@
 package org.dhis2.community.tasking.ui
 
 import android.os.Build
+import android.util.Log
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.filters.TaskFilterState
 import org.dhis2.community.tasking.filters.models.DateRangeFilter
-import org.dhis2.community.tasking.models.EvaluationResult
-import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.mobile.ui.designsystem.component.CheckBoxData
 import org.hisp.dhis.mobile.ui.designsystem.component.OrgTreeItem
 import timber.log.Timber
@@ -20,23 +25,35 @@ import java.util.Calendar
 import javax.inject.Inject
 
 interface TaskingViewModelContract {
+    val loading: StateFlow<Boolean>
     val filteredTasks: StateFlow<List<TaskingUiModel>>
     val programs: List<CheckBoxData>
     val priorities: List<CheckBoxData>
     val statuses: List<CheckBoxData>
     val orgUnits: List<OrgTreeItem>
     val allTasksForProgress: List<TaskingUiModel>
+    val progressTasks: StateFlow<List<TaskingUiModel>>
     fun onFilterChanged()
+    fun tasksForProgressBar(): List<TaskingUiModel>
+    fun updateTasks(tasks: List<TaskingUiModel>)
 }
 
 class TaskingViewModel @Inject constructor(
     private val repository: TaskingRepository,
-    private val d2: D2
+    private val filterRepository: TaskFilterRepository,
 ) : ViewModel(), TaskingViewModelContract {
     val filterState = TaskFilterState()
-    private var allTasks: List<TaskingUiModel> = emptyList()
+
+    private val _loading = MutableStateFlow(false)
+    override val loading = _loading.asStateFlow()
+
+    private val _allTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
+
     private val _filteredTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
     override val filteredTasks: StateFlow<List<TaskingUiModel>> = _filteredTasks
+
+    private val _progressTasks = MutableStateFlow<List<TaskingUiModel>>(emptyList())
+    override val progressTasks: StateFlow<List<TaskingUiModel>> = _progressTasks
 
     override var programs: List<CheckBoxData> = emptyList()
         private set
@@ -46,94 +63,74 @@ class TaskingViewModel @Inject constructor(
         private set
     override var orgUnits: List<OrgTreeItem> = emptyList()
         private set
+
+    // Return current tasks from StateFlow
     override val allTasksForProgress: List<TaskingUiModel>
-        get() = allTasks
+        get() = _allTasks.value
+
+    // Debounce filter updates to prevent recomposition storms
+    private var filterDebounceJob: kotlinx.coroutines.Job? = null
+    private val FILTER_DEBOUNCE_MS = 300L
 
     init {
-        Timber.d("TaskingViewModel initialized")
         loadInitialData()
     }
 
     private fun loadInitialData() {
-        Timber.d("loadInitialData() called in TaskingViewModel")
         viewModelScope.launch {
-            Timber.d("Coroutine launched in loadInitialData()")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 try {
-                    // Ensure config is loaded before accessing cachedConfig
+                    // Ensure config is loaded before accessing cachedConfig (this is still blocking but happens once)
                     repository.getTaskingConfig()
-                    Timber.d("About to fetch orgUnits from repository.currentOrgUnits")
-                    val orgUnits = repository.currentOrgUnits
-                    Timber.d("Fetched orgUnits: $orgUnits")
-                    val programUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.programUid
-                    Timber.d("Using programUid: $programUid")
-                    val teiTypeUid = repository.getCachedConfig()?.taskProgramConfig?.firstOrNull()?.teiTypeUid
-                    Timber.d("Using teiTypeUid: $teiTypeUid")
-                    val taskConfig = repository.getCachedConfig()?.programTasks?.firstOrNull { it.programUid == programUid }
-                    Timber.d("Using taskConfig: $taskConfig")
-                    allTasks = orgUnits.flatMap { orgUnitUid ->
-                        Timber.d("Fetching tasks for orgUnit $orgUnitUid and programUid $programUid")
-                        val teis = repository.getTaskTei(orgUnitUid)
-                        Timber.d("TEIs fetched for orgUnit $orgUnitUid: ${teis.size}")
-//                        val tasks = repository.getAllTasks(orgUnitUid, programUid ?: "")
-                        val tasks = repository.getAllTasks()
-                        val tasksDebug = repository.getTasksPerOrgUnit(orgUnitUid)
-                        Timber.d("Tasks fetched for orgUnit $orgUnitUid: ${tasksDebug.size}")
-                        Timber.d("Tasks built for orgUnit $orgUnitUid: ${tasks.size}")
-                        tasks.map { task -> TaskingUiModel(task, orgUnitUid) }
+
+                    // Fetch all tasks on IO dispatcher to avoid main thread blockage
+                    val fetchedTasks = withContext(Dispatchers.IO) {
+                        repository.getAllTasks()
                     }
-                    Timber.d("Total tasks loaded: ${allTasks.size}")
-                    _filteredTasks.value = allTasks
-                    updateFilterOptions()
-                    applyFilters()
+
+                    Timber.tag("TaskingViewModel").d("Loaded ${fetchedTasks.size} tasks")
+
+                    // Map tasks to UI models on Default dispatcher
+                    val tasks = withContext(Dispatchers.Default) {
+                        fetchedTasks.map { task ->
+                            val taskOrgUnit = withContext(Dispatchers.IO) {
+                                repository.getOrgUnit(task.sourceTeiUid)
+                            } ?: ""
+                            TaskingUiModel(task, taskOrgUnit, repository)
+                        }
+                    }
+
+                    _allTasks.value = tasks
+
+                    // Update UI on main thread
+                    withContext(Dispatchers.Main) {
+                        filterState.updateUiState()
+                        updateFilterOptions()
+                        applyFilters()
+                    }
                 } catch (e: Exception) {
-                    Timber.e(e, "Error loading tasks in loadInitialData()")
+                    Timber.tag("TaskingViewModel").e(e, "Error loading tasks in loadInitialData()")
                 }
             } else {
-                Timber.w("Android version too low for loadInitialData() logic")
+                Timber.tag("TaskingViewModel")
+                    .w("Android version too low for loadInitialData() logic")
             }
-        }
-    }
-
-    private fun evaluationResultToTask(result: EvaluationResult): Task? {
-        return try {
-            result.tieAttrs?.let { attrs ->
-                result.dueDate?.let { dueDate ->
-                    Task(
-                        name = result.taskingConfig.name,
-                        description = result.taskingConfig.description,
-                        sourceProgramUid = result.programUid,
-                        sourceEnrollmentUid = "",
-                        sourceProgramName = result.taskingConfig.trigger.programName,
-                        teiUid = result.teiUid,
-                        teiPrimary = attrs.first,
-                        teiSecondary = attrs.second,
-                        teiTertiary = attrs.third,
-                        dueDate = dueDate,
-                        priority = result.taskingConfig.priority,
-                        status = "OPEN",
-                        iconNane = repository.getSourceProgramIcon(result.programUid)
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Error converting evaluation result to task")
-            null
         }
     }
 
     private fun updateFilterOptions() {
-        Timber.d("updateFilterOptions called")
+        Log.d("TaskingViewModel", "updateFilterOptions called")
         // Update program filters
-        programs = allTasks
+        programs = _allTasks.value
             .map { it.sourceProgramUid to it.sourceProgramName }
             .distinctBy { it.first }
             .map { (uid, name) ->
+                val displayName = repository.getProgramDisplayName(uid) ?: name
                 CheckBoxData(
                     uid = uid,
                     checked = filterState.currentFilter.programFilters.contains(uid),
                     enabled = true,
-                    textInput = AnnotatedString(name)
+                    textInput = AnnotatedString(displayName)
                 )
             }
 
@@ -158,7 +155,7 @@ class TaskingViewModel @Inject constructor(
         }
 
         // Update organization unit filters
-        orgUnits = allTasks
+        orgUnits = _allTasks.value
             .mapNotNull { task ->
                 task.orgUnit?.takeIf { it.isNotEmpty() }?.let { orgUnitUid ->
                     OrgTreeItem(uid = orgUnitUid, label = orgUnitUid)
@@ -168,15 +165,31 @@ class TaskingViewModel @Inject constructor(
     }
 
     private fun applyFilters() {
-        Timber.d("applyFilters called")
+        Timber.tag("TaskingViewModel").d("applyFilters called")
         val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
+        // Task list: filter by all filters including status
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
             (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            (filter.statusFilters.isEmpty() || filter.statusFilters.contains(task.status)) &&
+            (filter.statusFilters.isEmpty() || filter.statusFilters.any { status -> status.label == task.status.label }) &&
             matchesDateFilter(task, filter.dueDateRange)
         }
+        updateProgressTasks()
+    }
+
+    private fun updateProgressTasks() {
+        val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
+        // Progress bar: filter by all filters except status
+        val progressFiltered = allTasks.filter { task ->
+            (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
+                    (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+                    (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+                    matchesDateFilter(task, filter.dueDateRange)
+        }
+        _progressTasks.value = progressFiltered
     }
 
     private fun matchesDateFilter(task: TaskingUiModel, dateRange: DateRangeFilter?): Boolean {
@@ -186,48 +199,217 @@ class TaskingViewModel @Inject constructor(
         val taskCal = Calendar.getInstance().apply { time = taskDate }
         return when (dateRange) {
             DateRangeFilter.Today -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                        taskCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
             }
             DateRangeFilter.Yesterday -> {
                 val yesterday = Calendar.getInstance().apply {
                     add(Calendar.DAY_OF_YEAR, -1)
                 }
                 taskCal.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
+                        taskCal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
+            }
+            DateRangeFilter.Tomorrow -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                val tomorrow = Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, +1)
+                }
+                taskCal.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) &&
+                        taskCal.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)
+            }
             }
             DateRangeFilter.ThisWeek -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
+                        taskCal.get(Calendar.WEEK_OF_YEAR) == today.get(Calendar.WEEK_OF_YEAR)
             }
             DateRangeFilter.LastWeek -> {
                 val lastWeek = Calendar.getInstance().apply {
                     add(Calendar.WEEK_OF_YEAR, -1)
                 }
                 taskCal.get(Calendar.YEAR) == lastWeek.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
+                        taskCal.get(Calendar.WEEK_OF_YEAR) == lastWeek.get(Calendar.WEEK_OF_YEAR)
+            }
+            DateRangeFilter.NextWeek -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextWeek = Calendar.getInstance().apply {
+                    add(Calendar.WEEK_OF_YEAR, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextWeek.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.WEEK_OF_YEAR) == nextWeek.get(Calendar.WEEK_OF_YEAR)
+                }
             }
             DateRangeFilter.ThisMonth -> {
+                if (exemptOverDueTask(task) ) {
+                    true
+                } else
                 taskCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
+                        taskCal.get(Calendar.MONTH) == today.get(Calendar.MONTH)
             }
             DateRangeFilter.LastMonth -> {
                 val lastMonth = Calendar.getInstance().apply {
                     add(Calendar.MONTH, -1)
                 }
                 taskCal.get(Calendar.YEAR) == lastMonth.get(Calendar.YEAR) &&
-                taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
+                        taskCal.get(Calendar.MONTH) == lastMonth.get(Calendar.MONTH)
             }
-            else -> false
+            DateRangeFilter.NextMonth -> {
+                if (exemptOverDueTask(task)) {
+                    true
+                } else {
+                    val nextMonth = Calendar.getInstance().apply {
+                    add(Calendar.MONTH, +1)
+                }
+                    taskCal.get(Calendar.YEAR) == nextMonth.get(Calendar.YEAR) &&
+                            taskCal.get(Calendar.MONTH) == nextMonth.get(Calendar.MONTH)
+                }
+            }
         }
     }
 
-    override fun onFilterChanged() {
-        Timber.d("onFilterChanged called")
-        applyFilters()
+    fun exemptOverDueTask(task: TaskingUiModel): Boolean {
+        return if (task.status == TaskingStatus.OVERDUE) {
+            val today = Calendar.getInstance()
+            val taskCal = Calendar.getInstance().apply { task.dueDate?.let { time = it } }
+            taskCal.before(today)
+        } else false
     }
 
-    fun refreshTasks() {
-        loadInitialData()
+    override fun onFilterChanged() {
+        // Cancel any ongoing debounce job
+        filterDebounceJob?.cancel()
+        // Start a new debounce job
+        filterDebounceJob = viewModelScope.launch {
+            delay(FILTER_DEBOUNCE_MS)
+            applyFilters()
+        }
+    }
+
+    override fun tasksForProgressBar(): List<TaskingUiModel> {
+        val filter = filterState.currentFilter
+        val allTasks = _allTasks.value
+        return allTasks.filter { task ->
+            (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
+            (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
+            (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
+            matchesDateFilter(task, filter.dueDateRange)
+        }
+    }
+
+    fun refreshData() {
+        viewModelScope.launch {
+            try {
+                // Fetch fresh task data
+                val updatedTasks = repository.getAllTasks()
+                Log.d("TaskingViewModel", "Fetched ${updatedTasks.size} tasks")
+
+                // Map tasks to UI models
+                val tasks = updatedTasks.map { task ->
+                    val orgUnit = repository.getOrgUnit(task.teiUid)
+                    TaskingUiModel(task, orgUnit, repository).also { uiModel ->
+                        Log.d("TaskingViewModel", "Task ${task.name} status: ${task.status} -> UI status: ${uiModel.status.label}")
+                    }
+                }
+
+                _allTasks.value = tasks
+
+                // Update filters and UI
+                updateFilterOptions()
+                applyFilters()
+            } catch (e: Exception) {
+                Log.e("TaskingViewModel", "Error refreshing tasks", e)
+            }
+        }
+    }
+
+    override fun updateTasks(tasks: List<TaskingUiModel>) {
+        _allTasks.value = tasks
+        updateFilterOptions()
+        applyFilters()
+        refreshProgressTasks()
+    }
+
+    fun refreshProgressTasks() {
+        _progressTasks.value = tasksForProgressBar()
+    }
+
+    fun reloadTasks() {
+        viewModelScope.launch {
+            try {
+                //  Clear current list and show loading
+                _loading.value = true
+                _allTasks.value = emptyList()
+                _filteredTasks.value = emptyList()
+                Log.d("TaskingViewModel", "LOADING STARTED: _loading.value = true")
+
+                //  Reset filters to default on every reload
+                filterState.resetToDefaultFilters()
+
+                //  Fetch fresh data from database
+                val freshTasks = withContext(Dispatchers.IO) {
+                    val orgUnits = repository.currentOrgUnits
+                    orgUnits.flatMap { orgUnitUid ->
+                        val tasks = repository.getAllTasks()
+                        tasks.map { task ->
+                            TaskingUiModel(
+                                task = task,
+                                orgUnit = orgUnitUid,
+                                repository = repository
+                            )
+                        }
+                    }
+                }
+
+                Log.d("TaskingViewModel", "Fetched ${freshTasks.size} fresh tasks from database")
+
+                //  Add minimum delay to ensure loading animation is visible (at least 500ms)
+                kotlinx.coroutines.delay(500)
+
+                //  Update tasks with fresh data
+                _allTasks.value = freshTasks
+                Log.d("TaskingViewModel", "Updated _allTasks with ${freshTasks.size} tasks")
+
+                //  Reapply filters
+                updateFilterOptions()
+                applyFilters()
+
+                Log.d("TaskingViewModel", "Tasks reloaded: ${freshTasks.size} tasks found")
+
+            } catch (e: Exception) {
+                Log.e("TaskingViewModel", "Error reloading tasks", e)
+                _allTasks.value = emptyList()
+                _filteredTasks.value = emptyList()
+            } finally {
+                //  FORCE: Hide loading animation
+                _loading.value = false
+                Log.d("TaskingViewModel", "LOADING FINISHED: _loading.value = false")
+            }
+        }
+    }
+
+    fun setOrgUnitFilters(selectedOrgUnits: List<OrganisationUnit>) {
+        val orgUnitUids = selectedOrgUnits.map { it.uid() }.toSet()
+        val currentFilter = filterRepository.selectedFilters.value
+        filterRepository.updateFilter(currentFilter.copy(orgUnitFilters = orgUnitUids))
+    }
+
+    fun canOpenTask(task: TaskingUiModel): Boolean {
+        return try {
+           val enrollment = repository.getEnrollment(task.sourceEnrollmentUid)
+            enrollment != null
+        } catch (e: Exception) {
+            DefaultingEvaluator(repository).evaluateForDefaultingEnrollment(listOf(task.sourceEnrollmentUid))
+            Timber.tag("TaskingViewModel").e(e, "Error checking access for program ${task.sourceProgramUid}")
+            false
+        }
     }
 }

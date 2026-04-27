@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--DEFAULT THEME-->
-    <color name="colorPrimary">#2C98F0</color>
-    <color name="colorPrimaryDark">#006BBD</color>
-    <color name="colorPrimaryLight">#72C8FF</color>
+    <color name="colorPrimary">#218c51</color>
+    <color name="colorPrimaryDark">#14714D</color>
+    <color name="colorPrimaryLight">#8CDD8E</color>
     <color name="colorAccent">#ffffff</color>
     <color name="colorAccentAlpha">#7fffffff</color>
     <color name="primaryBgTextColor">@color/white</color>

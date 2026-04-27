@@ -17,7 +17,10 @@ data class TaskingConfig(
         val taskSecondaryAttrUid: String,
         val taskTertiaryAttrUid: String,
         val taskSourceProgramUid: String,
-        val taskSourceEnrollmentUid: String
+        val taskSourceEnrollmentUid: String,
+        val taskSourceTeiUid: String,
+        val taskSourceEventUid: String?,
+        val taskProgressUid: String?
     )
 
     data class ProgramTasks(
@@ -37,16 +40,22 @@ data class TaskingConfig(
             val description: String,
             val trigger: Trigger,
             val period: Period,
-            val priority: String,
+            val priority: String = "medium",
             val completion: Completion,
             val singleIncomplete: Boolean,
-            val anchorDate: String
+            val anchorDate: String,
+            val secondaryProgramUid: String?
         ) {
+
+            interface HasConditions {
+                val condition: List<Condition>
+            }
             data class Trigger(
                 val programName: String,
                 val programUid: String,
-                val condition: List<Condition>
-            )
+                val combination: String,
+                override val condition: List<Condition>
+            ): HasConditions
 
             data class Condition(
                 val op: String,
@@ -68,8 +77,9 @@ data class TaskingConfig(
             )
 
         data class Completion(
-            val condition: List<Condition>
-        )
+            val combination: String? = null,
+            override val condition: List<Condition>
+        ): HasConditions
 
             data class CompletionCondition(
                 val op: String,

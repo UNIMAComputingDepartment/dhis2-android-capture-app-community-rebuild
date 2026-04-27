@@ -10,6 +10,7 @@ import org.dhis2.maps.api.GeocoderApi
 import org.dhis2.maps.utils.AvailableLatLngBounds
 import org.hisp.dhis.mobile.ui.designsystem.component.model.LocationItemModel
 import timber.log.Timber
+import java.io.IOException
 import kotlin.coroutines.resume
 
 class GeocoderSearchImpl(
@@ -18,29 +19,25 @@ class GeocoderSearchImpl(
     private val maxResults: Int = 10,
     private val dispatcherProvider: DispatcherProvider,
 ) : GeocoderSearch {
-
     override suspend fun getLocationFromName(
         name: String,
         visibleRegion: AvailableLatLngBounds?,
-    ): List<LocationItemModel> {
-        return try {
+    ): List<LocationItemModel> =
+        try {
             geocoderApi.searchFor(name, visibleRegion, maxResults)
         } catch (e: Exception) {
             Timber.e(e)
             defaultSearchLocationProvider(name)
         }
-    }
 
     override suspend fun getLocationFromLatLng(
         latitude: Double,
         longitude: Double,
-    ): LocationItemModel.SearchResult {
-        return geocoderApi.getLocationFromLatLng(latitude, longitude)
-    }
+    ): LocationItemModel.SearchResult = geocoderApi.getLocationFromLatLng(latitude, longitude)
 
     @Suppress("DEPRECATION")
-    private suspend fun defaultSearchLocationProvider(name: String): List<LocationItemModel> {
-        return withContext(dispatcherProvider.io()) {
+    private suspend fun defaultSearchLocationProvider(name: String): List<LocationItemModel> =
+        withContext(dispatcherProvider.io()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 suspendCancellableCoroutine { continuation ->
                     geocoder.getFromLocationName(name, maxResults) { addresses ->
@@ -51,17 +48,22 @@ class GeocoderSearchImpl(
                     }
                 }
             } else {
-                geocoder.getFromLocationName(name, maxResults)?.mapToLocationItems() ?: emptyList()
+                try {
+                    geocoder.getFromLocationName(name, maxResults)?.mapToLocationItems()
+                        ?: emptyList()
+                } catch (e: IOException) {
+                    emptyList()
+                }
             }
         }
-    }
 
-    private fun List<Address>.mapToLocationItems() = map { address ->
-        LocationItemModel.SearchResult(
-            searchedTitle = address.featureName,
-            searchedSubtitle = address.getAddressLine(0),
-            searchedLatitude = address.latitude,
-            searchedLongitude = address.longitude,
-        )
-    }
+    private fun List<Address>.mapToLocationItems() =
+        map { address ->
+            LocationItemModel.SearchResult(
+                searchedTitle = address.featureName,
+                searchedSubtitle = address.getAddressLine(0),
+                searchedLatitude = address.latitude,
+                searchedLongitude = address.longitude,
+            )
+        }
 }

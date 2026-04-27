@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="invalid_integer">رقم باید کامل باشد</string>
+    <string name="error">خطا</string>
+    <string name="required">ضروری</string>
+    <string name="date">تاریخ</string>
+    <string name="hint_year">سالانه</string>
+    <string name="hint_month">ماه ها</string>
+    <string name="hint_day">روزها</string>
+    <string name="polygon">چند ضلعی</string>
+    <string name="latitude">عرض البلد</string>
+    <string name="longitude">طول البلد</string>
+    <string name="due_date">موعد مقرر</string>
+    <string name="complete">تکمیل</string>
+    <string name="share">اشتراک</string>
+    <string name="action_close">بستن</string>
+    <string name="incident_date">تاریخ رویداد/ واقعه</string>
+    <string name="download">دانلود</string>
+    <string name="coordinates">ځانګړتیاوې</string>
+    <string name="no_options">هیچ گزینه موجود نیست</string>
+    <string name="input_age_date_of_birth">تاریخ تولد</string>
+    <string name="input_age">سن</string>
+    <string name="input_age_or">تنظیم</string>
+    <string name="input_action_accept">پذیرش</string>
+    <string name="input_action_cancel">انصراف</string>
+    <string name="input_coordinate_latitude">عرض البلد</string>
+    <string name="input_coordinate_longitude">طول البلد</string>
+    <string name="no_results_found">هیج نتیجه ی یافت نشد</string>
+    <string name="action_done">انجام شد</string>
+    <!--*******************->
+       END OF D2 Error Messages
+    **********************-->
+
+</resources>

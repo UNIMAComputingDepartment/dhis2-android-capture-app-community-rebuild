@@ -1,35 +1,30 @@
 package org.dhis2.community.tasking.filters.models
 
-import java.util.Date
-import timber.log.Timber
+import android.util.Log
 
 data class TaskFilterModel(
     val programFilters: Set<String> = emptySet(),
     val orgUnitFilters: Set<String> = emptySet(),
     val priorityFilters: Set<org.dhis2.community.tasking.ui.TaskingPriority> = emptySet(),
     val statusFilters: Set<org.dhis2.community.tasking.ui.TaskingStatus> = emptySet(),
-    val dueDateRange: DateRangeFilter? = null, // Make nullable
-    val customDateRange: CustomDateRange? = null
+    val dueDateRange: DateRangeFilter? = null
 ) {
     init {
-        Timber.d("TaskFilterModel created: $this")
+        Log.d("TaskFilterModel", "TaskFilterModel created: $this")
     }
 }
 
 enum class DateRangeFilter {
     Today,
     Yesterday,
+    Tomorrow,
     ThisWeek,
     LastWeek,
+    NextWeek,
     ThisMonth,
     LastMonth,
-    Custom
+    NextMonth,
 }
-
-data class CustomDateRange(
-    val from: Date? = null,
-    val to: Date? = null
-)
 
 data class FilterUiState(
     val isProgramFilterActive: Boolean = false,
@@ -43,5 +38,10 @@ data class FilterUiState(
     val isDueDateFilterActive: Boolean = false,
     val dueDateFilterCount: Int = 0,
     val selectedDateRange: DateRangeFilter? = null,
-    val customDateRange: CustomDateRange? = null
-)
+    val selectedOrgUnits: List<String> = listOf()
+) {
+
+    val isAnyFilterActive: Boolean
+        get() = isProgramFilterActive || isOrgUnitFilterActive || isPriorityFilterActive ||
+                isStatusFilterActive || isDueDateFilterActive
+}

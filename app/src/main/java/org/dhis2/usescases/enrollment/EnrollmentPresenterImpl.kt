@@ -1,5 +1,8 @@
 package org.dhis2.usescases.enrollment
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
@@ -13,6 +16,10 @@ import org.dhis2.commons.matomo.Labels.Companion.CLICK
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
+import org.dhis2.community.tasking.engine.CreationEvaluator
+import org.dhis2.community.tasking.engine.TaskingEngine
+import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
@@ -50,8 +57,9 @@ class EnrollmentPresenterImpl(
     private val eventCollectionRepository: EventCollectionRepository,
     private val teiAttributesProvider: TeiAttributesProvider,
     private val dateEditionWarningHandler: DateEditionWarningHandler,
+    private val taskingEngine: TaskingEngine,
+    private val workflowRepository: WorkflowRepository,
 ) {
-
     private val disposable = CompositeDisposable()
     private val backButtonProcessor: FlowableProcessor<Boolean> = PublishProcessor.create()
 
@@ -59,7 +67,8 @@ class EnrollmentPresenterImpl(
         view.setSaveButtonVisible(false)
 
         disposable.add(
-            teiRepository.get()
+            teiRepository
+                .get()
                 .map { tei ->
                     val attrList = mutableListOf<String>()
                     val attributesValues =
@@ -83,14 +92,14 @@ class EnrollmentPresenterImpl(
 
                     TeiAttributesInfo(
                         attributes = attrList,
-                        profileImage = tei.profilePicturePath(
-                            d2,
-                            programRepository.blockingGet()?.uid(),
-                        ),
+                        profileImage =
+                            tei.profilePicturePath(
+                                d2,
+                                programRepository.blockingGet()?.uid(),
+                            ),
                         teTypeName = d2.trackedEntityTypeForTei(tei.uid())?.displayName()!!,
                     )
-                }
-                .subscribeOn(schedulerProvider.io())
+                }.subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
                     view::displayTeiInfo,
@@ -99,7 +108,8 @@ class EnrollmentPresenterImpl(
         )
 
         disposable.add(
-            programRepository.get()
+            programRepository
+                .get()
                 .map { it.access()?.data()?.write() }
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
@@ -110,7 +120,8 @@ class EnrollmentPresenterImpl(
         )
 
         disposable.add(
-            enrollmentObjectRepository.get()
+            enrollmentObjectRepository
+                .get()
                 .map { it.status() }
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
@@ -132,26 +143,74 @@ class EnrollmentPresenterImpl(
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun finish(enrollmentMode: EnrollmentActivity.EnrollmentMode) {
         when (enrollmentMode) {
             EnrollmentActivity.EnrollmentMode.NEW -> {
                 matomoAnalyticsController.trackEvent(TRACKER_LIST, CREATE_TEI, CLICK)
                 disposable.add(
-                    enrollmentFormRepository.generateEvents()
+                    enrollmentFormRepository
+                        .generateEvents()
                         .defaultSubscribe(
                             schedulerProvider,
                             {
                                 it.second?.let { eventUid ->
                                     view.openEvent(eventUid)
                                 } ?: view.openDashboard(it.first)
+                                runTaskEngine()
+                                runWorkflowAutoEnrollment(it.second)
                             },
                             { Timber.tag(TAG).e(it) },
                         ),
                 )
             }
 
-            EnrollmentActivity.EnrollmentMode.CHECK -> view.setResultAndFinish()
+            EnrollmentActivity.EnrollmentMode.CHECK -> {
+                view.setResultAndFinish()
+                runTaskEngine()
+                runWorkflowAutoEnrollment()
+            }
+
         }
+
+
+    }
+
+    private fun runWorkflowAutoEnrollment(eventUid: String? = null) {
+        val triggerProgramUid = programRepository.blockingGet()?.uid() ?: return
+        val sourceTeiUid = teiRepository.blockingGet()?.uid() ?: return
+        val sourceEnrollmentUid = enrollmentObjectRepository.blockingGet()?.uid()
+
+        disposable.add(
+            Single.fromCallable {
+                workflowRepository.evaluateAutoEnrollment(
+                    triggerProgramUid = triggerProgramUid,
+                    teiUid = sourceTeiUid,
+                    enrollmentUid = sourceEnrollmentUid,
+                    eventUid = eventUid,
+                )
+            }
+                .subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { enrolledProgramUids ->
+                        if (enrolledProgramUids.isNotEmpty()) {
+                            Timber.tag(TAG).d("Auto-enrolled TEI $sourceTeiUid into: $enrolledProgramUids")
+                        }
+                    },
+                    { Timber.tag(TAG).e(it) },
+                ),
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun runTaskEngine() {
+        taskingEngine.evaluateAsync(
+            targetProgramUid = programRepository.blockingGet()?.uid()?: "",
+            sourceTieOrgUnitUid = enrollmentObjectRepository.blockingGet()?.organisationUnit()?: "",
+            sourceTieUid = teiRepository.blockingGet()?.uid()?:"",
+            sourceTieProgramEnrollment = enrollmentObjectRepository.blockingGet()?.uid()?:"",
+        )
     }
 
     fun updateFields(action: RowAction? = null) {
@@ -166,16 +225,12 @@ class EnrollmentPresenterImpl(
         backButtonProcessor.onNext(true)
     }
 
-    fun getEnrollment(): Enrollment? {
-        return enrollmentObjectRepository.blockingGet()
-    }
+    fun getEnrollment(): Enrollment? = enrollmentObjectRepository.blockingGet()
 
-    fun getProgram(): Program? {
-        return programRepository.blockingGet()
-    }
+    fun getProgram(): Program? = programRepository.blockingGet()
 
-    fun updateEnrollmentStatus(newStatus: EnrollmentStatus): Boolean {
-        return try {
+    fun updateEnrollmentStatus(newStatus: EnrollmentStatus): Boolean =
+        try {
             if (getProgram()?.access()?.data()?.write() == true) {
                 enrollmentObjectRepository.setStatus(newStatus)
                 view.renderStatus(newStatus)
@@ -187,7 +242,6 @@ class EnrollmentPresenterImpl(
         } catch (error: D2Error) {
             false
         }
-    }
 
     fun saveEnrollmentGeometry(geometry: Geometry?) {
         enrollmentObjectRepository.setGeometry(geometry)
@@ -226,8 +280,11 @@ class EnrollmentPresenterImpl(
     fun showOrHideSaveButton() {
         val teiUid = teiRepository.blockingGet()?.uid() ?: ""
         val programUid = getProgram()?.uid() ?: ""
-        val hasEnrollmentAccess = d2.enrollmentModule().enrollmentService()
-            .blockingGetEnrollmentAccess(teiUid, programUid)
+        val hasEnrollmentAccess =
+            d2
+                .enrollmentModule()
+                .enrollmentService()
+                .blockingGetEnrollmentAccess(teiUid, programUid)
         if (hasEnrollmentAccess == EnrollmentAccess.WRITE_ACCESS) {
             view.setSaveButtonVisible(visible = true)
         } else {
@@ -245,7 +302,12 @@ class EnrollmentPresenterImpl(
     fun suggestedReportDateIsNotFutureDate(eventUid: String): Boolean {
         return try {
             val event = eventCollectionRepository.uid(eventUid).blockingGet()
-            val programStage = d2.programModule().programStages().uid(event?.programStage()).blockingGet()
+            val programStage =
+                d2
+                    .programModule()
+                    .programStages()
+                    .uid(event?.programStage())
+                    .blockingGet()
             val enrollment = enrollmentObjectRepository.blockingGet()
             val generatedByEnrollment = programStage?.generatedByEnrollmentDate() ?: false
             val startDate = if (generatedByEnrollment) enrollment?.enrollmentDate() else enrollment?.incidentDate()

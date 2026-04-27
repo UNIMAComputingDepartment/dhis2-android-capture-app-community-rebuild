@@ -2,8 +2,6 @@ package org.dhis2.community.tasking.repositories
 //
 //import dagger.Module
 //import dagger.Provides
-//import dagger.hilt.InstallIn
-//import dagger.hilt.components.SingletonComponent
 //import javax.inject.Singleton
 //import org.dhis2.community.tasking.ui.TaskingView
 //import org.dhis2.community.tasking.ui.TaskingPresenter
@@ -11,7 +9,6 @@ package org.dhis2.community.tasking.repositories
 //import org.dhis2.commons.filters.FilterManager
 //
 //@Module
-//@InstallIn(SingletonComponent::class)
 //class TaskingModule {
 //
 //    @Provides
