@@ -1,5 +1,7 @@
 package org.dhis2.community.tasking.engine
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.utils.Constants
@@ -11,6 +13,7 @@ class CompletionEvaluator(
     private val repository: TaskingRepository
 ) : TaskingEvaluator(repository) {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun taskCompletion(
         tasks: List<Task>,
         sourceProgramEnrollmentUid: String,

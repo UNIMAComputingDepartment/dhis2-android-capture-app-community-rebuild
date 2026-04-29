@@ -1,5 +1,7 @@
 package org.dhis2.community.tasking.repositories
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.models.Task
@@ -16,6 +18,10 @@ import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Collections
 import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
@@ -462,4 +468,57 @@ class TaskingRepository(
 
     fun getEnrollment(enrollmentUid: String) =
         d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
+
+
+    fun getPeriodEventsForProgramStage(
+        programUid: String,
+        stageUid: String,
+        teiUid: String,
+        startDate: Date,
+        endDate: Date,
+    ): List<Event> {
+
+        val occurredEvents =  d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byEventDate().after(startDate)
+            .byEventDate().before(endDate)
+            .blockingGet()
+
+        val scheduledEvents = d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byDueDate().after(startDate)
+            .byDueDate().before(endDate)
+            .byEventDate().isNull
+            .blockingGet()
+
+        return (occurredEvents + scheduledEvents).distinctBy { it.uid() }
+
+    }
+
+    fun getTeiUidsWithActiveEnrollmentForProgram(programUid: String): List<String> {
+        return d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .byStatus().eq(EnrollmentStatus.ACTIVE)
+            .blockingGet()
+            .map { it.trackedEntityInstance() as String }
+    }
+
+    fun getEnrollmentLatestEvent(enrollmentUid: String, programUid: String): Event? {
+        val events = d2.eventModule().events()
+            .byEnrollmentUid().eq(enrollmentUid)
+            .byProgramUid().eq(programUid)
+            .withTrackedEntityDataValues()
+            .blockingGet()
+
+        return events
+            .maxByOrNull {
+                it.created() ?: it.eventDate() ?: Date(0)
+            }
+    }
+
+
 }
