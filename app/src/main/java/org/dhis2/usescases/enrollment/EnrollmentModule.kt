@@ -15,9 +15,11 @@ import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.workflow.WorkflowRepository
+import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -166,8 +168,7 @@ class EnrollmentModule(
         teiAttributesProvider: TeiAttributesProvider,
         dateEditionWarningHandler: DateEditionWarningHandler,
         taskingEngine: TaskingEngine,
-
-
+        workflowRepository: WorkflowRepository,
     ): EnrollmentPresenterImpl  =
         EnrollmentPresenterImpl(
             enrollmentView,
@@ -183,6 +184,7 @@ class EnrollmentModule(
             teiAttributesProvider,
             dateEditionWarningHandler,
             taskingEngine,
+            workflowRepository,
         )
 
     @Provides
@@ -274,6 +276,9 @@ class EnrollmentModule(
         return TaskingEngine(repository)
     }
 
-
-
+    @Provides
+    @PerActivity
+    fun provideWorkflowRepository(d2: D2): WorkflowRepository {
+        return WorkflowRepository(d2)
+    }
 }

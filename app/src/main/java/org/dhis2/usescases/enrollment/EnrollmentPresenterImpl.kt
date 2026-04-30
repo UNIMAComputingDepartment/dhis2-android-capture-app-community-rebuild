@@ -2,6 +2,7 @@ package org.dhis2.usescases.enrollment
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
@@ -18,6 +19,7 @@ import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.form.model.RowAction
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
@@ -56,6 +58,7 @@ class EnrollmentPresenterImpl(
     private val teiAttributesProvider: TeiAttributesProvider,
     private val dateEditionWarningHandler: DateEditionWarningHandler,
     private val taskingEngine: TaskingEngine,
+    private val workflowRepository: WorkflowRepository,
 ) {
     private val disposable = CompositeDisposable()
     private val backButtonProcessor: FlowableProcessor<Boolean> = PublishProcessor.create()
@@ -155,6 +158,7 @@ class EnrollmentPresenterImpl(
                                     view.openEvent(eventUid)
                                 } ?: view.openDashboard(it.first)
                                 runTaskEngine()
+                                runWorkflowAutoEnrollment(it.second)
                             },
                             { Timber.tag(TAG).e(it) },
                         ),
@@ -164,11 +168,39 @@ class EnrollmentPresenterImpl(
             EnrollmentActivity.EnrollmentMode.CHECK -> {
                 view.setResultAndFinish()
                 runTaskEngine()
+                runWorkflowAutoEnrollment()
             }
 
         }
 
 
+    }
+
+    private fun runWorkflowAutoEnrollment(eventUid: String? = null) {
+        val triggerProgramUid = programRepository.blockingGet()?.uid() ?: return
+        val sourceTeiUid = teiRepository.blockingGet()?.uid() ?: return
+        val sourceEnrollmentUid = enrollmentObjectRepository.blockingGet()?.uid()
+
+        disposable.add(
+            Single.fromCallable {
+                workflowRepository.evaluateAutoEnrollment(
+                    triggerProgramUid = triggerProgramUid,
+                    teiUid = sourceTeiUid,
+                    enrollmentUid = sourceEnrollmentUid,
+                    eventUid = eventUid,
+                )
+            }
+                .subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { enrolledProgramUids ->
+                        if (enrolledProgramUids.isNotEmpty()) {
+                            Timber.tag(TAG).d("Auto-enrolled TEI $sourceTeiUid into: $enrolledProgramUids")
+                        }
+                    },
+                    { Timber.tag(TAG).e(it) },
+                ),
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
