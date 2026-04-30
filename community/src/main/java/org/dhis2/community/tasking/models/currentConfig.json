@@ -1,528 +1,100 @@
 {
   "programTasks": [
     {
-      "programName": "Person Register",
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiTertiaryAttribute": "HYlWwg511tF",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc"
+      },
       "programUid": "NFnp1h3IMzl",
+      "programName": "Person Register",
       "taskConfigs": [
         {
-          "combination": "AND",
-          "completion": {
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "FHFH24arHkG"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Does the person use a long-lasting insecticidal net (LLIN)?"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "KwJqVrMOhkE"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Population segment"
-                }
-              }
-            ]
-          },
-          "description": "Population Segment and LLIN Tasks, they need to be filled",
-          "name": "Population Segment And LLIN Every Three Months",
+          "name": "PR Quarterly Personal Visit",
           "period": {
             "anchor": {
               "ref": "",
               "uid": ""
             },
-            "dueInDays": 90
+            "dueInDays": 2
           },
-          "priority": "medium",
           "trigger": {
-            "combination": "OR",
             "condition": [
               {
+                "op": "QUARTERLY_SCHEDULE",
+                "lhs": {
+                  "ref": "sRChkEPg3AU",
+                  "uid": ""
+                },
+                "rhs": {
+                  "value": ""
+                }
+              },
+              {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "FHFH24arHkG"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date OPV 0 Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "KwJqVrMOhkE"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date BCG was given"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "OR"
+          },
+          "priority": "high",
+          "frequency": "monthly",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "FHFH24arHkG"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
                   "value": "Does the person use a long-lasting insecticidal net (LLIN)?"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "KwJqVrMOhkE"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
                   "value": "Population segment"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Task for Quarterly Personal Visit",
-          "frequency": "monthly",
-          "name": "Quarterly Personal Visit",
-          "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
-          },
-          "priority": "high",
-          "trigger": {
-            "combination": "OR",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "sRChkEPg3AU",
-                  "uid": ""
-                },
-                "op": "QUARTERLY_SCHEDULE",
-                "rhs": {
-                  "value": ""
-                }
-              }
-            ]
-          }
+          "description": "Task for Quarterly Personal Visit"
         }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "dkFbZ4zHZZc",
-        "teiTertiaryAttribute": "HYlWwg511tF"
-      }
+      ]
     },
     {
-      "programName": "Household Register",
+      "teiView": {
+        "teiPrimaryAttribute": "RSr9YoqpPS7",
+        "teiTertiaryAttribute": "HYlWwg511tF",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc"
+      },
       "programUid": "sXzdrtXMink",
+      "programName": "Household Register",
       "taskConfigs": [
         {
-          "anchorDate": "",
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "K3m9aYHO67h"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH - Number of LLIN in the household"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "sIlxprHKeca"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "IZiaQK4QkQ1"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-Latrine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "JC4NIlakoVs"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Household Infested"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "mFenAqWzr1R"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Insecticide Spray"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "SBYOJJYbPIe"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Littered"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "MEa0dDKTkj0"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Refuse Pit"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "fpJgH8hZzAT"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "aKbvLiB1rCA"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-1% Stock Solution"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "HCEdo9jKXNv"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Covered Container"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "jG0qt9ny9nR"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Protected"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "uDDMorJ3Urg"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Use of 2 Cup System"
-                }
-              }
-            ]
-          },
-          "description": "Complete all household environmental health data collection fields during quarterly visit",
-          "name": "HH Environmental Quarterly Visit",
-          "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 90
-          },
-          "priority": "high",
-          "singleIncomplete": false,
-          "taskTypeId": "Household Quarterly Environmental Visit",
-          "trigger": {
-            "combination": "OR",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "K3m9aYHO67h"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH - Number of LLIN in the household"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "sIlxprHKeca"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "IZiaQK4QkQ1"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-Latrine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "JC4NIlakoVs"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Household Infested"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "mFenAqWzr1R"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Insecticide Spray"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "SBYOJJYbPIe"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Littered"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "MEa0dDKTkj0"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Refuse Pit"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "fpJgH8hZzAT"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "aKbvLiB1rCA"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-1% Stock Solution"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "HCEdo9jKXNv"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Covered Container"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "jG0qt9ny9nR"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Protected"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "uDDMorJ3Urg"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Use of 2 Cup System"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "K3m9aYHO67h"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH - Number of LLIN in the household"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "sIlxprHKeca"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "IZiaQK4QkQ1"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-Latrine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "JC4NIlakoVs"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Household Infested"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "mFenAqWzr1R"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Insecticide Spray"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "SBYOJJYbPIe"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Littered"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "MEa0dDKTkj0"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Refuse Pit"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "fpJgH8hZzAT"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "aKbvLiB1rCA"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-1% Stock Solution"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "HCEdo9jKXNv"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Covered Container"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "jG0qt9ny9nR"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Protected"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "uDDMorJ3Urg"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Use of 2 Cup System"
-                }
-              }
-            ]
-          },
-          "description": "Task for Quarterly HouseHold Visit",
-          "frequency": "monthly",
-          "name": "Quarterly HouseHold Visit",
+          "name": "HHR Quarterly HouseHold Visit",
           "period": {
             "anchor": {
               "ref": "",
@@ -530,52 +102,282 @@
             },
             "dueInDays": 2
           },
-          "priority": "high",
           "trigger": {
-            "combination": "OR",
             "condition": [
               {
+                "op": "QUARTERLY_SCHEDULE",
                 "lhs": {
                   "ref": "e3vz0w6dU7o",
                   "uid": ""
                 },
-                "op": "QUARTERLY_SCHEDULE",
                 "rhs": {
                   "value": ""
                 }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "K3m9aYHO67h"
+                },
+                "rhs": {
+                  "value": "HR-EH - Number of LLIN in the household"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "sIlxprHKeca"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "IZiaQK4QkQ1"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-Latrine"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JC4NIlakoVs"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Household Infested"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "mFenAqWzr1R"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Insecticide Spray"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SBYOJJYbPIe"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Littered"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "MEa0dDKTkj0"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Refuse Pit"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "fpJgH8hZzAT"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "aKbvLiB1rCA"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-1% Stock Solution"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "HCEdo9jKXNv"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Covered Container"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "jG0qt9ny9nR"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Protected"
+                }
+              },
+              {
+                "op": "NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "uDDMorJ3Urg"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Use of 2 Cup System"
+                }
               }
-
-            ]
-          }
-        }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "RSr9YoqpPS7",
-        "teiSecondaryAttribute": "dkFbZ4zHZZc",
-        "teiTertiaryAttribute": "HYlWwg511tF"
-      }
-    },
-    {
-      "programName": "CBMNC - Woman Program",
-      "programUid": "cJEpYzKPHqg",
-      "taskConfigs": [
-        {
-          "hasEvent": true,
+            ],
+            "combination": "OR"
+          },
+          "priority": "high",
+          "frequency": "monthly",
           "completion": {
             "condition": [
               {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "ggEeifB2HgC"
-                },
                 "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "K3m9aYHO67h"
+                },
                 "rhs": {
-                  "value": "Woman Visited Facility"
+                  "value": "HR-EH - Number of LLIN in the household"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "sIlxprHKeca"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "IZiaQK4QkQ1"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-Latrine"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JC4NIlakoVs"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Household Infested"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "mFenAqWzr1R"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Insecticide Spray"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SBYOJJYbPIe"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Littered"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "MEa0dDKTkj0"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Refuse Pit"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "fpJgH8hZzAT"
+                },
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "aKbvLiB1rCA"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-1% Stock Solution"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "HCEdo9jKXNv"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Covered Container"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "jG0qt9ny9nR"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Protected"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "uDDMorJ3Urg"
+                },
+                "rhs": {
+                  "value": "HR-EH-WA-Use of 2 Cup System"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "After Birth, Danger Sign Follow up",
+          "description": "Task for Quarterly HouseHold Visit"
+        }
+      ]
+    },
+    {
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiTertiaryAttribute": "HYlWwg511tF",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc"
+      },
+      "programUid": "cJEpYzKPHqg",
+      "programName": "CBMNC - Woman Program",
+      "taskConfigs": [
+        {
           "name": "PNC Danger Sign Follow-up",
           "period": {
             "anchor": {
@@ -584,39 +386,39 @@
             },
             "dueInDays": 2
           },
-          "priority": "high",
           "trigger": {
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "LAfiAKu70JZ"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "true"
                 }
               }
             ]
-          }
-        },
-        {
+          },
           "hasEvent": true,
+          "priority": "high",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "eventData",
-                  "uid": "IFLzAItumUj"
+                  "uid": "ggEeifB2HgC"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
                   "value": "Woman Visited Facility"
                 }
               }
             ]
           },
-          "description": "Trigger a follow-up task if danger sign is YES",
+          "description": "After Birth, Danger Sign Follow up"
+        },
+        {
           "name": "ANC Danger Sign Follow-up",
           "period": {
             "anchor": {
@@ -625,50 +427,39 @@
             },
             "dueInDays": 2
           },
-          "priority": "high",
           "trigger": {
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "QP43M2iqn5W"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "true"
                 }
               }
             ]
-          }
-        },
-        {
+          },
           "hasEvent": true,
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "eventData",
-                  "uid": "VRZVC0KQKNp"
+                  "uid": "IFLzAItumUj"
                 },
-                "op": "EQUALS",
                 "rhs": {
-                  "value": "1"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "K6TwbtvFNHg"
-                },
-                "op": "GREATER_THAN",
-                "rhs": {
-                  "value": 1
+                  "value": "Woman Visited Facility"
                 }
               }
             ]
           },
-          "description": "ANC Second Visit - visit before delivery",
+          "description": "Trigger a follow-up task if danger sign is YES"
+        },
+        {
           "name": "ANC Second Scheduled Visit",
           "period": {
             "anchor": {
@@ -677,52 +468,62 @@
             },
             "dueInDays": 60
           },
-          "priority": "low",
-          "singleIncomplete": true,
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "VRZVC0KQKNp"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               },
               {
+                "op": "NUM_EQUAL",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "K6TwbtvFNHg"
                 },
-                "op": "NUM_EQUAL",
                 "rhs": {
                   "value": 1
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
           "hasEvent": true,
-          "anchorDate": "",
+          "priority": "low",
           "completion": {
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "kgREvBO1JEe"
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": ""
+                  "value": "1"
+                }
+              },
+              {
+                "op": "GREATER_THAN",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "rhs": {
+                  "value": 1
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "",
+          "description": "ANC Second Visit - visit before delivery",
+          "singleIncomplete": true
+        },
+        {
           "name": "Enroll Neonate into CBMNC - Neonatal Program",
           "period": {
             "anchor": {
@@ -731,93 +532,93 @@
             },
             "dueInDays": 1
           },
-          "priority": "medium",
-          "secondaryProgramUid": "J0EYs4wVHDQ",
-          "singleIncomplete": true,
-          "taskTypeId": "Enroll Neonate into CBMNC - Neonatal Program",
           "trigger": {
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "fWG6KdfkJWG"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Q3DzuJsu4FN"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "LHmB4BIhMl4"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "jmeSMUywdfR"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "LTIE8lv5JEL"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "yH0ZVXmKSto"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "live_birth"
                 }
               }
             ]
-          }
-        },
-        {
+          },
           "hasEvent": true,
+          "priority": "medium",
           "anchorDate": "",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "ji4ZJk9B7sv"
+                  "ref": "teiAttribute",
+                  "uid": "kgREvBO1JEe"
                 },
-                "op": "EQUALS",
                 "rhs": {
-                  "value": "1"
+                  "value": ""
                 }
               }
             ]
           },
+          "taskTypeId": "Enroll Neonate into CBMNC - Neonatal Program",
           "description": "",
+          "singleIncomplete": true,
+          "secondaryProgramUid": "J0EYs4wVHDQ"
+        },
+        {
           "name": "Delivery Follow Up",
           "period": {
             "anchor": {
@@ -826,63 +627,52 @@
             },
             "dueInDays": 1
           },
-          "priority": "medium",
-          "singleIncomplete": true,
-          "taskTypeId": "Woman Delivery Follow Up",
           "trigger": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "y5alwOfRQDT"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
                   "value": ""
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "ji4ZJk9B7sv"
                 },
-                "op": "NULL",
-                "rhs": {
-                  "value": "1"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "hasEvent": true,
-          "anchorDate": "",
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "K6TwbtvFNHg"
-                },
-                "op": "NUM_EQUAL",
-                "rhs": {
-                  "value": 1
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "VRZVC0KQKNp"
-                },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
             ]
           },
+          "hasEvent": true,
+          "priority": "medium",
+          "anchorDate": "",
+          "completion": {
+            "condition": [
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          },
+          "taskTypeId": "Woman Delivery Follow Up",
           "description": "",
+          "singleIncomplete": true
+        },
+        {
           "name": "ANC First Sheduled Visit",
           "period": {
             "anchor": {
@@ -891,60 +681,123 @@
             },
             "dueInDays": 1
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Sheduled ANC First Visit",
           "trigger": {
-            "combination": "OR",
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "VRZVC0KQKNp"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": ""
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "K6TwbtvFNHg"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": ""
                 }
               }
-            ]
-          }
+            ],
+            "combination": "OR"
+          },
+          "hasEvent": true,
+          "priority": "high",
+          "anchorDate": "",
+          "completion": {
+            "condition": [
+              {
+                "op": "NUM_EQUAL",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "K6TwbtvFNHg"
+                },
+                "rhs": {
+                  "value": 1
+                }
+              },
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "VRZVC0KQKNp"
+                },
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ],
+            "combination": "AND"
+          },
+          "taskTypeId": "Sheduled ANC First Visit",
+          "description": "",
+          "singleIncomplete": true
         },
         {
+          "name": "After Birth Follow Up",
+          "period": {
+            "anchor": {
+              "ref": "eventData",
+              "uid": "lVHn7c10EaS",
+              "type": "llP45OWGSGb"
+            },
+            "dueInDays": 3
+          },
+          "trigger": {
+            "condition": [
+              {
+                "op": "NUM_EQUAL",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "rhs": {
+                  "value": 1
+                }
+              },
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
+                },
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ],
+            "combination": "AND"
+          },
           "hasEvent": true,
+          "priority": "high",
           "anchorDate": "lVHn7c10EaS",
           "completion": {
             "condition": [
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
                   "uid": "ji4ZJk9B7sv",
+                  "type": "MvNwuuB40gF",
                   "value": ""
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": 2
                 }
               },
               {
+                "op": "EQUAL",
                 "lhs": {
                   "ref": "eventsData",
-                  "type": "MvNwuuB40gF",
                   "uid": "Wri2Zw6Qnyo",
+                  "type": "MvNwuuB40gF",
                   "value": "scheduled"
                 },
-                "op": "EQUAL",
                 "rhs": {
                   "value": "1"
                 }
@@ -952,101 +805,20 @@
             ]
           },
           "description": "CHW second PNC visit due 3 days after discharge; complete when there are 2 scheduled 'After Birth' events (count >= 2).",
-          "name": "After Birth Follow Up",
-          "period": {
-            "anchor": {
-              "ref": "eventData",
-              "type": "llP45OWGSGb",
-              "uid": "lVHn7c10EaS"
-            },
-            "dueInDays": 3
-          },
-          "priority": "high",
-          "singleIncomplete": true,
-          "trigger": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "ji4ZJk9B7sv"
-                },
-                "op": "NUM_EQUAL",
-                "rhs": {
-                  "value": 1
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "Wri2Zw6Qnyo"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "1"
-                }
-              }
-            ]
-          }
+          "singleIncomplete": true
         }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "dkFbZ4zHZZc",
-        "teiTertiaryAttribute": "HYlWwg511tF"
-      }
+      ]
     },
     {
-      "programName": "CBMNC - Neonatal Program",
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiTertiaryAttribute": "HYlWwg511tF",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc"
+      },
       "programUid": "J0EYs4wVHDQ",
+      "programName": "CBMNC - Neonatal Program",
       "taskConfigs": [
         {
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "NMdsnU5SaSF"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "2500_to_6000"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "JSUBrlqki6J"
-                },
-                "op": "GREATER_THAN_OR_EQUALS",
-                "rhs": {
-                  "value": "2500"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "vGBbxUdRFlG"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "1"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "Ybo4mhfpt9O"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "1"
-                }
-              }
-            ]
-          },
-          "description": "First home visit for newborn 2500g and above on day 1 after discharge",
           "name": "Normal Birth Weight First Visit",
           "period": {
             "anchor": {
@@ -1055,82 +827,82 @@
             },
             "dueInDays": 1
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Normal Birth Weight First Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2500"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
-                  "value": "2"
+                  "value": "1"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Second home visit for newborn 2500g and above on day 3 after discharge",
+          "taskTypeId": "Normal Birth Weight First Visit",
+          "description": "First home visit for newborn 2500g and above on day 1 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Normal Birth Weight Second Visit",
           "period": {
             "anchor": {
@@ -1139,102 +911,102 @@
             },
             "dueInDays": 3
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Normal Birth Weight Second Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
+          "completion": {
+            "condition": [
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "NMdsnU5SaSF"
+                },
+                "rhs": {
+                  "value": "2500_to_6000"
+                }
+              },
+              {
+                "op": "GREATER_THAN_OR_EQUALS",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "JSUBrlqki6J"
+                },
+                "rhs": {
+                  "value": "2500"
+                }
+              },
+              {
+                "op": "GREATER_THAN_OR_EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "vGBbxUdRFlG"
+                },
+                "rhs": {
+                  "value": "2"
+                }
+              },
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Ybo4mhfpt9O"
+                },
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ],
+            "combination": "AND"
+          },
+          "taskTypeId": "Normal Birth Weight Second Visit",
+          "description": "Second home visit for newborn 2500g and above on day 3 after discharge",
+          "singleIncomplete": true
         },
         {
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "NMdsnU5SaSF"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "2500_to_6000"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "JSUBrlqki6J"
-                },
-                "op": "GREATER_THAN_OR_EQUALS",
-                "rhs": {
-                  "value": "2500"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "vGBbxUdRFlG"
-                },
-                "op": "GREATER_THAN_OR_EQUALS",
-                "rhs": {
-                  "value": "3"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "Ybo4mhfpt9O"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "1"
-                }
-              }
-            ]
-          },
-          "description": "Third home visit for newborn 2500g and above on day 8 after discharge",
           "name": "Normal Birth Weight Third Visit",
           "period": {
             "anchor": {
@@ -1243,102 +1015,102 @@
             },
             "dueInDays": 8
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Normal Birth Weight Third Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "EQUALS",
                 "rhs": {
-                  "value": "1"
+                  "value": "3"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "First home visit for infant <2500g on day 1 after discharge",
+          "taskTypeId": "Normal Birth Weight Third Visit",
+          "description": "Third home visit for newborn 2500g and above on day 8 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Low Birth Weight First Visit",
           "period": {
             "anchor": {
@@ -1347,82 +1119,82 @@
             },
             "dueInDays": 1
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight First Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
-                  "value": "2"
+                  "value": "1"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Second home visit for infant <2500g on day 2 after discharge",
+          "taskTypeId": "Low Birth Weight First Visit",
+          "description": "First home visit for infant <2500g on day 1 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Low Birth Weight Second Visit",
           "period": {
             "anchor": {
@@ -1431,102 +1203,102 @@
             },
             "dueInDays": 2
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight Second Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
+          "completion": {
+            "condition": [
+              {
+                "op": "NOT_EQUALS",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "NMdsnU5SaSF"
+                },
+                "rhs": {
+                  "value": "2500_to_6000"
+                }
+              },
+              {
+                "op": "LESS_THAN",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "JSUBrlqki6J"
+                },
+                "rhs": {
+                  "value": "2500"
+                }
+              },
+              {
+                "op": "GREATER_THAN_OR_EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "vGBbxUdRFlG"
+                },
+                "rhs": {
+                  "value": "2"
+                }
+              },
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Ybo4mhfpt9O"
+                },
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ],
+            "combination": "AND"
+          },
+          "taskTypeId": "Low Birth Weight Second Visit",
+          "description": "Second home visit for infant <2500g on day 2 after discharge",
+          "singleIncomplete": true
         },
         {
-          "completion": {
-            "combination": "AND",
-            "condition": [
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "NMdsnU5SaSF"
-                },
-                "op": "NOT_EQUALS",
-                "rhs": {
-                  "value": "2500_to_6000"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "teiAttribute",
-                  "uid": "JSUBrlqki6J"
-                },
-                "op": "LESS_THAN",
-                "rhs": {
-                  "value": "2500"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "vGBbxUdRFlG"
-                },
-                "op": "GREATER_THAN_OR_EQUALS",
-                "rhs": {
-                  "value": "3"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "eventData",
-                  "uid": "Ybo4mhfpt9O"
-                },
-                "op": "EQUALS",
-                "rhs": {
-                  "value": "1"
-                }
-              }
-            ]
-          },
-          "description": "Third home visit for infant <2500g on day 3 after discharge",
           "name": "Low Birth Weight Third Visit",
           "period": {
             "anchor": {
@@ -1535,102 +1307,102 @@
             },
             "dueInDays": 3
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight Third Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "2"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
-                  "value": "4"
+                  "value": "3"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Fourth home visit for infant <2500g on day 8 after discharge",
+          "taskTypeId": "Low Birth Weight Third Visit",
+          "description": "Third home visit for infant <2500g on day 3 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Low Birth Weight Fourth Visit",
           "period": {
             "anchor": {
@@ -1639,102 +1411,102 @@
             },
             "dueInDays": 8
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight Fourth Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "3"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
-                  "value": "5"
+                  "value": "4"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Fifth home visit for infant <2500g on day 14 after discharge",
+          "taskTypeId": "Low Birth Weight Fourth Visit",
+          "description": "Fourth home visit for infant <2500g on day 8 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Low Birth Weight Fifth Visit",
           "period": {
             "anchor": {
@@ -1743,71 +1515,102 @@
             },
             "dueInDays": 14
           },
-          "priority": "high",
-          "singleIncomplete": true,
-          "taskTypeId": "Low Birth Weight Fifth Visit",
           "trigger": {
-            "combination": "AND",
             "condition": [
               {
+                "op": "NOT_EQUALS",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "NMdsnU5SaSF"
                 },
-                "op": "NOT_EQUALS",
                 "rhs": {
                   "value": "2500_to_6000"
                 }
               },
               {
+                "op": "LESS_THAN",
                 "lhs": {
                   "ref": "teiAttribute",
                   "uid": "JSUBrlqki6J"
                 },
-                "op": "LESS_THAN",
                 "rhs": {
                   "value": "2500"
                 }
               },
               {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "vGBbxUdRFlG"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
                   "value": "4"
                 }
               },
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "Ybo4mhfpt9O"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
-            ]
-          }
-        },
-        {
+            ],
+            "combination": "AND"
+          },
+          "priority": "high",
           "completion": {
             "condition": [
               {
+                "op": "NOT_EQUALS",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "NMdsnU5SaSF"
+                },
+                "rhs": {
+                  "value": "2500_to_6000"
+                }
+              },
+              {
+                "op": "LESS_THAN",
+                "lhs": {
+                  "ref": "teiAttribute",
+                  "uid": "JSUBrlqki6J"
+                },
+                "rhs": {
+                  "value": "2500"
+                }
+              },
+              {
+                "op": "GREATER_THAN_OR_EQUALS",
                 "lhs": {
                   "ref": "eventData",
-                  "uid": "XDdiFVbF1ha"
+                  "uid": "vGBbxUdRFlG"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Woman Visited Facility"
+                  "value": "5"
+                }
+              },
+              {
+                "op": "EQUALS",
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Ybo4mhfpt9O"
+                },
+                "rhs": {
+                  "value": "1"
                 }
               }
-            ]
+            ],
+            "combination": "AND"
           },
-          "description": "Neonate Danger Sign Follow up",
+          "taskTypeId": "Low Birth Weight Fifth Visit",
+          "description": "Fifth home visit for infant <2500g on day 14 after discharge",
+          "singleIncomplete": true
+        },
+        {
           "name": "Neonate Danger Sign Follow-up",
           "period": {
             "anchor": {
@@ -1816,59 +1619,49 @@
             },
             "dueInDays": 2
           },
-          "priority": "high",
           "trigger": {
             "condition": [
               {
+                "op": "EQUALS",
                 "lhs": {
                   "ref": "eventData",
                   "uid": "NFsBwFwvpFF"
                 },
-                "op": "EQUALS",
                 "rhs": {
                   "value": "true"
                 }
               }
             ]
-          }
-        }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "dkFbZ4zHZZc",
-        "teiTertiaryAttribute": "HYlWwg511tF"
-      }
-    },
-    {
-      "programName": "EPI - Expanded Programme on Immunization",
-      "programUid": "Ur5UakrSEYj",
-      "taskConfigs": [
-        {
+          },
+          "priority": "high",
           "completion": {
             "condition": [
               {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "pOmfBiixrBw"
-                },
                 "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Date OPV 0 Given"
-                }
-              },
-              {
                 "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "BNidQ6DxZpz"
+                  "ref": "eventData",
+                  "uid": "XDdiFVbF1ha"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date BCG was given"
+                  "value": "Woman Visited Facility"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "Neonate Danger Sign Follow up"
+        }
+      ]
+    },
+    {
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiTertiaryAttribute": "HYlWwg511tF",
+        "teiSecondaryAttribute": "dkFbZ4zHZZc"
+      },
+      "programUid": "Ur5UakrSEYj",
+      "programName": "EPI - Expanded Programme on Immunization",
+      "taskConfigs": [
+        {
           "name": "Immunization at Birth to Two Weeks",
           "period": {
             "anchor": {
@@ -1877,78 +1670,58 @@
             },
             "dueInDays": 14
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "pOmfBiixrBw"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date OPV 0 Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "BNidQ6DxZpz"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date BCG was given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "ETmwrRaI25Y"
+                  "uid": "pOmfBiixrBw"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date PCV 1 Given"
+                  "value": "Date OPV 0 Given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "Fc3lDKsux3s"
+                  "uid": "BNidQ6DxZpz"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date Penta 1 given"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "aoALwwoX4IT"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Date Rota 1 given"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "KcyaDxZPnKa"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Date OPV 1 Given"
+                  "value": "Date BCG was given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 6 Weeks",
           "period": {
             "anchor": {
@@ -1957,98 +1730,98 @@
             },
             "dueInDays": 42
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "ETmwrRaI25Y"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date PCV 1 Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "Fc3lDKsux3s"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date Penta 1 given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "aoALwwoX4IT"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date Rota 1 given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "KcyaDxZPnKa"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date OPV 1 Given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "IoL7gwKLKrl"
+                  "uid": "ETmwrRaI25Y"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date Rota 2 given"
+                  "value": "Date PCV 1 Given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "r9atuH8eFeP"
+                  "uid": "Fc3lDKsux3s"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date Penta 2 given"
+                  "value": "Date Penta 1 given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "ALmomDtQ5Tw"
+                  "uid": "aoALwwoX4IT"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date PCV 2 given"
+                  "value": "Date Rota 1 given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "Idw4YqjUCVD"
+                  "uid": "KcyaDxZPnKa"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date OPV 2 given"
+                  "value": "Date OPV 1 Given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 10 Weeks",
           "period": {
             "anchor": {
@@ -2057,108 +1830,98 @@
             },
             "dueInDays": 70
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "IoL7gwKLKrl"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date Rota 2 given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "r9atuH8eFeP"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date Penta 2 given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "ALmomDtQ5Tw"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date PCV 2 given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "Idw4YqjUCVD"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date OPV 2 given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "o8WZPSulzau"
+                  "uid": "IoL7gwKLKrl"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date IPV Given"
+                  "value": "Date Rota 2 given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "m6ifohqeKNN"
+                  "uid": "r9atuH8eFeP"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date PCV 3 Given"
+                  "value": "Date Penta 2 given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "nwfhpvw2BrA"
+                  "uid": "ALmomDtQ5Tw"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Date Penta 3 Given"
+                  "value": "Date PCV 2 given"
                 }
               },
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "YL1oJqV6cyt"
+                  "uid": "Idw4YqjUCVD"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "Whether BCG Scar is Visible"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "oAj9SehHnn1"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "Date OPV 3 Given"
+                  "value": "Date OPV 2 given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 14 Weeks",
           "period": {
             "anchor": {
@@ -2167,78 +1930,118 @@
             },
             "dueInDays": 98
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "o8WZPSulzau"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date IPV Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "m6ifohqeKNN"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date PCV 3 Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "nwfhpvw2BrA"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date Penta 3 Given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "YL1oJqV6cyt"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Whether BCG Scar is Visible"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "oAj9SehHnn1"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "Date OPV 3 Given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "UN8BE26LmzD"
+                  "uid": "o8WZPSulzau"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MV 1 Date given"
+                  "value": "Date IPV Given"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "m6ifohqeKNN"
+                },
+                "rhs": {
+                  "value": "Date PCV 3 Given"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "nwfhpvw2BrA"
+                },
+                "rhs": {
+                  "value": "Date Penta 3 Given"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "YL1oJqV6cyt"
+                },
+                "rhs": {
+                  "value": "Whether BCG Scar is Visible"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "oAj9SehHnn1"
+                },
+                "rhs": {
+                  "value": "Date OPV 3 Given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 5 Months",
           "period": {
             "anchor": {
@@ -2247,48 +2050,38 @@
             },
             "dueInDays": 152
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "UN8BE26LmzD"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MV 1 Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "Rz8kbGyO438"
+                  "uid": "UN8BE26LmzD"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MV 2 Date given"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "e3nRPmyFFVp"
-                },
-                "op": "NOT_NULL",
-                "rhs": {
-                  "value": "EPI_IMM_Vitamin A 6 months Date give"
+                  "value": "EPI_IMM_MV 1 Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 6 Months",
           "period": {
             "anchor": {
@@ -2297,48 +2090,58 @@
             },
             "dueInDays": 182
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "Rz8kbGyO438"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MV 2 Date given"
                 }
               },
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "e3nRPmyFFVp"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_Vitamin A 6 months Date give"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "CmP9wn8GPpg"
+                  "uid": "Rz8kbGyO438"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MV 3 Date give"
+                  "value": "EPI_IMM_MV 2 Date given"
+                }
+              },
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "e3nRPmyFFVp"
+                },
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 6 months Date give"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 7 Months",
           "period": {
             "anchor": {
@@ -2347,38 +2150,38 @@
             },
             "dueInDays": 213
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "CmP9wn8GPpg"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MV 3 Date give"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "apKnu58M1vi"
+                  "uid": "CmP9wn8GPpg"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MR 1 Date given"
+                  "value": "EPI_IMM_MV 3 Date give"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 9 Months",
           "period": {
             "anchor": {
@@ -2387,38 +2190,38 @@
             },
             "dueInDays": 274
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "apKnu58M1vi"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MR 1 Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "urJuUff7piT"
+                  "uid": "apKnu58M1vi"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_Vitamin A 12 months Date given"
+                  "value": "EPI_IMM_MR 1 Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 12 Months",
           "period": {
             "anchor": {
@@ -2427,38 +2230,38 @@
             },
             "dueInDays": 365
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "urJuUff7piT"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_Vitamin A 12 months Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "f71ZoAKdEFf"
+                  "uid": "urJuUff7piT"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MR 2 Date given"
+                  "value": "EPI_IMM_Vitamin A 12 months Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 15 Months",
           "period": {
             "anchor": {
@@ -2467,38 +2270,38 @@
             },
             "dueInDays": 456
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "f71ZoAKdEFf"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MR 2 Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "b0NyYDtKBm7"
+                  "uid": "f71ZoAKdEFf"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_Vitamin A 18 months Date given"
+                  "value": "EPI_IMM_MR 2 Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 18 Months",
           "period": {
             "anchor": {
@@ -2507,38 +2310,38 @@
             },
             "dueInDays": 548
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "b0NyYDtKBm7"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_Vitamin A 18 months Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "SGekHjdRdCC"
+                  "uid": "b0NyYDtKBm7"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_MV 4 Date given"
+                  "value": "EPI_IMM_Vitamin A 18 months Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 22 Months",
           "period": {
             "anchor": {
@@ -2547,38 +2350,38 @@
             },
             "dueInDays": 670
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "SGekHjdRdCC"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_MV 4 Date given"
                 }
               }
             ]
-          }
-        },
-        {
+          },
+          "priority": "medium",
           "completion": {
             "condition": [
               {
+                "op": "NOT_NULL",
                 "lhs": {
                   "ref": "allEventsData",
-                  "uid": "JmQ2j05Kqio"
+                  "uid": "SGekHjdRdCC"
                 },
-                "op": "NOT_NULL",
                 "rhs": {
-                  "value": "EPI_IMM_Vitamin A 24 months Date given"
+                  "value": "EPI_IMM_MV 4 Date given"
                 }
               }
             ]
           },
-          "description": "EPI Tasks, they need to be filled",
+          "description": "EPI Tasks, they need to be filled"
+        },
+        {
           "name": "Immunization at 24 Months",
           "period": {
             "anchor": {
@@ -2587,39 +2390,49 @@
             },
             "dueInDays": 730
           },
-          "priority": "medium",
           "trigger": {
             "condition": [
               {
+                "op": "NULL",
                 "lhs": {
                   "ref": "allEventsData",
                   "uid": "JmQ2j05Kqio"
                 },
-                "op": "NULL",
                 "rhs": {
                   "value": "EPI_IMM_Vitamin A 24 months Date given"
                 }
               }
             ]
-          }
+          },
+          "priority": "medium",
+          "completion": {
+            "condition": [
+              {
+                "op": "NOT_NULL",
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JmQ2j05Kqio"
+                },
+                "rhs": {
+                  "value": "EPI_IMM_Vitamin A 24 months Date given"
+                }
+              }
+            ]
+          },
+          "description": "EPI Tasks, they need to be filled"
         }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "dkFbZ4zHZZc",
-        "teiTertiaryAttribute": "HYlWwg511tF"
-      }
+      ]
     },
     {
-      "programName": "",
+      "teiView": {
+        "teiPrimaryAttribute": "X5UOKXdwvbI",
+        "teiTertiaryAttribute": "EDjTF6dn75s",
+        "teiSecondaryAttribute": "UZOaWSmTFj6"
+      },
       "programUid": "yzT1RFPDbSL",
+      "programName": "",
       "taskConfigs": [
         {
-          "anchorDate": "",
-          "completion": {
-            "condition": []
-          },
-          "description": "",
           "name": "",
           "period": {
             "anchor": {
@@ -2628,38 +2441,38 @@
             },
             "dueInDays": 1
           },
-          "priority": "medium",
-          "singleIncomplete": false,
-          "taskTypeId": "",
           "trigger": {
             "condition": []
-          }
+          },
+          "priority": "medium",
+          "anchorDate": "",
+          "completion": {
+            "condition": []
+          },
+          "taskTypeId": "",
+          "description": "",
+          "singleIncomplete": false
         }
-      ],
-      "teiView": {
-        "teiPrimaryAttribute": "X5UOKXdwvbI",
-        "teiSecondaryAttribute": "UZOaWSmTFj6",
-        "teiTertiaryAttribute": "EDjTF6dn75s"
-      }
+      ]
     }
   ],
   "taskProgramConfig": [
     {
+      "statusUid": "UxERjzcCQgm",
       "dueDateUid": "X1bSv1j75Oo",
+      "programUid": "mIn6hesS2yR",
+      "teiTypeUid": "fgyP4MJja3C",
       "priorityUid": "bp4FX8ajXWS",
       "programName": "Tasking Program",
-      "programUid": "mIn6hesS2yR",
-      "statusUid": "UxERjzcCQgm",
       "taskNameUid": "t3k6ATKay0k",
-      "taskPrimaryAttrUid": "ZNNgWoMBvZc",
       "taskProgressUid": "wIu3HoZRXJ8",
-      "taskSecondaryAttrUid": "IZOHOGZeBCD",
-      "taskSourceEnrollmentUid": "nH0vQ5e744Q",
-      "taskSourceEventUid": "if37kHI2RSy",
-      "taskSourceProgramUid": "ugRQf1GWFOj",
       "taskSourceTeiUid": "cpkkGoT9N2M",
+      "taskPrimaryAttrUid": "ZNNgWoMBvZc",
+      "taskSourceEventUid": "if37kHI2RSy",
       "taskTertiaryAttrUid": "dnP7Qk7EaJL",
-      "teiTypeUid": "fgyP4MJja3C"
+      "taskSecondaryAttrUid": "IZOHOGZeBCD",
+      "taskSourceProgramUid": "ugRQf1GWFOj",
+      "taskSourceEnrollmentUid": "nH0vQ5e744Q"
     }
   ]
 }

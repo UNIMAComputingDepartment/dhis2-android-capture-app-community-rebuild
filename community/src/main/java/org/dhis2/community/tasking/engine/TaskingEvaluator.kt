@@ -64,7 +64,10 @@ abstract class TaskingEvaluator(
         return when (taskConfig.period.anchor.ref){
             //"" -> dueDate.toString()
             //"DIFF" -> java.time.temporal.ChronoUnit.DAYS.between(anchorDate,dueDate).toString()
+
             Constants.PAST -> anchorDate.minusDays(taskConfig.period.dueInDays.toLong()).toString()
+            Constants.QUARTERLY_SCHEDULE -> quarterDatesCalculator().first.minusDays(taskConfig.period.dueInDays.toLong()).toString()
+
             else -> anchorDate.plusDays(taskConfig.period.dueInDays.toLong()).toString()
 
         }
@@ -192,14 +195,8 @@ abstract class TaskingEvaluator(
         }
     }
 
-
     @RequiresApi(Build.VERSION_CODES.O)
-    fun resolvedQuarterly(
-        ref: TaskingConfig.ProgramTasks.TaskConfig.Reference,
-        teiUid: String,
-        programUid: String,
-    ): Boolean? {
-
+    private fun quarterDatesCalculator(): Pair<LocalDate, LocalDate>{
         val today = LocalDate.now()
 
         val adjustMonth = (today.monthValue - 1 + 12) % 12
@@ -210,11 +207,22 @@ abstract class TaskingEvaluator(
         val quarterStart = LocalDate.of(today.year, quarterStartMonth, 1)
         val quarterEnd = quarterStart.plusMonths(3).minusDays(1)
 
+        return quarterStart to quarterEnd
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun resolvedQuarterly(
+        ref: TaskingConfig.ProgramTasks.TaskConfig.Reference,
+        teiUid: String,
+        programUid: String,
+    ): Boolean? {
+
         val startDate = Date.from(
-            quarterStart.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            quarterDatesCalculator().first.atStartOfDay(ZoneId.systemDefault()).toInstant()
         )
         val endDate = Date.from(
-            quarterEnd.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            quarterDatesCalculator().second.atStartOfDay(ZoneId.systemDefault()).toInstant()
         )
 
         val events = repository.getPeriodEventsForProgramStage(
