@@ -25,7 +25,6 @@ import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
-import org.dhis2.community.medicalHistory.engine.MHEngine
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
@@ -51,7 +50,6 @@ class EventCapturePresenterImpl(
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
     private val taskingEngine: TaskingEngine,
-    private val mhEngine: MHEngine
 ) : ViewModel(),
     EventCaptureContract.Presenter {
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -72,7 +70,6 @@ class EventCapturePresenterImpl(
     }
 
     override fun init() {
-        runMHEngine()
         compositeDisposable.add(
             eventCaptureRepository
                 .eventIntegrityCheck()
@@ -285,14 +282,6 @@ class EventCapturePresenterImpl(
                         view.finishDataEntry()
                     },
                 ),
-        )
-    }
-
-    private fun runMHEngine() {
-        mhEngine.runAsync(
-            teiUid = eventCaptureRepository.getTeiUid().toString(),
-            baseProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
-            baseProgramStage = programStage()
         )
     }
 
