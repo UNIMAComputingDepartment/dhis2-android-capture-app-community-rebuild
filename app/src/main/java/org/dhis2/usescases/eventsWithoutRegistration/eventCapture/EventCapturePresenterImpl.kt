@@ -28,7 +28,6 @@ import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
 import org.dhis2.ui.icons.DataEntryFilled
@@ -53,7 +52,6 @@ class EventCapturePresenterImpl(
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
     private val taskingEngine: TaskingEngine,
-    private val workflowRepository: WorkflowRepository,
 ) : ViewModel(),
     EventCaptureContract.Presenter {
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -252,7 +250,6 @@ class EventCapturePresenterImpl(
                     eventUid = eventUid
                 )
             }
-            runWorkflowAutoEnrollment()
         }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {
@@ -260,31 +257,6 @@ class EventCapturePresenterImpl(
         } else {
             view.finishDataEntry()
         }
-    }
-
-    private fun runWorkflowAutoEnrollment() {
-        val enrollmentUid = eventCaptureRepository.getEnrollmentUid() ?: return
-        val sourceTeiUid = eventCaptureRepository.getTeiUid() ?: return
-
-        compositeDisposable.add(
-            Flowable.fromCallable {
-                val triggerProgramUid = eventCaptureRepository.getProgramUid().blockingFirst()
-                workflowRepository.evaluateAutoEnrollment(
-                    triggerProgramUid = triggerProgramUid,
-                    teiUid = sourceTeiUid,
-                    enrollmentUid = enrollmentUid,
-                    eventUid = eventUid,
-                )
-            }.defaultSubscribe(
-                schedulerProvider,
-                { enrolledProgramUids ->
-                    if (enrolledProgramUids.isNotEmpty()) {
-                        Timber.d("Auto-enrolled TEI $sourceTeiUid into: $enrolledProgramUids")
-                    }
-                },
-                Timber::e,
-            ),
-        )
     }
 
     override fun isEnrollmentOpen(): Boolean = eventCaptureRepository.isEnrollmentOpen

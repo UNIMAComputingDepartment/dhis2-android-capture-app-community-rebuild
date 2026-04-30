@@ -431,7 +431,10 @@ class TaskingRepository(
     ): Int {
         try {
             val stage = if (!stageUid.isNullOrBlank()) {
-                d2.programModule().programStages().byUid().eq(stageUid).one().blockingGet()
+                d2.programModule().programStages()
+                    .byUid().eq(stageUid)
+                    .one()
+                    .blockingGet()
             } else {
                 d2.programModule().programStages().byProgramUid()
                     .eq(programUid).blockingGet()
@@ -439,7 +442,8 @@ class TaskingRepository(
                         d2.programModule().programStageDataElements()
                             .byProgramStage().eq(it.uid())
                             .byDataElement().eq(dataElementUid)
-                            .blockingGet().isNotEmpty()
+                            .blockingGet()
+                            .isNotEmpty()
                     }
             } ?: return 0
 
