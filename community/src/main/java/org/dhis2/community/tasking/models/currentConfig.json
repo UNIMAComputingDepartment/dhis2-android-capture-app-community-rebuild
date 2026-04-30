@@ -5,8 +5,69 @@
       "programUid": "NFnp1h3IMzl",
       "taskConfigs": [
         {
+          "combination": "AND",
           "completion": {
-            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "FHFH24arHkG"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Does the person use a long-lasting insecticidal net (LLIN)?"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "KwJqVrMOhkE"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "Population segment"
+                }
+              }
+            ]
+          },
+          "description": "Population Segment and LLIN Tasks, they need to be filled",
+          "name": "Population Segment And LLIN Every Three Months",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 90
+          },
+          "priority": "medium",
+          "trigger": {
+            "combination": "OR",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "FHFH24arHkG"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Date OPV 0 Given"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "KwJqVrMOhkE"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "Date BCG was given"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "completion": {
             "condition": [
               {
                 "lhs": {
@@ -32,7 +93,7 @@
           },
           "description": "Task for Quarterly Personal Visit",
           "frequency": "monthly",
-          "name": "PR Quarterly Personal Visit",
+          "name": "Quarterly Personal Visit",
           "period": {
             "anchor": {
               "ref": "",
@@ -53,26 +114,6 @@
                 "rhs": {
                   "value": ""
                 }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "FHFH24arHkG"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "Date OPV 0 Given"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "KwJqVrMOhkE"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "Date BCG was given"
-                }
               }
             ]
           }
@@ -88,6 +129,271 @@
       "programName": "Household Register",
       "programUid": "sXzdrtXMink",
       "taskConfigs": [
+        {
+          "anchorDate": "",
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "K3m9aYHO67h"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH - Number of LLIN in the household"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "sIlxprHKeca"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "IZiaQK4QkQ1"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-Latrine"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JC4NIlakoVs"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Household Infested"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "mFenAqWzr1R"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Insecticide Spray"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SBYOJJYbPIe"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Littered"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "MEa0dDKTkj0"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Refuse Pit"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "fpJgH8hZzAT"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "aKbvLiB1rCA"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-1% Stock Solution"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "HCEdo9jKXNv"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Covered Container"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "jG0qt9ny9nR"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Protected"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "uDDMorJ3Urg"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Use of 2 Cup System"
+                }
+              }
+            ]
+          },
+          "description": "Complete all household environmental health data collection fields during quarterly visit",
+          "name": "HH Environmental Quarterly Visit",
+          "period": {
+            "anchor": {
+              "ref": "",
+              "uid": ""
+            },
+            "dueInDays": 90
+          },
+          "priority": "high",
+          "singleIncomplete": false,
+          "taskTypeId": "Household Quarterly Environmental Visit",
+          "trigger": {
+            "combination": "OR",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "K3m9aYHO67h"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH - Number of LLIN in the household"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "sIlxprHKeca"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "IZiaQK4QkQ1"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-Latrine"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "JC4NIlakoVs"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Household Infested"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "mFenAqWzr1R"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Insecticide Spray"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "SBYOJJYbPIe"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Littered"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "MEa0dDKTkj0"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Refuse Pit"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "fpJgH8hZzAT"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "aKbvLiB1rCA"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-1% Stock Solution"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "HCEdo9jKXNv"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Covered Container"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "jG0qt9ny9nR"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Protected"
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "allEventsData",
+                  "uid": "uDDMorJ3Urg"
+                },
+                "op": "NULL",
+                "rhs": {
+                  "value": "HR-EH-WA-Use of 2 Cup System"
+                }
+              }
+            ]
+          }
+        },
         {
           "completion": {
             "combination": "AND",
@@ -216,7 +522,7 @@
           },
           "description": "Task for Quarterly HouseHold Visit",
           "frequency": "monthly",
-          "name": "HHR Quarterly HouseHold Visit",
+          "name": "Quarterly HouseHold Visit",
           "period": {
             "anchor": {
               "ref": "",
@@ -237,127 +543,8 @@
                 "rhs": {
                   "value": ""
                 }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "K3m9aYHO67h"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH - Number of LLIN in the household"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "sIlxprHKeca"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-HWF-Hand Washing Facilities"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "IZiaQK4QkQ1"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-Latrine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "JC4NIlakoVs"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Household Infested"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "mFenAqWzr1R"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Insecticide Spray"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "SBYOJJYbPIe"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Littered"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "MEa0dDKTkj0"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Refuse Pit"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "fpJgH8hZzAT"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-SA-SU-Salt Tested for Iodine"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "aKbvLiB1rCA"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-1% Stock Solution"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "HCEdo9jKXNv"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Covered Container"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "jG0qt9ny9nR"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Protected"
-                }
-              },
-              {
-                "lhs": {
-                  "ref": "allEventsData",
-                  "uid": "uDDMorJ3Urg"
-                },
-                "op": "NULL",
-                "rhs": {
-                  "value": "HR-EH-WA-Use of 2 Cup System"
-                }
               }
+
             ]
           }
         }

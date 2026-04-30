@@ -1,5 +1,7 @@
 package org.dhis2.data.service
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -23,6 +25,7 @@ import org.dhis2.commons.prefs.Preference.Companion.TIME_DATA
 import org.dhis2.commons.prefs.Preference.Companion.TIME_META
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
+import org.dhis2.community.tasking.engine.TaskingWorker
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.data.service.workManager.WorkerItem
@@ -824,5 +827,11 @@ class SyncPresenterImpl(
     override fun taskingDefault() {
         DefaultingEvaluator(TaskingRepository(d2))
             .periodicCheck()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun taskingWorker() {
+        TaskingWorker( TaskingRepository(d2)).defaultingWorker()
+        TaskingWorker( TaskingRepository(d2)).periodicWorker()
     }
 }
