@@ -28,7 +28,6 @@ import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
-import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
 import org.dhis2.ui.icons.DataEntryFilled
@@ -53,7 +52,6 @@ class EventCapturePresenterImpl(
     private val pageConfigurator: NavigationPageConfigurator,
     private val resourceManager: ResourceManager,
     private val taskingEngine: TaskingEngine,
-    private val workflowRepository: WorkflowRepository,
 ) : ViewModel(),
     EventCaptureContract.Presenter {
     var compositeDisposable: CompositeDisposable = CompositeDisposable()
@@ -64,7 +62,8 @@ class EventCapturePresenterImpl(
 
     private val navigationBarUIState = mutableStateOf(NavigationBarUIState<NavigationPage>())
 
-    override fun observeNavigationBarUIState(): State<NavigationBarUIState<NavigationPage>> = navigationBarUIState
+    override fun observeNavigationBarUIState(): State<NavigationBarUIState<NavigationPage>> =
+        navigationBarUIState
 
     override fun observeActions(): LiveData<EventCaptureAction> = actions
 
@@ -180,7 +179,8 @@ class EventCapturePresenterImpl(
         }
     }
 
-    override fun isDataEntrySelected(): Boolean = navigationBarUIState.value.selectedItem == NavigationPage.DATA_ENTRY
+    override fun isDataEntrySelected(): Boolean =
+        navigationBarUIState.value.selectedItem == NavigationPage.DATA_ENTRY
 
     override fun updateNotesBadge(numberOfNotes: Int) {
         val uiState = navigationBarUIState.value
@@ -240,7 +240,7 @@ class EventCapturePresenterImpl(
     @RequiresApi(Build.VERSION_CODES.O)
     override fun saveAndExit(eventStatus: EventStatus?) {
 
-        if (eventCaptureRepository.getEnrollmentUid() != null){
+        if (eventCaptureRepository.getEnrollmentUid() != null) {
             eventCaptureRepository.getTeiUid()?.let {
                 taskingEngine.evaluateAsync(
                     targetProgramUid = eventCaptureRepository.getProgramUid().blockingFirst(),
@@ -250,7 +250,6 @@ class EventCapturePresenterImpl(
                     eventUid = eventUid
                 )
             }
-            runWorkflowAutoEnrollment()
         }
 
         if (!hasExpired && !eventCaptureRepository.isEnrollmentCancelled) {
@@ -258,31 +257,6 @@ class EventCapturePresenterImpl(
         } else {
             view.finishDataEntry()
         }
-    }
-
-    private fun runWorkflowAutoEnrollment() {
-        val enrollmentUid = eventCaptureRepository.getEnrollmentUid() ?: return
-        val sourceTeiUid = eventCaptureRepository.getTeiUid() ?: return
-
-        compositeDisposable.add(
-            Flowable.fromCallable {
-                val triggerProgramUid = eventCaptureRepository.getProgramUid().blockingFirst()
-                workflowRepository.evaluateAutoEnrollment(
-                    triggerProgramUid = triggerProgramUid,
-                    teiUid = sourceTeiUid,
-                    enrollmentUid = enrollmentUid,
-                    eventUid = eventUid,
-                )
-            }.defaultSubscribe(
-                schedulerProvider,
-                { enrolledProgramUids ->
-                    if (enrolledProgramUids.isNotEmpty()) {
-                        Timber.d("Auto-enrolled TEI $sourceTeiUid into: $enrolledProgramUids")
-                    }
-                },
-                Timber::e,
-            ),
-        )
     }
 
     override fun isEnrollmentOpen(): Boolean = eventCaptureRepository.isEnrollmentOpen
@@ -379,7 +353,8 @@ class EventCapturePresenterImpl(
         view.showProgress()
     }
 
-    override fun getCompletionPercentageVisibility(): Boolean = eventCaptureRepository.showCompletionPercentage()
+    override fun getCompletionPercentageVisibility(): Boolean =
+        eventCaptureRepository.showCompletionPercentage()
 
     private val eventStatus: EventStatus
         get() = eventCaptureRepository.eventStatus().blockingFirst()
