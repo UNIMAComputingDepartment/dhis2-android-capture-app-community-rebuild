@@ -82,7 +82,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.dhis2"
+        applicationId = "com.ichis"
         compileSdk = libs.versions.sdk.get().toInt()
         targetSdk = libs.versions.sdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()

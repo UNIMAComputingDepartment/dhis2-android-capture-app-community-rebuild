@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.hisp.dhis.android.core.D2
+import timber.log.Timber
 
 class Repository(
     private val d2: D2
@@ -14,9 +15,25 @@ class Repository(
             .eq("community_redesign")
             .blockingGet()
 
-        return entries.firstOrNull{ it.key() == "medicalHistory"}
-            ?.let{Gson().fromJson((it.value()), MedicalHistoryConfig::class.java)}
-            ?: MedicalHistoryConfig(emptyList())
+        val rawValue = entries.firstOrNull { it.key() == "medicalHistory" }?.value()
+            ?: return MedicalHistoryConfig(emptyList())
+
+        if (rawValue.isBlank()) return MedicalHistoryConfig(emptyList())
+
+        val value = if (rawValue.startsWith("JsonWrapper(json=")) {
+            rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
+        } else {
+            rawValue
+        }
+
+        if (!value.trim().startsWith("{")) return MedicalHistoryConfig(emptyList())
+
+        return try {
+            Gson().fromJson(value, MedicalHistoryConfig::class.java)
+        } catch (exception: Exception) {
+            Timber.e(exception, "Error parsing medicalHistory config")
+            MedicalHistoryConfig(emptyList())
+        }
     }
 
     suspend fun updateImmunizationSummaryValues(

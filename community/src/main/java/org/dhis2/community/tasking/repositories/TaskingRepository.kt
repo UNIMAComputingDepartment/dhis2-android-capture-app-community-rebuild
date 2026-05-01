@@ -1,9 +1,7 @@
 package org.dhis2.community.tasking.repositories
 
 import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.utils.Constants
@@ -19,6 +17,7 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
 import java.util.Date
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
 
 @Singleton
@@ -28,24 +27,19 @@ class TaskingRepository(
 
     private var cachedConfig: TaskingConfig? = null
 
-    val taskStatusAttributeUid =
-        getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid ?: ""
-    val taskProgressAttributeUid =
-        getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid ?: ""
+    val taskStatusAttributeUid: String
+        get() = getTaskingConfig().taskProgramConfig.firstOrNull()?.statusUid.orEmpty()
+    val taskProgressAttributeUid: String
+        get() = getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid.orEmpty()
 
     private val programDisplayNames = mutableMapOf<String, String?>()
 
     fun getCachedConfig() = cachedConfig
 
-    init {
-        CoroutineScope(Dispatchers.IO).launch {
-            getTaskingConfig()
-        }
-    }
-
+    @Synchronized
     fun getTaskingConfig(): TaskingConfig {
         Timber.d("getTaskingConfig() called - START")
-        cachedConfig?.let {
+        cachedConfig?.takeIf { it.hasAnyConfig() }?.let {
             Timber.d("Returning cached tasking config")
             return it
         }
@@ -111,8 +105,16 @@ class TaskingRepository(
             )
         }
 
-        cachedConfig = config
+        // Avoid permanently pinning an empty config due to startup timing races.
+        if (config.hasAnyConfig()) {
+            cachedConfig = config
+        }
+
         return config
+    }
+
+    private fun TaskingConfig.hasAnyConfig(): Boolean {
+        return programTasks.isNotEmpty() || taskProgramConfig.isNotEmpty()
     }
 
     fun getOrgUnit(taskTeiUid: String): String? {
@@ -156,7 +158,7 @@ class TaskingRepository(
 
 
     fun getTaskTei(): List<TrackedEntityInstance> {
-        val taskTeiUid = cachedConfig?.taskProgramConfig?.firstOrNull()?.teiTypeUid
+        val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
 
         val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
@@ -180,7 +182,7 @@ class TaskingRepository(
     fun getTasks(): List<Task> {
         val teis = getTaskTei()
 
-        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
+        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
 
         return teis.map { tei: TrackedEntityInstance ->
             teiToTask(tei, programConfig)
@@ -207,7 +209,7 @@ class TaskingRepository(
             .orderByLastUpdated(RepositoryScope.OrderByDirection.DESC)
             .blockingGet()
 
-        val programConfig = getCachedConfig()?.taskProgramConfig?.firstOrNull()
+        val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
 
         return allTies.map { tei: TrackedEntityInstance ->
             teiToTask(tei, programConfig)
@@ -252,15 +254,19 @@ class TaskingRepository(
 
 
     fun updateTaskAttrValue(taskAttrUid: String?, newTaskAttrValue: String?, taskTieUid: String, retries: Int = 0) {
+        if (taskAttrUid.isNullOrBlank()) {
+            Timber.tag("TaskingRepository").w("Skipping task attribute update because attribute UID is blank")
+            return
+        }
+
         try {
-            if (taskAttrUid != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(taskAttrUid, taskTieUid)
-                    .blockingSet(newTaskAttrValue ?: "")
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(taskAttrUid, taskTieUid)
+                .blockingSet(newTaskAttrValue ?: "")
         } catch (ex: Exception) {
             Timber.tag("TaskingRepository").e(ex, "Error updating task attribute value")
             if (retries < 3 && taskTieUid.isNotEmpty()) {
-                updateTaskAttrValue(taskAttrUid, newTaskAttrValue, taskTieUid, retries+1)
+                updateTaskAttrValue(taskAttrUid, newTaskAttrValue, taskTieUid, retries + 1)
             }
         }
 
@@ -285,6 +291,11 @@ class TaskingRepository(
         }
     }
 
+
+    // ===== CACHING FOR PERFORMANCE =====
+    private val _allTasksCache = MutableStateFlow<List<Task>>(emptyList())
+    private val allTasksCacheTimestamp = AtomicReference<Long>(0)
+    private val CACHE_TTL_TASKS = 30 * 1000L // 30 seconds for task list
 
     @Synchronized
     fun createTask(

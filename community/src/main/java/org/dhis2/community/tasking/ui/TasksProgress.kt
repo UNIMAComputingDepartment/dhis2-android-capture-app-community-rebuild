@@ -49,7 +49,7 @@ fun TaskProgressSection(
                 Text(
                     text = "Task Progress",
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
                     color = TextColor.OnSurface
                 )
 

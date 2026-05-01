@@ -376,7 +376,7 @@ class RelationshipRepository(
         targetTeiUid: String,
         mappings: List<AttributeMapping>
     ) {
-        if (sourceTeiUid.isBlank() || mappings.isEmpty()) return
+        if (sourceTeiUid.isBlank() || mappings.isNullOrEmpty()) return
 
         val sourceTei = d2.trackedEntityModule()
             .trackedEntityInstances()

@@ -74,11 +74,12 @@ abstract class TaskingEvaluator(
         conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
         teiUid: String,
         programUid: String,
-        eventUid: String? = null
+        eventUid: String? = null,
+        secondaryProgramUid: String? = null
     ): List<Boolean> {
         return conditions.condition.map { cond ->
-            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid)
-            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid)
+            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
+            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
 
             when (cond.op) {
                 Constants.EQUALS -> rhsValue == lhsValue
@@ -91,11 +92,21 @@ abstract class TaskingEvaluator(
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs > rhs
                 }
+                Constants.LESS_THAN -> {
+                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
+                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    rhs != null && lhs != null && lhs < rhs
+                }
 
                 Constants.GREATER_THAN_OR_EQUALS -> {
                     val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs >= rhs
+                }
+                Constants.LESS_THAN_OR_EQUALS -> {
+                    val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
+                    val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
+                    rhs != null && lhs != null && lhs <= rhs
                 }
                 else -> false
             }
@@ -123,11 +134,12 @@ abstract class TaskingEvaluator(
         reference: TaskingConfig.ProgramTasks.TaskConfig.Reference,
         teiUid: String,
         programUid: String,
-        eventUid: String? = null
+        eventUid: String? = null,
+        secondaryProgramUid: String? = null
     ): String? {
 
         val enrollment = repository.getLatestEnrollment(teiUid, programUid)
-            ?: return null
+            ?: secondaryProgramUid?.let { repository.getLatestEnrollment(teiUid, it) } ?: return null
 
         if (reference.uid.isNullOrBlank())
             return reference.value.toString()

@@ -84,10 +84,15 @@ class TaskingFragment(
         // Create notification channels for task reminders (API 26+)
         NotificationChannelManager.createNotificationChannels(requireContext())
 
-        // Schedule three-times-daily task reminders (7 AM, 12 PM, 5 PM)
-        // Uses AlarmManager with setExactAndAllowWhileIdle() to ensure notifications trigger
-        // even in power saving mode, Doze mode, and across device reboots
-        TaskReminderScheduler.scheduleTaskReminder(requireContext())
+        // Schedule task reminders in onStart() instead to avoid blocking Fragment init
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Schedule task reminders asynchronously on background thread
+        lifecycleScope.launch {
+            TaskReminderScheduler.scheduleTaskReminder(requireContext())
+        }
     }
 
     @Composable
