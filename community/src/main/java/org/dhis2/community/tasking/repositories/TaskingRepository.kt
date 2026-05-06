@@ -535,4 +535,11 @@ class TaskingRepository(
             .blockingGet()
         return program != null
     }
+
+    fun hasDataAccessToTasking(): Boolean {
+        val taskProgramUid = getTaskProgramUid() ?: return false
+        val program = d2.programModule().programs().uid(taskProgramUid).blockingGet()
+        val dataAccess = program?.access()?.data()
+        return dataAccess?.read() == true && dataAccess.write() == true
+    }
 }

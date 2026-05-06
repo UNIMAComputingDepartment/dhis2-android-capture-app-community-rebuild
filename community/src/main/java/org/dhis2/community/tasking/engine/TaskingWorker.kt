@@ -31,7 +31,7 @@ class TaskingWorker(
             val taskProgramUid = taskProgramConfig.programUid
             val taskTIETypeUid = taskProgramConfig.teiTypeUid
             val taskingProgramUid = config.taskProgramConfig.first().programUid
-            val hasTaskingProgramAccess = repository.hasAccessToProgram(taskingProgramUid)
+            val hasTaskingProgramAccess = repository.hasDataAccessToTasking()
 
             if(!hasTaskingProgramAccess){
                 Timber.tag(TAG).d("User does not have access to tasking program with uid: $taskingProgramUid. Skipping tasking evaluation.")

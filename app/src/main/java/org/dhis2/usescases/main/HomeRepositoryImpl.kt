@@ -108,10 +108,7 @@ class HomeRepositoryImpl(
     override fun hasHomeAnalytics(): Boolean = charts?.getVisualizationGroups(null)?.isNotEmpty() == true
 
     override fun hasTaskingProgram(): Boolean {
-        val taskProgramUid = taskingRepository.getTaskProgramUid() ?: return false
-        val program = d2.programModule().programs().uid(taskProgramUid).blockingGet()
-        val dataAccess = program?.access()?.data()
-        return dataAccess?.read() == true || dataAccess?.write() == true
+        return taskingRepository.hasDataAccessToTasking()
     }
 
     override fun getServerVersion(): Single<SystemInfo?> = d2.systemInfoModule().systemInfo().get()
