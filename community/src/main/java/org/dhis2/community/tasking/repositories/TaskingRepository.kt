@@ -1,7 +1,5 @@
 package org.dhis2.community.tasking.repositories
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.tasking.models.Task
@@ -18,9 +16,6 @@ import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Collections
 import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
@@ -533,5 +528,11 @@ class TaskingRepository(
             }
     }
 
-
+    fun hasAccessToProgram(programUid: String): Boolean {
+        val program = d2.programModule().programs()
+            .byUid().eq(programUid)
+            .one()
+            .blockingGet()
+        return program != null
+    }
 }
