@@ -25,12 +25,18 @@ class TaskingWorker(
     @RequiresApi(Build.VERSION_CODES.O)
     fun periodicWorker(
     ){
-        val config = repository.getTaskingConfig()
-
         try {
+            val config = repository.getTaskingConfig()
             val taskProgramConfig = repository.getTaskingConfig().taskProgramConfig.first()
             val taskProgramUid = taskProgramConfig.programUid
             val taskTIETypeUid = taskProgramConfig.teiTypeUid
+            val taskingProgramUid = config.taskProgramConfig.first().programUid
+            val hasTaskingProgramAccess = repository.hasAccessToProgram(taskingProgramUid)
+
+            if(!hasTaskingProgramAccess){
+                Timber.tag(TAG).d("User does not have access to tasking program with uid: $taskingProgramUid. Skipping tasking evaluation.")
+                return
+            }
 
             config.programTasks.forEach { programTask ->
 
