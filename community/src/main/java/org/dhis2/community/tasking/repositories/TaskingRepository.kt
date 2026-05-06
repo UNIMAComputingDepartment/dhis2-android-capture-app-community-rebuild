@@ -42,6 +42,15 @@ class TaskingRepository(
 
     fun getCachedConfig() = cachedConfig
 
+    fun getTaskProgramUids(): List<String> =
+        getTaskingConfig()
+            .taskProgramConfig
+            .mapNotNull { config ->
+                config.programUid.trim().takeIf { uid -> uid.isNotEmpty() }
+            }
+
+    fun getTaskProgramUid(): String? = getTaskProgramUids().firstOrNull()
+
     @Synchronized
     fun getTaskingConfig(): TaskingConfig {
         Timber.d("getTaskingConfig() called - START")

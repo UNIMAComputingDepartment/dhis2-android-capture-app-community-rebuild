@@ -20,6 +20,7 @@ import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.program.ProgramType
 import org.hisp.dhis.android.core.systeminfo.SystemInfo
 import org.hisp.dhis.android.core.user.User
+import org.dhis2.community.tasking.repositories.TaskingRepository
 
 class HomeRepositoryImpl(
     private val d2: D2,
@@ -28,6 +29,7 @@ class HomeRepositoryImpl(
     private val cryptographyManager: CryptographicActions,
     private val dispatcher: Dispatcher,
     private val domainErrorMapper: DomainErrorMapper,
+    private val taskingRepository: TaskingRepository,
 ) : HomeRepository {
     companion object {
         const val BIOMETRICS_PERMISSION = "biometrics_permission"
@@ -104,6 +106,13 @@ class HomeRepositoryImpl(
     }
 
     override fun hasHomeAnalytics(): Boolean = charts?.getVisualizationGroups(null)?.isNotEmpty() == true
+
+    override fun hasTaskingProgram(): Boolean {
+        val taskProgramUid = taskingRepository.getTaskProgramUid() ?: return false
+        val program = d2.programModule().programs().uid(taskProgramUid).blockingGet()
+        val dataAccess = program?.access()?.data()
+        return dataAccess?.read() == true || dataAccess?.write() == true
+    }
 
     override fun getServerVersion(): Single<SystemInfo?> = d2.systemInfoModule().systemInfo().get()
 
