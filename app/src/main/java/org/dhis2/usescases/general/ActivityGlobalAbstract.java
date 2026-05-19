@@ -4,7 +4,6 @@ import static org.dhis2.utils.analytics.AnalyticsConstants.CLICK;
 import static org.dhis2.utils.analytics.AnalyticsConstants.SHOW_HELP;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
@@ -17,7 +16,7 @@ import org.dhis2.commons.ActivityResultObservable;
 import org.dhis2.commons.Constants;
 import org.dhis2.commons.dialogs.CustomDialog;
 import org.dhis2.commons.popupmenu.AppMenuHelper;
-import org.dhis2.commons.reporting.CrashReportController;
+import org.dhis2.mobile.commons.reporting.CrashReportController;
 import org.dhis2.utils.HelpManager;
 import org.dhis2.utils.OnDialogClickListener;
 import org.dhis2.utils.analytics.AnalyticsHelper;
@@ -51,7 +50,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
                 )
         );
     }
-
 
 
     @Override
@@ -93,7 +91,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
     }
 
 
-
     public ActivityGlobalAbstract getAbstracContext() {
         return this;
     }
@@ -112,11 +109,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
             message = getString(R.string.permission_denied);
 
         Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public SharedPreferences getSharedPreferences() {
-        return getSharedPreferences(Constants.SHARE_PREFS, MODE_PRIVATE);
     }
 
     public void hideKeyboard() {
@@ -172,8 +164,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
                     .show();
         }
     }
-
-
 
 
     @Override

@@ -1,10 +1,12 @@
 package org.dhis2.usescases.teiDashboard.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -14,21 +16,19 @@ import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
 import org.dhis2.community.relationships.CmtRelationshipViewModel
 import org.dhis2.community.relationships.ui.components.CollapsibleRelationshipSection
 import org.dhis2.usescases.teiDashboard.ui.model.InfoBarUiModel
+import org.dhis2.usescases.teiDashboard.ui.model.QuickActionUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TeiCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.model.TimelineEventsHeaderModel
+import org.hisp.dhis.mobile.ui.designsystem.component.AssistChip
 import org.hisp.dhis.mobile.ui.designsystem.component.CardDetail
 import org.hisp.dhis.mobile.ui.designsystem.component.InfoBar
-import org.hisp.dhis.mobile.ui.designsystem.component.InfoBarData
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 
 @Composable
 fun TeiDetailDashboard(
-    syncData: InfoBarUiModel?,
-    followUpData: InfoBarUiModel?,
-    enrollmentData: InfoBarUiModel?,
+    infoBarModels: List<InfoBarUiModel>,
     card: TeiCardUiModel?,
     timelineEventHeaderModel: TimelineEventsHeaderModel,
-    isGrouped: Boolean = true,
     timelineOnEventCreationOptionSelected: (EventCreationType) -> Unit,
     relationships: List<CmtRelationshipTypeViewModel>?,
     onRelationshipClick: (String, String, String) -> Unit,
@@ -37,64 +37,33 @@ fun TeiDetailDashboard(
     onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
     onCreateEntity: (String, String) -> Unit,
     onRemoveRelationship: (String, String) -> Unit,
+    quickActions: List<QuickActionUiModel>,
+    modifier: Modifier = Modifier,
+    isGrouped: Boolean = true,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
     ) {
-        if (syncData?.showInfoBar == true) {
-            InfoBar(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp)
-                    .testTag(SYNC_INFO_BAR_TEST_TAG),
-                infoBarData =
-                    InfoBarData(
-                        text = syncData.text,
-                        icon = syncData.icon,
-                        color = syncData.textColor,
-                        backgroundColor = syncData.backgroundColor,
-                        actionText = syncData.actionText,
-                        onClick = syncData.onActionClick,
-                    ),
-            )
-            if (followUpData?.showInfoBar == true || enrollmentData?.showInfoBar == true) {
-                Spacer(modifier = Modifier.padding(top = 8.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            infoBarModels.forEach { infoBar ->
+                if (infoBar.showInfoBar) {
+                    InfoBar(
+                        modifier =
+                            Modifier
+                                .padding(start = 8.dp, end = 8.dp)
+                                .testTag(INFO_BAR_TEST_TAG + infoBar.type.name),
+                        text = infoBar.text,
+                        icon = infoBar.icon,
+                        textColor = infoBar.textColor,
+                        backgroundColor = infoBar.backgroundColor,
+                        actionText = infoBar.actionText ?: "",
+                        onActionClick = infoBar.onActionClick,
+                    )
+                }
             }
-        }
-
-        if (followUpData?.showInfoBar == true) {
-            InfoBar(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp)
-                    .testTag(FOLLOWUP_INFO_BAR_TEST_TAG),
-                infoBarData = InfoBarData(
-                    text = followUpData.text,
-                    icon = followUpData.icon,
-                    color = followUpData.textColor,
-                    backgroundColor = followUpData.backgroundColor,
-                    actionText = followUpData.actionText,
-                    onClick = followUpData.onActionClick,
-                ),
-            )
-            if (enrollmentData?.showInfoBar == true) {
-                Spacer(modifier = Modifier.padding(top = 8.dp))
-            }
-        }
-
-        if (enrollmentData?.showInfoBar == true) {
-            InfoBar(
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 8.dp)
-                    .testTag(STATE_INFO_BAR_TEST_TAG),
-                infoBarData = InfoBarData(
-                    text = enrollmentData.text,
-                    icon = enrollmentData.icon,
-                    color = enrollmentData.textColor,
-                    backgroundColor = enrollmentData.backgroundColor,
-                    actionText = enrollmentData.actionText,
-                ),
-            )
         }
 
         card?.let {
@@ -109,6 +78,8 @@ fun TeiDetailDashboard(
             )
         }
 
+        QuickActionsRow(quickActions)
+
         relationships?.forEach { relationship ->
             CollapsibleRelationshipSection(
                 relationshipTypeView = relationship,
@@ -122,16 +93,31 @@ fun TeiDetailDashboard(
         }
 
         if (!isGrouped) {
-            Spacer(modifier = Modifier.size(Spacing.Spacing16))
             TimelineEventsHeader(
                 timelineEventsHeaderModel = timelineEventHeaderModel,
                 onOptionSelected = timelineOnEventCreationOptionSelected,
             )
-            Spacer(modifier = Modifier.size(Spacing.Spacing8))
         }
     }
 }
 
-const val SYNC_INFO_BAR_TEST_TAG = "sync"
-const val FOLLOWUP_INFO_BAR_TEST_TAG = "followUp"
-const val STATE_INFO_BAR_TEST_TAG = "state"
+@Composable
+private fun QuickActionsRow(quickActions: List<QuickActionUiModel>) {
+    if (quickActions.isNotEmpty()) {
+        LazyRow(
+            modifier = Modifier.padding(bottom = Spacing.Spacing16),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Spacing8),
+            contentPadding = PaddingValues(horizontal = Spacing.Spacing16),
+        ) {
+            items(quickActions) {
+                AssistChip(
+                    label = it.label,
+                    icon = it.icon,
+                    onClick = it.onActionClick,
+                )
+            }
+        }
+    }
+}
+
+const val INFO_BAR_TEST_TAG = "INFO_BAR_TEST_TAG"

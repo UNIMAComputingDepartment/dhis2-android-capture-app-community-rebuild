@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 import androidx.databinding.DataBindingUtil
 import org.dhis2.R
 import org.dhis2.commons.Constants
@@ -14,20 +16,18 @@ import org.dhis2.form.model.EventMode
 import org.dhis2.form.model.EventRecords
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.ui.FormView
-import org.dhis2.form.ui.provider.FormResultDialogProvider
+import org.dhis2.mobile.commons.ui.NonEditableReasonBlock
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureAction
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
-import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.ui.showNonEditableReasonMessage
 import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.utils.granularsync.OPEN_ERROR_LOCATION
 import javax.inject.Inject
 
-class EventCaptureFormFragment : FragmentGlobalAbstract(), EventCaptureFormView {
+class EventCaptureFormFragment :
+    FragmentGlobalAbstract(),
+    EventCaptureFormView {
     @Inject
     lateinit var presenter: EventCaptureFormPresenter
-
-    @Inject
-    lateinit var eventResultDialogUiProvider: FormResultDialogProvider
 
     private lateinit var activity: EventCaptureActivity
 
@@ -38,44 +38,44 @@ class EventCaptureFormFragment : FragmentGlobalAbstract(), EventCaptureFormView 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         this.activity = context as EventCaptureActivity
-        activity.eventCaptureComponent?.plus(
-            EventCaptureFormModule(
-                this,
-                arguments?.getString(Constants.EVENT_UID)!!,
-            ),
-        )?.inject(this)
+        activity.eventCaptureComponent
+            ?.plus(
+                EventCaptureFormModule(
+                    this,
+                    arguments?.getString(Constants.EVENT_UID)!!,
+                ),
+            )?.inject(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val eventUid = requireArguments().getString(Constants.EVENT_UID, "")
         val eventMode = arguments?.getString(Constants.EVENT_MODE)?.let { EventMode.valueOf(it) }
         val eventStatus = presenter.getEventStatus(eventUid)
-        formView = FormView.Builder()
-            .locationProvider(locationProvider)
-            .onLoadingListener { loading: Boolean ->
-                if (loading) {
-                    activity.showProgress()
-                } else {
-                    activity.hideProgress()
-                }
-            }.onItemChangeListener { action: RowAction ->
-                if (action.isEventDetailsRow) {
-                    presenter.showOrHideSaveButton()
-                }
-                Unit
-            }.onFinishDataEntry { presenter.saveAndExit(eventStatus) }
-            .onFocused {
-                activity.hideNavigationBar()
-            }
-            .onPercentageUpdate { percentage: Float? ->
-                activity.updatePercentage(percentage!!)
-            }
-            .eventCompletionResultDialogProvider(eventResultDialogUiProvider = eventResultDialogUiProvider)
-            .factory(activity.supportFragmentManager)
-            .setRecords(EventRecords(eventUid, eventMode ?: EventMode.CHECK))
-            .openErrorLocation(requireArguments().getBoolean(OPEN_ERROR_LOCATION, false))
-            .setProgramUid(presenter.getEvent()?.program())
-            .build()
+        formView =
+            FormView
+                .Builder()
+                .locationProvider(locationProvider)
+                .onLoadingListener { loading: Boolean ->
+                    if (loading) {
+                        activity.showProgress()
+                    } else {
+                        activity.hideProgress()
+                    }
+                }.onItemChangeListener { action: RowAction ->
+                    if (action.isEventDetailsRow) {
+                        presenter.showOrHideSaveButton()
+                    }
+                    Unit
+                }.onFinishDataEntry { presenter.saveAndExit(eventStatus) }
+                .onFocused {
+                    activity.hideNavigationBar()
+                }.onPercentageUpdate { percentage: Float? ->
+                    activity.updatePercentage(percentage!!)
+                }.factory(activity.supportFragmentManager)
+                .setRecords(EventRecords(eventUid, eventMode ?: EventMode.CHECK))
+                .openErrorLocation(requireArguments().getBoolean(OPEN_ERROR_LOCATION, false))
+                .setProgramUid(presenter.getEvent()?.program())
+                .build()
         super.onCreate(savedInstanceState)
     }
 
@@ -106,7 +106,10 @@ class EventCaptureFormFragment : FragmentGlobalAbstract(), EventCaptureFormView 
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         val transaction = childFragmentManager.beginTransaction()
         transaction.replace(R.id.formViewContainer, formView!!).commit()
@@ -124,7 +127,10 @@ class EventCaptureFormFragment : FragmentGlobalAbstract(), EventCaptureFormView 
         var translationX = 1000
         if (sectionIsVisible) translationX = 0
 
-        binding.actionButton.animate().translationX(translationX.toFloat()).setDuration(500)
+        binding.actionButton
+            .animate()
+            .translationX(translationX.toFloat())
+            .setDuration(500)
             .start()
     }
 
@@ -144,15 +150,19 @@ class EventCaptureFormFragment : FragmentGlobalAbstract(), EventCaptureFormView 
         formView?.reload()
     }
 
-    override fun showNonEditableMessage(reason: String, canBeReOpened: Boolean) {
+    override fun showNonEditableMessage(
+        reason: String,
+        canBeReOpened: Boolean,
+    ) {
         binding.editableReasonContainer.visibility = View.VISIBLE
 
-        showNonEditableReasonMessage(
-            binding.editableReasonContainer,
-            reason,
-            canBeReOpened,
-        ) {
-            presenter.reOpenEvent()
+        binding.editableReasonContainer.setContent {
+            NonEditableReasonBlock(
+                modifier = Modifier.fillMaxWidth(),
+                reason = reason,
+                canBeReopened = canBeReOpened,
+                onReopenClick = presenter::reOpenEvent,
+            )
         }
     }
 

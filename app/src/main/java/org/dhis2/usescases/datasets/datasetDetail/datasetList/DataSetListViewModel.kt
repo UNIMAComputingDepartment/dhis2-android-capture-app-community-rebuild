@@ -15,6 +15,7 @@ import org.dhis2.commons.matomo.Categories
 import org.dhis2.commons.matomo.Labels
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.mobile.commons.coroutine.CoroutineTracker
 import org.dhis2.usescases.datasets.datasetDetail.DataSetDetailModel
 import org.dhis2.usescases.datasets.datasetDetail.DataSetDetailRepository
 import org.dhis2.utils.Action
@@ -26,7 +27,6 @@ class DataSetListViewModel(
     val matomoAnalyticsController: MatomoAnalyticsController,
     dispatcher: DispatcherProvider,
 ) : ViewModel() {
-
     private val _datasets = MutableLiveData<List<DataSetDetailModel>>()
     val datasets: LiveData<List<DataSetDetailModel>> = _datasets
 
@@ -40,25 +40,32 @@ class DataSetListViewModel(
     init {
         viewModelScope.launch(dispatcher.io()) {
 
-            filterManager.asFlowable()
+            filterManager
+                .asFlowable()
                 .startWith(filterManager)
                 .flatMap { filterManager: FilterManager ->
+                    CoroutineTracker.increment()
                     dataSetDetailRepository.dataSetGroups(
                         filterManager.orgUnitUidsFilters,
                         filterManager.periodFilters,
                         filterManager.stateFilters,
                         filterManager.catOptComboFilters,
                     )
-                }
-                .asFlow()
-                .catch { Timber.d(it) }
-                .collectLatest {
+                }.asFlow()
+                .catch {
+                    Timber.d(it)
+                    CoroutineTracker.decrement()
+                }.collectLatest {
                     withContext(dispatcher.ui()) {
                         _datasets.value = it
+                        CoroutineTracker.decrement()
                     }
                 }
+        }
 
-            dataSetDetailRepository.canWriteAny()
+        viewModelScope.launch(dispatcher.io()) {
+            dataSetDetailRepository
+                .canWriteAny()
                 .asFlow()
                 .catch { Timber.d(it) }
                 .collectLatest {
@@ -91,12 +98,11 @@ class DataSetListViewModel(
         periodId: String,
         organisationUnitUid: String,
         attributeOptionComboUid: String,
-    ): Boolean {
-        return dataSetDetailRepository.dataSetIsEditable(
+    ): Boolean =
+        dataSetDetailRepository.dataSetIsEditable(
             datasetUid,
             periodId,
             organisationUnitUid,
             attributeOptionComboUid,
         )
-    }
 }

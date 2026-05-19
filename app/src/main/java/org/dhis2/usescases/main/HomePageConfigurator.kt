@@ -5,7 +5,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.TaskAlt
 import org.dhis2.R
 import org.dhis2.commons.resources.ResourceManager
-import org.dhis2.ui.icons.imagevectors.Form
+import org.dhis2.usescases.main.ui.Form
 import org.dhis2.utils.customviews.navigationbar.NavigationPage
 import org.dhis2.utils.customviews.navigationbar.NavigationPageConfigurator
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
@@ -14,21 +14,16 @@ class HomePageConfigurator(
     private val homeRepository: HomeRepository,
     private val resourceManager: ResourceManager,
 ) : NavigationPageConfigurator {
-
-    override fun displayPrograms(): Boolean {
-        return true
-    }
+    override fun displayPrograms(): Boolean = true
 
     override fun displayTasks(): Boolean {
         return true
     }
 
-    override fun displayAnalytics(): Boolean {
-        return homeRepository.hasHomeAnalytics()
-    }
+    override fun displayAnalytics(): Boolean = homeRepository.hasHomeAnalytics()
 
-    override fun navigationItems(): List<NavigationBarItem<NavigationPage>> {
-        return buildList {
+    override fun navigationItems(): List<NavigationBarItem<NavigationPage>> =
+        buildList {
             add(
                 NavigationBarItem(
                     id = NavigationPage.PROGRAMS,
@@ -53,5 +48,4 @@ class HomePageConfigurator(
                 )
             }
         }
-    }
 }

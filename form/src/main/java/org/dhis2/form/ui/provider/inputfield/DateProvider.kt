@@ -18,12 +18,13 @@ import org.dhis2.form.ui.intent.FormIntent
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.mobile.ui.designsystem.component.DateTimeActionType
 import org.hisp.dhis.mobile.ui.designsystem.component.InputDateTime
-import org.hisp.dhis.mobile.ui.designsystem.component.InputDateTimeModel
 import org.hisp.dhis.mobile.ui.designsystem.component.InputStyle
 import org.hisp.dhis.mobile.ui.designsystem.component.SelectableDates
 import org.hisp.dhis.mobile.ui.designsystem.component.model.DateTimeTransformation
 import org.hisp.dhis.mobile.ui.designsystem.component.model.DateTransformation
 import org.hisp.dhis.mobile.ui.designsystem.component.model.TimeTransformation
+import org.hisp.dhis.mobile.ui.designsystem.component.state.InputDateTimeData
+import org.hisp.dhis.mobile.ui.designsystem.component.state.rememberInputDateTimeState
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -37,14 +38,16 @@ fun ProvideInputDate(
     intentHandler: (FormIntent) -> Unit,
     onNextClicked: () -> Unit,
 ) {
-    val (actionType, visualTransformation) = when (fieldUiModel.valueType) {
-        ValueType.DATETIME -> DateTimeActionType.DATE_TIME to DateTimeTransformation()
-        ValueType.TIME -> DateTimeActionType.TIME to TimeTransformation()
-        else -> DateTimeActionType.DATE to DateTransformation()
-    }
-    val textSelection = TextRange(
-        fieldUiModel.value?.length ?: 0,
-    )
+    val (actionType, visualTransformation) =
+        when (fieldUiModel.valueType) {
+            ValueType.DATETIME -> DateTimeActionType.DATE_TIME to DateTimeTransformation()
+            ValueType.TIME -> DateTimeActionType.TIME to TimeTransformation()
+            else -> DateTimeActionType.DATE to DateTransformation()
+        }
+    val textSelection =
+        TextRange(
+            fieldUiModel.value?.length ?: 0,
+        )
 
     val yearIntRange = getYearRange(fieldUiModel)
     val selectableDates = getSelectableDates(fieldUiModel)
@@ -60,55 +63,73 @@ fun ProvideInputDate(
         )
     }
 
-    InputDateTime(
-        InputDateTimeModel(
-            title = fieldUiModel.label,
+    val inputState =
+        rememberInputDateTimeState(
+            InputDateTimeData(
+                title = fieldUiModel.label,
+                actionType = actionType,
+                visualTransformation = visualTransformation,
+                isRequired = fieldUiModel.mandatory,
+                selectableDates = selectableDates,
+                yearRange = yearIntRange,
+                inputStyle = inputStyle,
+            ),
             inputTextFieldValue = value,
-            actionType = actionType,
-            state = fieldUiModel.inputState(),
+            inputState = fieldUiModel.inputState(),
             legendData = fieldUiModel.legend(),
             supportingText = fieldUiModel.supportingText(),
-            isRequired = fieldUiModel.mandatory,
-            visualTransformation = visualTransformation,
-            onNextClicked = onNextClicked,
-            onValueChanged = {
-                value = it ?: TextFieldValue()
-                val formIntent = if (value.text.length == 8) {
+        )
+
+    InputDateTime(
+        state = inputState,
+        modifier =
+            modifier.semantics {
+                contentDescription = formatStoredDateToUI(value.text, fieldUiModel.valueType)
+            },
+        onValueChanged = {
+            value = it ?: TextFieldValue()
+            val formIntent =
+                if (checkValueLengthWithTypeIsValid(value.text.length, fieldUiModel.valueType)) {
                     FormIntent.OnSave(
                         uid = fieldUiModel.uid,
-                        value = formatUIDateToStored(it?.text, fieldUiModel.valueType),
+                        value = value.text,
                         valueType = fieldUiModel.valueType,
                         allowFutureDates = fieldUiModel.allowFutureDates,
                     )
                 } else {
                     FormIntent.OnTextChange(
                         uid = fieldUiModel.uid,
-                        value = formatUIDateToStored(it?.text, fieldUiModel.valueType),
+                        value = value.text,
                         valueType = fieldUiModel.valueType,
                     )
                 }
-                intentHandler.invoke(formIntent)
-            },
-            selectableDates = selectableDates,
-            yearRange = yearIntRange,
-            inputStyle = inputStyle,
-        ),
-        modifier = modifier.semantics {
-            contentDescription = formatStoredDateToUI(value.text, fieldUiModel.valueType)
+            intentHandler.invoke(formIntent)
         },
+        onNextClicked = onNextClicked,
     )
 }
 
-private fun getSelectableDates(uiModel: FieldUiModel): SelectableDates {
-    return if (uiModel.selectableDates == null) {
+fun checkValueLengthWithTypeIsValid(
+    length: Int,
+    valueType: ValueType?,
+): Boolean =
+    when (valueType) {
+        ValueType.DATETIME -> length == 16
+        ValueType.TIME -> length == 5
+        else -> length == 10
+    }
+
+private fun getSelectableDates(uiModel: FieldUiModel): SelectableDates =
+    if (uiModel.selectableDates == null) {
         if (uiModel.allowFutureDates == true) {
             SelectableDates(initialDate = DEFAULT_MIN_DATE, endDate = DEFAULT_MAX_DATE)
         } else {
             SelectableDates(
                 initialDate = DEFAULT_MIN_DATE,
-                endDate = SimpleDateFormat("ddMMyyyy", Locale.US).format(
-                    Date(System.currentTimeMillis() - 1000),
-                ),
+                endDate =
+                    SimpleDateFormat("ddMMyyyy", Locale.US).format(
+                        Date(System.currentTimeMillis() - 1000),
+                    ),
             )
         }
     } else {
@@ -117,20 +138,29 @@ private fun getSelectableDates(uiModel: FieldUiModel): SelectableDates {
             endDate = DEFAULT_MAX_DATE,
         )
     }
-}
 
 private fun getYearRange(uiModel: FieldUiModel): IntRange {
-    val toYear = when (uiModel.allowFutureDates) {
-        true -> 2124
-        else -> Calendar.getInstance()[Calendar.YEAR]
-    }
+    val toYear =
+        when (uiModel.allowFutureDates) {
+            true -> 2124
+            else -> Calendar.getInstance()[Calendar.YEAR]
+        }
     return IntRange(
-        uiModel.selectableDates?.initialDate?.substring(4, 8)?.toInt() ?: 1924,
-        uiModel.selectableDates?.endDate?.substring(4, 8)?.toInt() ?: toYear,
+        uiModel.selectableDates
+            ?.initialDate
+            ?.substring(4, 8)
+            ?.toInt() ?: 1924,
+        uiModel.selectableDates
+            ?.endDate
+            ?.substring(4, 8)
+            ?.toInt() ?: toYear,
     )
 }
 
-private fun formatStoredDateToUI(inputDateString: String, valueType: ValueType?): String {
+private fun formatStoredDateToUI(
+    inputDateString: String,
+    valueType: ValueType?,
+): String {
     return when (valueType) {
         ValueType.DATETIME -> {
             val components = inputDateString.split("T")
@@ -181,47 +211,6 @@ private fun formatStoredDateToUI(inputDateString: String, valueType: ValueType?)
             val day = components[2]
 
             "$day$month$year"
-        }
-    }
-}
-
-private fun formatUIDateToStored(inputDateString: String?, valueType: ValueType?): String? {
-    return when (valueType) {
-        ValueType.DATETIME -> {
-            if (inputDateString?.length != 12) {
-                inputDateString
-            } else {
-                val minutes = inputDateString.substring(10, 12)
-                val hours = inputDateString.substring(8, 10)
-                val year = inputDateString.substring(4, 8)
-                val month = inputDateString.substring(2, 4)
-                val day = inputDateString.substring(0, 2)
-
-                "$year-$month-$day" + "T$hours:$minutes"
-            }
-        }
-
-        ValueType.TIME -> {
-            if (inputDateString?.length != 4) {
-                inputDateString
-            } else {
-                val minutes = inputDateString.substring(2, 4)
-                val hours = inputDateString.substring(0, 2)
-
-                "$hours:$minutes"
-            }
-        }
-
-        else -> {
-            if (inputDateString?.length != 8) {
-                inputDateString
-            } else {
-                val year = inputDateString.substring(4, 8)
-                val month = inputDateString.substring(2, 4)
-                val day = inputDateString.substring(0, 2)
-
-                "$year-$month-$day"
-            }
         }
     }
 }

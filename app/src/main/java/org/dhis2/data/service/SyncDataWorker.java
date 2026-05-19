@@ -73,7 +73,7 @@ public class SyncDataWorker extends Worker {
                 20);
 
         try {
-            presenter.taskingDefault();
+            presenter.taskingWorker();
             presenter.syncAndDownloadEvents();
         } catch (Exception e) {
             if (!new NetworkUtils(getApplicationContext()).isOnline()) {

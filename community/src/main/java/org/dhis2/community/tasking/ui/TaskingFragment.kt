@@ -39,6 +39,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.community.tasking.filters.TaskFilterRepository
+import org.dhis2.community.tasking.notifications.NotificationChannelManager
+import org.dhis2.community.tasking.notifications.TaskReminderScheduler
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicator
@@ -78,6 +80,19 @@ class TaskingFragment(
         repository = TaskingRepository(d2)
         filterRepository = TaskFilterRepository()
         viewModel = TaskingViewModel(repository, filterRepository)
+
+        // Create notification channels for task reminders (API 26+)
+        NotificationChannelManager.createNotificationChannels(requireContext())
+
+        // Schedule task reminders in onStart() instead to avoid blocking Fragment init
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Schedule task reminders asynchronously on background thread
+        lifecycleScope.launch {
+            TaskReminderScheduler.scheduleTaskReminder(requireContext())
+        }
     }
 
     @Composable

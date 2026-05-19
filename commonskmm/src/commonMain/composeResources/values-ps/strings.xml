@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="invalid_integer">ارقام باید صحیح عدد وي</string>
+    <string name="error">تېروته</string>
+    <string name="required">اړین دي</string>
+    <string name="date">نېټه</string>
+    <string name="hint_year">کلونه</string>
+    <string name="hint_month">میاشت</string>
+    <string name="hint_day">ورځې</string>
+    <string name="latitude">لېټېټيوډ</string>
+    <string name="longitude">لانګېټيوډ</string>
+    <string name="due_date">ټاکلې نېټه</string>
+    <string name="complete">بشپړ یې کړئ</string>
+    <string name="share">شریک یې کړئ</string>
+    <string name="action_close">بند یې کړئ</string>
+    <string name="incident_date">د پېښې نېټه</string>
+    <string name="download">بارگیری</string>
+    <string name="coordinates">مختصات</string>
+    <string name="no_options">هېڅ انتخاب شتون نه لري</string>
+    <string name="input_age_date_of_birth">د زېږېدو نېټه</string>
+    <string name="input_action_accept">د منلو وړ</string>
+    <string name="input_action_cancel">رد یې کړئ [ ژباړه ـ ردول ]</string>
+    <string name="input_coordinate_latitude">لېټېټيوډ</string>
+    <string name="input_coordinate_longitude">لانګېټيوډ</string>
+    <string name="no_results_found">هېڅ پایله ترلاسه نه شوه</string>
+    <string name="action_done">ترسره شو</string>
+    <!--*******************->
+       END OF D2 Error Messages
+    **********************-->
+
+</resources>

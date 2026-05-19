@@ -71,7 +71,7 @@ class SearchScreenConfigurator(
     private fun setFiltersVisibility(showFilters: Boolean) {
         binding.filterCounter.visibility =
             if (showFilters && (binding.totalFilters ?: 0) > 0) View.VISIBLE else View.GONE
-        binding.searchFilterGeneral.visibility = if (showFilters) View.VISIBLE else View.GONE
+        binding.filter.visibility = if (showFilters) View.VISIBLE else View.GONE
     }
 
     private fun openFilters() {
@@ -107,7 +107,11 @@ class SearchScreenConfigurator(
         changeBounds(false, R.id.searchContainer, 0)
     }
 
-    private fun changeBounds(isNavigationBarVisible: Boolean, endID: Int, margin: Int) {
+    private fun changeBounds(
+        isNavigationBarVisible: Boolean,
+        endID: Int,
+        margin: Int,
+    ) {
         changeBoundsIf(
             isPortrait(),
             isNavigationBarVisible,

@@ -7,8 +7,10 @@ data class RelationshipConfig(
 data class Relationship(
     val access: Access,
     val description: String,
+    val maxCount: Int,
     val view: View,
     val relatedProgram: RelatedProgram,
+    val attributeMappings: List<AttributeMapping> = emptyList(),
 )
 
 data class Access(
@@ -27,4 +29,10 @@ data class RelatedProgram(
     val programUid: String,
     val teiTypeUid: String,
     val teiTypeName: String
+)
+
+data class AttributeMapping(
+    val sourceAttribute: String,
+    val targetAttribute: String,
+    val defaultValue: String?,
 )

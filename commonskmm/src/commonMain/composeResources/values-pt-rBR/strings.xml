@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="invalid_integer">Valor deve ser um número inteiro</string>
+    <string name="error">Erro</string>
+    <string name="required">Exigido</string>
+    <string name="date">Data</string>
+    <string name="hint_year">Anos</string>
+    <string name="hint_month">Meses</string>
+    <string name="hint_day">Dias</string>
+    <string name="polygon">Poligono</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
+    <string name="polygon_captured">Polígono capturado</string>
+    <string name="due_date">Data de vencimento</string>
+    <string name="complete">Completo</string>
+    <string name="share">Partilhar</string>
+    <string name="action_close">Fechar</string>
+    <string name="incident_date">Data do incidente</string>
+    <string name="download">Baixar</string>
+    <string name="coordinates">Coordenadas</string>
+    <string name="category_combo">Combinação de categoria</string>
+    <string name="yes">sim</string>
+    <string name="no">não</string>
+    <string name="input_age_date_of_birth">Data de nascimento</string>
+    <string name="input_age">Idade</string>
+    <string name="input_age_or">ou</string>
+    <string name="input_action_cancel">Cancelar</string>
+    <string name="input_coordinate_latitude">Latitude</string>
+    <string name="input_coordinate_longitude">Longitude</string>
+    <string name="no_results_found">Nenhum resultado encontrado</string>
+    <string name="action_done">Concluído</string>
+    <!--*******************->
+       END OF D2 Error Messages
+    **********************-->
+
+</resources>

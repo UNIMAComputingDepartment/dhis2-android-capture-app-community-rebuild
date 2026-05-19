@@ -1,5 +1,7 @@
 package org.dhis2.community.tasking.models
 
+import android.R
+
 data class TaskingConfig(
     val programTasks: List<ProgramTasks>,
     val taskProgramConfig: List<TaskProgramConfig>
@@ -34,7 +36,10 @@ data class TaskingConfig(
             val teiSecondaryAttribute: String,
             val teiTertiaryAttribute: String
         )
+
         data class TaskConfig(
+            val frequency : String ? = null,
+            val hasEvent : Boolean? = false,
             val taskTypeId: String,
             val name: String,
             val description: String,
@@ -42,17 +47,20 @@ data class TaskingConfig(
             val period: Period,
             val priority: String = "medium",
             val completion: Completion,
-            val singleIncomplete: Boolean,
+            val singleIncomplete: Boolean = false,
             val anchorDate: String
         ) {
             interface HasConditions {
                 val condition: List<Condition>
             }
+
             data class Trigger(
                 val programName: String,
                 val programUid: String,
+                val programStageUid: String? = null,
+                val combination: String,
                 override val condition: List<Condition>
-            ): HasConditions
+            ) : HasConditions
 
             data class Condition(
                 val op: String,
@@ -68,14 +76,22 @@ data class TaskingConfig(
                 val fn: String? = null
             )
 
+            data class Schedule(
+                val type: String? = null,
+                val ref: String? = null,
+                val repeat: Boolean ? = false
+            )
+
+
             data class Period(
                 val anchor: Reference,
                 val dueInDays: Int
             )
 
-        data class Completion(
-            override val condition: List<Condition>
-        ): HasConditions
+            data class Completion(
+                val combination: String? = null,
+                override val condition: List<Condition>
+            ) : HasConditions
 
             data class CompletionCondition(
                 val op: String,

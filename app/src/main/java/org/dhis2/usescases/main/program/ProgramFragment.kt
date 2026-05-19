@@ -1,7 +1,6 @@
 package org.dhis2.usescases.main.program
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,9 +19,6 @@ import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
 import org.dhis2.App
 import org.dhis2.R
-import org.dhis2.android.rtsm.commons.Constants.INTENT_EXTRA_APP_CONFIG
-import org.dhis2.android.rtsm.data.AppConfig
-import org.dhis2.android.rtsm.ui.home.HomeActivity
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.usescases.general.FragmentGlobalAbstract
@@ -35,17 +31,15 @@ import org.dhis2.utils.granularsync.SyncStatusDialog
 import timber.log.Timber
 import javax.inject.Inject
 
-class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
-
+class ProgramFragment :
+    FragmentGlobalAbstract(),
+    ProgramView {
     @Inject
     lateinit var programViewModelFactory: ProgramViewModelFactory
 
     val programViewModel: ProgramViewModel by viewModels {
         programViewModelFactory
     }
-
-    @Inject
-    lateinit var animation: ProgramAnimation
 
     private val getActivityContent =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -65,8 +59,8 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View {
-        return ComposeView(requireContext()).apply {
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
@@ -90,11 +84,15 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
                 )
             }
         }
-    }
 
     override fun onResume() {
         super.onResume()
         programViewModel.init()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        programViewModel.dispose()
     }
 
     //endregion
@@ -138,15 +136,9 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
         )
     }
 
-    override fun navigateToStockManagement(config: AppConfig) {
-        Intent(activity, HomeActivity::class.java).apply {
-            putExtra(INTENT_EXTRA_APP_CONFIG, config)
-            getActivityContent.launch(this)
-        }
-    }
-
     override fun showSyncDialog(program: ProgramUiModel) {
-        SyncStatusDialog.Builder()
+        SyncStatusDialog
+            .Builder()
             .withContext(this)
             .withSyncContext(
                 when (program.programType) {
@@ -154,8 +146,7 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
                     "WITHOUT_REGISTRATION" -> SyncContext.GlobalEventProgram(program.uid)
                     else -> SyncContext.GlobalDataSet(program.uid)
                 },
-            )
-            .onDismissListener(
+            ).onDismissListener(
                 object : OnDismissListener {
                     override fun onDismiss(hasChanged: Boolean) {
                         if (hasChanged) {
@@ -163,16 +154,15 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView {
                         }
                     }
                 },
-            )
-            .onNoConnectionListener {
+            ).onNoConnectionListener {
                 val contextView = activity?.findViewById<View>(R.id.navigationBar)
-                Snackbar.make(
-                    contextView!!,
-                    R.string.sync_offline_check_connection,
-                    Snackbar.LENGTH_SHORT,
-                ).show()
-            }
-            .show(FRAGMENT_TAG)
+                Snackbar
+                    .make(
+                        contextView!!,
+                        R.string.sync_offline_check_connection,
+                        Snackbar.LENGTH_SHORT,
+                    ).show()
+            }.show(FRAGMENT_TAG)
     }
 
     companion object {

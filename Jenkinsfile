@@ -12,17 +12,48 @@ pipeline {
 
     options {
         buildDiscarder(logRotator(daysToKeepStr: '5'))
-        timeout(time: 50)
         disableConcurrentBuilds(abortPrevious: true)
+        skipStagesAfterUnstable()
     }
 
     stages {
+        stage('Check for [skip ci]') {
+            when {
+                expression {
+                    return isSkipCI()
+                }
+            }
+            steps {
+                script {
+                    currentBuild.result = 'UNSTABLE' // Mark build as a warning instead of an error
+                    echo "⚠️ Warning: Skipping CI because '[skip ci]' was found in the PR title or description."
+                }
+            }
+        }
         stage('Change to JAVA 17') {
             steps {
                 script {
                     echo 'Changing JAVA version to 17'
                     sh 'sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java'
                     env.JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+                }
+            }
+        }
+        stage('Check PR Size') {
+            when {
+                expression {
+                    return !isSkipSizeCheck()
+                }
+            }
+            environment {
+                GIT_BRANCH = "${env.CHANGE_BRANCH}"
+                GIT_BRANCH_DEST = "${env.CHANGE_TARGET == null ? '' : env.CHANGE_TARGET}"
+            }
+            steps {
+                script {
+                    echo "Checking PR Size against ${env.CHANGE_TARGET ?: 'None (CI build)'}"
+                    sh 'chmod +x ./scripts/check_pr_size.sh'
+                    sh './scripts/check_pr_size.sh'
                 }
             }
         }
@@ -40,10 +71,8 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Running unit tests on app module'
-                    sh './gradlew :app:testDhisDebugUnitTest --stacktrace --no-daemon'
-                    echo 'Running unit tests on all other modules'
-                    sh './gradlew testDebugUnitTest --stacktrace --no-daemon'
+                    echo 'Running unit tests'
+                    sh './gradlew testDebugUnitTest testDhis2DebugUnitTest --stacktrace --no-daemon'
                 }
             }
         }
@@ -51,63 +80,61 @@ pipeline {
             steps {
                 script {
                     echo 'Building UI APKs'
-                    sh './gradlew :app:assembleDhisUITestingDebug :app:assembleDhisUITestingDebugAndroidTest :compose-table:assembleAndroidTest :form:assembleAndroidTest'
+                    sh './gradlew :app:assembleDhis2Debug :app:assembleDhis2DebugAndroidTest :form:assembleAndroidTest'
                 }
             }
         }
-        stage('Run tests') {
-            parallel {
-                stage('Deploy and run Form Tests') {
-                        environment {
-                            BROWSERSTACK = credentials('android-browserstack')
-                            form_apk = sh(returnStdout: true, script: 'find form/build/outputs -iname "*.apk" | sed -n 1p')
-                            form_apk_path = "${env.WORKSPACE}/${form_apk}"
-                            buildTag = "${env.GIT_BRANCH} - form"
-                        }
-                        steps {
-                            dir("${env.WORKSPACE}/scripts"){
-                                script {
-                                    echo 'Browserstack deployment and running Form module tests'
-                                    sh 'chmod +x browserstackJenkinsForm.sh'
-                                    sh './browserstackJenkinsForm.sh'
-                                }
-                            }
-                        }
-                    }
-                stage('Deploy compose-table module Tests') {
-                    environment {
-                        BROWSERSTACK = credentials('android-browserstack')
-                        compose_table_apk = sh(returnStdout: true, script: 'find compose-table/build/outputs -iname "*.apk" | sed -n 1p')
-                        compose_table_apk_path = "${env.WORKSPACE}/${compose_table_apk}"
-                        buildTag = "${env.GIT_BRANCH} - table"
-                    }
-                    steps {
-                        dir("${env.WORKSPACE}/scripts"){
-                            script {
-                                echo 'Browserstack deployment and running compose-table module tests'
-                                sh 'chmod +x browserstackJenkinsCompose.sh'
-                                sh './browserstackJenkinsCompose.sh'
-                            }
+        stage('Run Form Tests') {
+                environment {
+                    BROWSERSTACK = credentials('android-browserstack')
+                    form_apk = sh(returnStdout: true, script: 'find form/build/outputs -iname "*.apk" | sed -n 1p')
+                    form_apk_path = "${env.WORKSPACE}/${form_apk}"
+                    buildTag = "${env.GIT_BRANCH} - form"
+                }
+                steps {
+                    dir("${env.WORKSPACE}/scripts"){
+                        script {
+                            echo 'Browserstack deployment and running Form module tests'
+                            sh 'chmod +x browserstackJenkinsForm.sh'
+                            sh './browserstackJenkinsForm.sh'
                         }
                     }
                 }
-                stage('Deploy and Run UI Tests') {
-                    environment {
-                        BROWSERSTACK = credentials('android-browserstack')
-                        app_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/dhisUITesting -iname "*.apk"')
-                        test_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/androidTest -iname "*.apk"')
-                        app_apk_path = "${env.WORKSPACE}/${app_apk}"
-                        test_apk_path = "${env.WORKSPACE}/${test_apk}"
-                        buildTag = "${env.GIT_BRANCH}"
+            }
+        stage('Run UI Tests in portrait') {
+            environment {
+                BROWSERSTACK = credentials('android-browserstack')
+                app_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/dhis2/debug -iname "*.apk"')
+                test_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/androidTest -iname "*.apk"')
+                app_apk_path = "${env.WORKSPACE}/${app_apk}"
+                test_apk_path = "${env.WORKSPACE}/${test_apk}"
+                buildTag = "${env.GIT_BRANCH}"
+            }
+            steps {
+                dir("${env.WORKSPACE}/scripts"){
+                    script {
+                        echo 'Browserstack deployment and running tests'
+                        sh 'chmod +x browserstackJenkins.sh'
+                        sh './browserstackJenkins.sh'
                     }
-                    steps {
-                        dir("${env.WORKSPACE}/scripts"){
-                            script {
-                                echo 'Browserstack deployment and running tests'
-                                sh 'chmod +x browserstackJenkins.sh'
-                                sh './browserstackJenkins.sh'
-                            }
-                        }
+                }
+            }
+        }
+        stage('Run UI Tests in Landscape') {
+            environment {
+                BROWSERSTACK = credentials('android-browserstack')
+                app_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/dhis2/debug -iname "*.apk"')
+                test_apk = sh(returnStdout: true, script: 'find app/build/outputs/apk/androidTest -iname "*.apk"')
+                app_apk_path = "${env.WORKSPACE}/${app_apk}"
+                test_apk_path = "${env.WORKSPACE}/${test_apk}"
+                buildTag = "${env.GIT_BRANCH}"
+            }
+            steps {
+                dir("${env.WORKSPACE}/scripts"){
+                    script {
+                        echo 'Browserstack deployment and running tests'
+                        sh 'chmod +x browserstackJenkinsLandscape.sh'
+                        sh './browserstackJenkinsLandscape.sh'
                     }
                 }
             }
@@ -162,4 +189,16 @@ def custom_msg(){
   def BRANCH_NAME = env.GIT_BRANCH
   def JENKINS_LOG= "*Job:* $JOB_NAME\n *Branch:* $BRANCH_NAME\n *Build Number:* $BUILD_NUMBER (<${BUILD_URL}|Open>)"
   return JENKINS_LOG
+}
+
+def isSkipCI() {
+    def prTitle = env.CHANGE_TITLE ?: ""
+    def prDescription = env.CHANGE_DESCRIPTION ?: ""
+    return (prTitle.contains("[skip ci]") || prDescription.contains("[skip ci]"))
+}
+
+def isSkipSizeCheck() {
+    def prTitle = env.CHANGE_TITLE ?: ""
+    def prDescription = env.CHANGE_DESCRIPTION ?: ""
+    return (prTitle.contains("[skip size]") || prDescription.contains("[skip size]"))
 }

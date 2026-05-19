@@ -9,6 +9,7 @@ import org.dhis2.commons.data.ProgramConfigurationRepository
 import org.dhis2.commons.resources.LocaleSelector
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.maps.api.NominatimGeocoderApi
+import org.dhis2.maps.model.MapScope
 import org.dhis2.maps.usecases.GeocoderSearchImpl
 import org.dhis2.maps.usecases.MapStyleConfiguration
 import org.dhis2.maps.usecases.SearchLocationManager
@@ -21,34 +22,41 @@ object Injector {
         context: Context,
         locationType: FeatureType,
         initialCoordinates: String?,
-        programUid: String?,
+        uid: String?,
+        scope: MapScope,
     ) = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return MapSelectorViewModel(
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            MapSelectorViewModel(
                 featureType = locationType,
                 initialCoordinates = initialCoordinates,
-                mapStyleConfig = MapStyleConfiguration(
-                    d2 = D2Manager.getD2(),
-                    programUid = programUid,
-                    programConfigurationRepository = ProgramConfigurationRepository(D2Manager.getD2()),
-                ),
-                geocoder = GeocoderSearchImpl(
-                    geocoder = Geocoder(context),
-                    geocoderApi = NominatimGeocoderApi(
-                        D2Manager.getD2(),
-                        LocaleSelector(context, D2Manager.getD2()),
+                mapStyleConfig =
+                    MapStyleConfiguration(
+                        d2 = D2Manager.getD2(),
+                        uid = uid,
+                        scope = scope,
+                        programConfigurationRepository = ProgramConfigurationRepository(D2Manager.getD2()),
                     ),
-                    dispatcherProvider = provideDispatcher(),
-                ),
+                geocoder =
+                    GeocoderSearchImpl(
+                        geocoder = Geocoder(context),
+                        geocoderApi =
+                            NominatimGeocoderApi(
+                                D2Manager.getD2(),
+                                LocaleSelector(context, D2Manager.getD2()),
+                            ),
+                        dispatcherProvider = provideDispatcher(),
+                    ),
                 searchLocationManager = SearchLocationManager(D2Manager.getD2()),
                 dispatchers = provideDispatcher(),
             ) as T
-        }
     }
 
-    fun provideDispatcher() = object : DispatcherProvider {
-        override fun io() = Dispatchers.IO
-        override fun computation() = Dispatchers.Unconfined
-        override fun ui() = Dispatchers.Main
-    }
+    fun provideDispatcher() =
+        object : DispatcherProvider {
+            override fun io() = Dispatchers.IO
+
+            override fun computation() = Dispatchers.Unconfined
+
+            override fun ui() = Dispatchers.Main
+        }
 }

@@ -1,4 +1,7 @@
-This is a hotfix version that fixes:
-- ANDROAPP-6797 Update rule engine to 3.3.2
-
+This is a patch version that fixes:
+- ANDROAPP-7269 Crash on search
+- ANDROAPP-7293 Bottom sheet landscape behavior
+- ANDROAPP-7345 Changes to enrollment date not respected by program rules
+- ANDROAPP-7368 Crash when trying to update fields in Tracker
+....
 You can find all the details on Jira and Github.

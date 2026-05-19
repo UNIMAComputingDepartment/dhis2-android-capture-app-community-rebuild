@@ -16,14 +16,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.Absolute.spacedBy
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -34,19 +38,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import org.dhis2.R
-import org.dhis2.ui.dialogs.alert.Dhis2AlertDialogUi
-import org.dhis2.ui.model.ButtonUiModel
 import org.hisp.dhis.mobile.ui.designsystem.component.Button
 import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
 import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicator
 import org.hisp.dhis.mobile.ui.designsystem.component.ProgressIndicatorType
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
+
+private const val CONFIRM_BUTTON_TAG = "CONFIRM_BUTTON_TAG"
 
 @Composable
 fun ExportOption(
@@ -58,13 +65,14 @@ fun ExportOption(
 
     var onPermissionGrantedCallback: () -> Unit = {}
     var showPermissionDialog by remember { mutableStateOf(false) }
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        onPermissionGrantedCallback.takeIf { isGranted }?.invoke() ?: run {
-            showPermissionDialog = true
+    val launcher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            onPermissionGrantedCallback.takeIf { isGranted }?.invoke() ?: run {
+                showPermissionDialog = true
+            }
         }
-    }
 
     val permissionSettingLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
@@ -90,15 +98,11 @@ fun ExportOption(
 
         if (targetState.not()) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Spacing.Spacing72)
-                    .padding(
-                        start = Spacing.Spacing48,
-                        top = Spacing.Spacing16,
-                        end = Spacing.Spacing16,
-                        bottom = Spacing.Spacing16,
-                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(Spacing.Spacing72)
+                        .padding(Spacing.Spacing16),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = getHorizontalArrangement(displayProgress),
             ) {
@@ -108,7 +112,7 @@ fun ExportOption(
                         onDownloadCLick(context, onDownload, launcher)
                         onPermissionGrantedCallback = onDownload
                     },
-                    style = ButtonStyle.TEXT,
+                    style = ButtonStyle.TONAL,
                     text = stringResource(id = R.string.download),
                     icon = {
                         Icon(
@@ -125,7 +129,7 @@ fun ExportOption(
                         onShareClick(context, onShare, launcher)
                         onPermissionGrantedCallback = onShare
                     },
-                    style = ButtonStyle.TEXT,
+                    style = ButtonStyle.TONAL,
                     text = stringResource(id = R.string.share),
                     icon = {
                         Icon(
@@ -138,10 +142,11 @@ fun ExportOption(
             }
         } else {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(Spacing.Spacing72)
-                    .padding(Spacing.Spacing16),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(Spacing.Spacing72)
+                        .padding(Spacing.Spacing16),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = getHorizontalArrangement(displayProgress),
             ) {
@@ -151,27 +156,63 @@ fun ExportOption(
     }
 
     if (showPermissionDialog) {
-        Dhis2AlertDialogUi(
-            labelText = stringResource(id = R.string.permission_denied),
-            descriptionText = "You need to provide the permission to carry out this action",
-            iconResource = R.drawable.ic_info,
-            dismissButton = ButtonUiModel("Cancel") {
+        AlertDialog(
+            onDismissRequest = {
                 showPermissionDialog = false
                 onPermissionGrantedCallback = {}
             },
-            confirmButton = ButtonUiModel("Change permission") {
-                permissionSettingLauncher.launch(
-                    Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.fromParts("package", context.packageName, null),
-                    ),
+            title = {
+                Text(
+                    text = stringResource(id = R.string.permission_denied),
+                    textAlign = TextAlign.Center,
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "You need to provide the permission to carry out this action",
+                    )
+                }
+            },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_info),
+                    tint = MaterialTheme.colorScheme.primary,
+                    contentDescription = "notification alert",
+                )
+            },
+            confirmButton = {
+                Button(
+                    text = "Change permission",
+                    modifier = Modifier.testTag(CONFIRM_BUTTON_TAG),
+                    onClick = {
+                        permissionSettingLauncher.launch(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null),
+                            ),
+                        )
+                    },
+                )
+            },
+            dismissButton = {
+                Button(
+                    text = stringResource(R.string.cancel),
+                    onClick = {
+                        showPermissionDialog = false
+                        onPermissionGrantedCallback = {}
+                    },
                 )
             },
         )
     }
 }
 
-private fun onDownloadCLick(context: Context, onSuccess: () -> Unit, launcher: ActivityResultLauncher<String>) {
+private fun onDownloadCLick(
+    context: Context,
+    onSuccess: () -> Unit,
+    launcher: ActivityResultLauncher<String>,
+) {
     if (checkPermissionAndAndroidVersion(context)) {
         onSuccess()
     } else {
@@ -179,7 +220,11 @@ private fun onDownloadCLick(context: Context, onSuccess: () -> Unit, launcher: A
     }
 }
 
-private fun onShareClick(context: Context, onSuccess: () -> Unit, launcher: ActivityResultLauncher<String>) {
+private fun onShareClick(
+    context: Context,
+    onSuccess: () -> Unit,
+    launcher: ActivityResultLauncher<String>,
+) {
     if (checkPermissionAndAndroidVersion(context)) {
         onSuccess()
     } else {
@@ -194,8 +239,7 @@ private fun checkPermissionAndAndroidVersion(context: Context) =
             android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
         ) == PackageManager.PERMISSION_GRANTED
 
-private fun getHorizontalArrangement(displayProgress: Boolean) =
-    if (displayProgress) Arrangement.Center else spacedBy(Spacing.Spacing16)
+private fun getHorizontalArrangement(displayProgress: Boolean) = if (displayProgress) Arrangement.Center else spacedBy(Spacing.Spacing16)
 
 @Preview
 @Composable

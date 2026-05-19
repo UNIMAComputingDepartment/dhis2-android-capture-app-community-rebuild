@@ -76,6 +76,12 @@ class TaskingEngine(
             val config = repository.getTaskingConfig().taskProgramConfig.first()
             val taskProgramUid = config.programUid
             val taskTIETypeUid = config.teiTypeUid
+            val hasTaskingProgramAccess = repository.hasAccessToProgram(taskProgramUid)
+
+            if (!hasTaskingProgramAccess) {
+                Timber.tag(TAG).e("User does not have access to tasking program $taskProgramUid")
+                return
+            }
 
             if (eventUid.isNullOrBlank()) {
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)

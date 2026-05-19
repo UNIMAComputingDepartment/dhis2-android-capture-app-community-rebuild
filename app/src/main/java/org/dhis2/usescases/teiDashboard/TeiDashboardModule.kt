@@ -3,7 +3,9 @@ package org.dhis2.usescases.teiDashboard
 import dagger.Module
 import dagger.Provides
 import dhis2.org.analytics.charts.Charts
+import org.dhis2.commons.data.ProgramConfigurationRepository
 import org.dhis2.commons.di.dagger.PerActivity
+import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.EventResourcesProvider
@@ -12,8 +14,6 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.form.data.metadata.EnrollmentConfiguration
-import org.dhis2.form.ui.provider.FormResultDialogProvider
-import org.dhis2.form.ui.provider.FormResultDialogResourcesProvider
 import org.dhis2.mobileProgramRules.EvaluationType
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.usescases.enrollment.DateEditionWarningHandler
@@ -31,9 +31,7 @@ class TeiDashboardModule(
 ) {
     @Provides
     @PerActivity
-    fun provideView(mobileActivity: TeiDashboardMobileActivity): TeiDashboardContracts.View {
-        return mobileActivity
-    }
+    fun provideView(mobileActivity: TeiDashboardMobileActivity): TeiDashboardContracts.View = mobileActivity
 
     @Provides
     @PerActivity
@@ -43,8 +41,8 @@ class TeiDashboardModule(
         analyticsHelper: AnalyticsHelper,
         preferenceProvider: PreferenceProvider,
         matomoAnalyticsController: MatomoAnalyticsController,
-    ): TeiDashboardContracts.Presenter {
-        return TeiDashboardPresenter(
+    ): TeiDashboardContracts.Presenter =
+        TeiDashboardPresenter(
             view,
             programUid,
             dashboardRepository,
@@ -53,13 +51,13 @@ class TeiDashboardModule(
             preferenceProvider,
             matomoAnalyticsController,
         )
-    }
 
     @Provides
     @PerActivity
     fun provideEnrollmentConfiguration(
         d2: D2,
-    ) = enrollmentUid?.let { EnrollmentConfiguration(d2, it) }
+        dispatcher: DispatcherProvider,
+    ) = enrollmentUid?.let { EnrollmentConfiguration(d2, it, dispatcher) }
 
     @Provides
     @PerActivity
@@ -73,24 +71,16 @@ class TeiDashboardModule(
 
     @Provides
     @PerActivity
-    fun provideResultDialogProvider(
-        resourceManager: ResourceManager,
-    ): FormResultDialogProvider {
-        return FormResultDialogProvider(
-            FormResultDialogResourcesProvider(resourceManager),
-        )
-    }
-
-    @Provides
-    @PerActivity
     fun dashboardRepository(
         d2: D2,
         charts: Charts,
         preferenceProvider: PreferenceProvider,
         teiAttributesProvider: TeiAttributesProvider,
         metadataIconProvider: MetadataIconProvider,
-    ): DashboardRepository {
-        return DashboardRepositoryImpl(
+        programConfigurationRepository: ProgramConfigurationRepository,
+        featureConfigRepository: FeatureConfigRepository,
+    ): DashboardRepository =
+        DashboardRepositoryImpl(
             d2,
             charts,
             teiUid,
@@ -99,14 +89,13 @@ class TeiDashboardModule(
             teiAttributesProvider,
             preferenceProvider,
             metadataIconProvider,
+            programConfigurationRepository,
+            featureConfigRepository,
         )
-    }
 
     @Provides
     @PerActivity
-    fun ruleEngineRepository(
-        d2: D2,
-    ): RuleEngineHelper? {
+    fun ruleEngineRepository(d2: D2): RuleEngineHelper? {
         if (enrollmentUid.isNullOrEmpty()) return null
         return RuleEngineHelper(
             EvaluationType.Enrollment(enrollmentUid),
@@ -116,17 +105,12 @@ class TeiDashboardModule(
 
     @Provides
     @PerActivity
-    fun pageConfigurator(
-        dashboardRepository: DashboardRepository,
-    ): NavigationPageConfigurator {
-        return TeiDashboardPageConfigurator(dashboardRepository, isPortrait)
-    }
+    fun pageConfigurator(dashboardRepository: DashboardRepository): NavigationPageConfigurator =
+        TeiDashboardPageConfigurator(dashboardRepository, isPortrait)
 
     @Provides
     @PerActivity
-    fun teiAttributesProvider(d2: D2): TeiAttributesProvider {
-        return TeiAttributesProvider(d2)
-    }
+    fun teiAttributesProvider(d2: D2): TeiAttributesProvider = TeiAttributesProvider(d2)
 
     @Provides
     @PerActivity
@@ -136,13 +120,15 @@ class TeiDashboardModule(
         dispatcher: DispatcherProvider,
         pageConfigurator: NavigationPageConfigurator,
         resourcesManager: ResourceManager,
-    ): DashboardViewModelFactory {
-        return DashboardViewModelFactory(
+    ): DashboardViewModelFactory =
+        DashboardViewModelFactory(
             repository,
             analyticsHelper,
             dispatcher,
             pageConfigurator,
             resourcesManager,
         )
-    }
+
+    @Provides
+    fun provideProgramConfigurationRepository(d2: D2): ProgramConfigurationRepository = ProgramConfigurationRepository(d2)
 }
