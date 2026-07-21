@@ -373,7 +373,6 @@
       "programUid": "cJEpYzKPHqg",
       "taskConfigs": [
         {
-          "hasEvent": true,
           "completion": {
             "condition": [
               {
@@ -389,6 +388,7 @@
             ]
           },
           "description": "After Birth, Danger Sign Follow up",
+          "hasEvent": true,
           "name": "PNC Danger Sign Follow-up",
           "period": {
             "anchor": {
@@ -414,7 +414,6 @@
           }
         },
         {
-          "hasEvent": true,
           "completion": {
             "condition": [
               {
@@ -430,6 +429,7 @@
             ]
           },
           "description": "Trigger a follow-up task if danger sign is YES",
+          "hasEvent": true,
           "name": "ANC Danger Sign Follow-up",
           "period": {
             "anchor": {
@@ -455,7 +455,6 @@
           }
         },
         {
-          "hasEvent": true,
           "completion": {
             "combination": "AND",
             "condition": [
@@ -482,6 +481,7 @@
             ]
           },
           "description": "ANC Second Visit - visit before delivery",
+          "hasEvent": true,
           "name": "ANC Second Scheduled Visit",
           "period": {
             "anchor": {
@@ -519,7 +519,6 @@
           }
         },
         {
-          "hasEvent": true,
           "anchorDate": "",
           "completion": {
             "condition": [
@@ -536,6 +535,7 @@
             ]
           },
           "description": "",
+          "hasEvent": true,
           "name": "Enroll Neonate into CBMNC - Neonatal Program",
           "period": {
             "anchor": {
@@ -614,7 +614,6 @@
           }
         },
         {
-          "hasEvent": true,
           "anchorDate": "",
           "completion": {
             "condition": [
@@ -631,6 +630,7 @@
             ]
           },
           "description": "",
+          "hasEvent": true,
           "name": "Delivery Follow Up",
           "period": {
             "anchor": {
@@ -668,7 +668,6 @@
           }
         },
         {
-          "hasEvent": true,
           "anchorDate": "",
           "completion": {
             "combination": "AND",
@@ -696,7 +695,8 @@
             ]
           },
           "description": "",
-          "name": "ANC First Sheduled Visit",
+          "hasEvent": true,
+          "name": "ANC First Scheduled Visit",
           "period": {
             "anchor": {
               "ref": "",
@@ -706,7 +706,7 @@
           },
           "priority": "high",
           "singleIncomplete": true,
-          "taskTypeId": "Sheduled ANC First Visit",
+          "taskTypeId": "Scheduled ANC First Visit",
           "trigger": {
             "combination": "OR",
             "condition": [
@@ -734,7 +734,6 @@
           }
         },
         {
-          "hasEvent": true,
           "anchorDate": "lVHn7c10EaS",
           "completion": {
             "condition": [
@@ -765,6 +764,7 @@
             ]
           },
           "description": "CHW second PNC visit due 3 days after discharge; complete when there are 2 scheduled 'After Birth' events (count >= 2).",
+          "hasEvent": true,
           "name": "After Birth Follow Up",
           "period": {
             "anchor": {
