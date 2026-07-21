@@ -16,6 +16,7 @@ import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
+import java.util.Collections
 import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
@@ -35,6 +36,15 @@ class TaskingRepository(
     private val programDisplayNames = mutableMapOf<String, String?>()
 
     fun getCachedConfig() = cachedConfig
+
+    fun getTaskProgramUids(): List<String> =
+        getTaskingConfig()
+            .taskProgramConfig
+            .mapNotNull { config ->
+                config.programUid.trim().takeIf { uid -> uid.isNotEmpty() }
+            }
+
+    fun getTaskProgramUid(): String? = getTaskProgramUids().firstOrNull()
 
     @Synchronized
     fun getTaskingConfig(): TaskingConfig {
@@ -466,4 +476,70 @@ class TaskingRepository(
 
     fun getEnrollment(enrollmentUid: String) =
         d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
+
+
+    fun getPeriodEventsForProgramStage(
+        programUid: String,
+        stageUid: String,
+        teiUid: String,
+        startDate: Date,
+        endDate: Date,
+    ): List<Event> {
+
+        val occurredEvents =  d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byEventDate().after(startDate)
+            .byEventDate().before(endDate)
+            .blockingGet()
+
+        val scheduledEvents = d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byDueDate().after(startDate)
+            .byDueDate().before(endDate)
+            .byEventDate().isNull
+            .blockingGet()
+
+        return (occurredEvents + scheduledEvents).distinctBy { it.uid() }
+
+    }
+
+    fun getTeiUidsWithActiveEnrollmentForProgram(programUid: String): List<String> {
+        return d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .byStatus().eq(EnrollmentStatus.ACTIVE)
+            .blockingGet()
+            .map { it.trackedEntityInstance() as String }
+    }
+
+    fun getEnrollmentLatestEvent(enrollmentUid: String, programUid: String): Event? {
+        val events = d2.eventModule().events()
+            .byEnrollmentUid().eq(enrollmentUid)
+            .byProgramUid().eq(programUid)
+            .withTrackedEntityDataValues()
+            .blockingGet()
+
+        return events
+            .maxByOrNull {
+                it.created() ?: it.eventDate() ?: Date(0)
+            }
+    }
+
+    fun hasAccessToProgram(programUid: String): Boolean {
+        val program = d2.programModule().programs()
+            .byUid().eq(programUid)
+            .one()
+            .blockingGet()
+        return program != null
+    }
+
+    fun hasDataAccessToTasking(): Boolean {
+        val taskProgramUid = getTaskProgramUid() ?: return false
+        val program = d2.programModule().programs().uid(taskProgramUid).blockingGet()
+        val dataAccess = program?.access()?.data()
+        return dataAccess?.read() == true && dataAccess.write() == true
+    }
 }

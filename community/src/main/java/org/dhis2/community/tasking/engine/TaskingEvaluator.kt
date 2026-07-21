@@ -6,6 +6,7 @@ import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.utils.Constants
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
 import java.util.Locale
@@ -22,14 +23,17 @@ abstract class TaskingEvaluator(
     ):  String?{
 
         val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-
-        if (taskConfig.period.anchor.uid.isNullOrBlank() || teiUid.isBlank()) {
-            val date =  Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
-            return date.plusDays(taskConfig.period.dueInDays.toLong()).toString()
-        }
-
         val enrollmentUid = repository.getLatestEnrollment(teiUid, programUid)
 
+        if (taskConfig.period.anchor.ref == Constants.QUARTERLY_SCHEDULE) {
+            return quarterDatesCalculator()
+                .second.minusDays(taskConfig.period.dueInDays.toLong())
+                .toString()
+        }
+
+        if (taskConfig.period.anchor.uid.isNullOrBlank() || teiUid.isBlank()) {
+            return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
+        }
 
         val periodAnchor = repository.getLatestEvent(programUid,
             taskConfig.period.anchor.uid,
@@ -38,12 +42,6 @@ abstract class TaskingEvaluator(
             ?.trackedEntityDataValues()
             ?.firstOrNull { it.dataElement() == taskConfig.period.anchor.uid }
             ?.value()
-
-        /*val periodAnchor : String? = repository.d2.trackedEntityModule()
-            .trackedEntityAttributeValues()
-            .value(taskConfig.period.anchor.uid, teiUid)
-            .blockingGet()
-            ?.value()*/
 
         if (periodAnchor.isNullOrBlank()) {
             return today.plusDays(taskConfig.period.dueInDays.toLong()).toString()
@@ -56,20 +54,13 @@ abstract class TaskingEvaluator(
             ?.toLocalDate()
             ?: return null
 
-        //val formatedPeriodAnchorValue = anchorDate?.toInstant()?.atZone(ZoneId.systemDefault())?.toLocalDate()
-
-        //val dueDate = anchorDate.plusDays(taskConfig.period.dueInDays.toLong())
-
-        return when (taskConfig.period.anchor.ref){
-            //"" -> dueDate.toString()
-            //"DIFF" -> java.time.temporal.ChronoUnit.DAYS.between(anchorDate,dueDate).toString()
-            "PAST" -> anchorDate.minusDays(taskConfig.period.dueInDays.toLong()).toString()
+        return when (taskConfig.period.anchor.ref) {
+            Constants.PAST -> anchorDate.minusDays(taskConfig.period.dueInDays.toLong()).toString()
             else -> anchorDate.plusDays(taskConfig.period.dueInDays.toLong()).toString()
-
         }
-        //return formatedPeriodAnchorValue?.plusDays(taskConfig.period.dueInDays.toLong()).toString()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     internal fun evaluateConditions(
         conditions: TaskingConfig.ProgramTasks.TaskConfig.HasConditions,
         teiUid: String,
@@ -78,8 +69,10 @@ abstract class TaskingEvaluator(
         secondaryProgramUid: String? = null
     ): List<Boolean> {
         return conditions.condition.map { cond ->
-            val lhsValue = this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
-            val rhsValue = this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
+            val lhsValue =
+                this.resolvedReference(cond.lhs, teiUid, programUid, eventUid, secondaryProgramUid)
+            val rhsValue =
+                this.resolvedReference(cond.rhs, teiUid, programUid, eventUid, secondaryProgramUid)
 
             when (cond.op) {
                 Constants.EQUALS -> rhsValue == lhsValue
@@ -92,6 +85,7 @@ abstract class TaskingEvaluator(
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs > rhs
                 }
+
                 Constants.LESS_THAN -> {
                     val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
@@ -103,11 +97,21 @@ abstract class TaskingEvaluator(
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs >= rhs
                 }
+
                 Constants.LESS_THAN_OR_EQUALS -> {
                     val lhs = (lhsValue?.toDouble() as? Number)?.toDouble()
                     val rhs = (rhsValue?.toDouble() as? Number)?.toDouble()
                     rhs != null && lhs != null && lhs <= rhs
                 }
+
+                Constants.QUARTERLY_SCHEDULE -> {
+                    this.resolvedQuarterly(
+                        ref = cond.lhs,
+                        teiUid = teiUid,
+                        programUid = programUid
+                    ) ?: false
+                }
+
                 else -> false
             }
         }
@@ -139,19 +143,23 @@ abstract class TaskingEvaluator(
     ): String? {
 
         val enrollment = repository.getLatestEnrollment(teiUid, programUid)
-            ?: secondaryProgramUid?.let { repository.getLatestEnrollment(teiUid, it) } ?: return null
+            ?: secondaryProgramUid?.let { repository.getLatestEnrollment(teiUid, it) }
+            ?: return null
 
         if (reference.uid.isNullOrBlank())
             return reference.value.toString()
 
         return when (reference.ref) {
-            Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule().trackedEntityAttributeValues()
+            Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule()
+                .trackedEntityAttributeValues()
                 .byTrackedEntityInstance().eq(teiUid)
                 .byTrackedEntityAttribute().eq(reference.uid)
-                .one().blockingGet()?.value()
+                .one().blockingGet()
+                ?.value()
 
             Constants.EVENT_DATA -> {
-                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                val latestEvent =
+                    repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
@@ -159,7 +167,8 @@ abstract class TaskingEvaluator(
             }
 
             Constants.ALL_EVENTS_DATA -> {
-                val latestEvent = repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                val latestEvent =
+                    repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
                 latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
@@ -167,14 +176,64 @@ abstract class TaskingEvaluator(
             }
 
             Constants.STATIC -> reference.uid
-            "eventsCount" -> {
+
+            Constants.EVENTS_COUNT -> {
                 // reference.value can be used to filter by a specific data value
                 val stageUid = reference.type
                 val expectedValue = reference.value?.toString()
-                val count = repository.countEventsByDataValue(programUid, reference.uid, enrollment.uid(), stageUid, expectedValue)
+                val count = repository.countEventsByDataValue(
+                    programUid,
+                    reference.uid,
+                    enrollment.uid(),
+                    stageUid,
+                    expectedValue
+                )
                 count.toString()
             }
+
+            //"static" -> reference.uid
             else -> null
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun quarterDatesCalculator(): Pair<LocalDate, LocalDate> {
+        val today = LocalDate.now()
+
+        val adjustMonth = (today.monthValue - 1 + 12) % 12
+        val currentQuarter = (adjustMonth / 3) + 1
+
+        val quarterStartMonth = (currentQuarter - 1) * 3 + 1
+
+        val quarterStart = LocalDate.of(today.year, quarterStartMonth, 1)
+        val quarterEnd = quarterStart.plusMonths(3).minusDays(1)
+
+        return quarterStart to quarterEnd
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun resolvedQuarterly(
+        ref: TaskingConfig.ProgramTasks.TaskConfig.Reference,
+        teiUid: String,
+        programUid: String,
+    ): Boolean? {
+
+        val startDate = Date.from(
+            quarterDatesCalculator().first.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        )
+        val endDate = Date.from(
+            quarterDatesCalculator().second.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        )
+
+        val events = repository.getPeriodEventsForProgramStage(
+            programUid = programUid,
+            stageUid = ref.ref,
+            teiUid = teiUid,
+            startDate = startDate,
+            endDate = endDate,
+        )
+
+        return events.isEmpty()
     }
 }

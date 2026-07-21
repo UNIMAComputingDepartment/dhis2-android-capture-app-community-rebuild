@@ -23,6 +23,10 @@ object Constants {
 
     const val LESS_THAN_OR_EQUALS = "LESS_THAN_OR_EQUALS"
 
+    const val QUARTERLY_SCHEDULE = "QUARTERLY_SCHEDULE"
+
+    const val EVENTS_COUNT = "eventsCount"
+
 
     const val  EVENT_DATA = "eventData"
     const val  TEI_ATTRIBUTE = "teiAttribute"
@@ -32,6 +36,7 @@ object Constants {
     const val MEDIUM = "medium"
     const val LOW = "low"
     const val HIGH = "high"
+    const val PAST = "PAST"
 
 
 }

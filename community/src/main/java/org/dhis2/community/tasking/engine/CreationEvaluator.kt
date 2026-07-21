@@ -57,8 +57,10 @@ class CreationEvaluator(
                     sourceTeiProgramEnrollment
             )
 
-            if (isTriggered && isNotDuplicate){
-                val res = createTaskForTei(
+            val checker = taskConfig.hasEvent
+
+            if (isTriggered && isNotDuplicate && checker == true){
+                val withEvent = createTaskForTei(
                     taskConfig,
                     configsForProgram.teiView,
                     taskProgramUid,
@@ -69,7 +71,22 @@ class CreationEvaluator(
                     sourceTeiProgramEnrollment,
                     eventUid
                 )
-                Timber.d("Task ${taskConfig.name} creation result: $res")
+                Timber.d("Task ${taskConfig.name} creation result: $withEvent")
+            }
+            else if (isTriggered && isNotDuplicate && (checker == false || checker == null)){
+                val withNoEvent = createTaskForTei(
+                    taskConfig,
+                    configsForProgram.teiView,
+                    taskProgramUid,
+                    taskTEITypeUid,
+                    targetProgramUid,
+                    sourceTeiUid,
+                    sourceTeiOrgUnitUid,
+                    sourceTeiProgramEnrollment,
+                    null
+                )
+                Timber.d("Task ${taskConfig.name} creation result: $withNoEvent")
+
             }
         }
     }
