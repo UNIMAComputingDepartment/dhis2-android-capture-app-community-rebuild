@@ -174,6 +174,7 @@ class MainActivity :
             { titleRes, showFilterButton, showBottomNavigation ->
                 setTitle(getString(titleRes))
                 setFilterButtonVisibility(showFilterButton)
+                setSearchButtonVisibility(mainNavigator.isTasks())
                 setBottomNavigationVisibility(showBottomNavigation)
             },
             { menuItemId ->
@@ -199,6 +200,12 @@ class MainActivity :
         binding.filterRecycler.adapter = newAdapter
 
         setUpNavigationBar()
+        binding.searchActionButton.setOnClickListener {
+            val fragment = org.dhis2.community.tasking.ui.TaskingFragment.findInstance(supportFragmentManager)
+            if (mainNavigator.isTasks() && fragment != null) {
+                fragment.toggleSearchBar()
+            }
+        }
         setUpDevelopmentMode()
 
         val restoreScreenName = savedInstanceState?.getString(FRAGMENT)
@@ -620,6 +627,15 @@ class MainActivity :
             }
         binding.syncActionButton.visibility =
             if (showFilterButton) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+    }
+
+    private fun setSearchButtonVisibility(showSearchButton: Boolean) {
+        binding.searchActionButton.visibility =
+            if (showSearchButton) {
                 View.VISIBLE
             } else {
                 View.GONE
