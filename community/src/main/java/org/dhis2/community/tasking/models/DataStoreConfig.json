@@ -509,7 +509,7 @@
                     },
                     "op": "GREATER_THAN",
                     "rhs": {
-                      "ref": "eventData",
+                      "ref": "allEventsData",
                       "uid": "RzVVXJ3lCdS"
                     }
                   }
