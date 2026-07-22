@@ -34,11 +34,13 @@
           "frequency": "monthly",
           "name": "PR Quarterly Personal Visit",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "trigger": {
@@ -218,11 +220,13 @@
           "frequency": "monthly",
           "name": "HHR Quarterly HouseHold Visit",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "trigger": {
@@ -391,11 +395,13 @@
           "hasEvent": true,
           "name": "PNC Danger Sign Follow-up",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "trigger": {
@@ -432,11 +438,13 @@
           "hasEvent": true,
           "name": "ANC Danger Sign Follow-up",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "trigger": {
@@ -484,11 +492,36 @@
           "hasEvent": true,
           "name": "ANC Second Scheduled Visit",
           "period": {
-            "anchor": {
-              "ref": "PAST",
-              "uid": "yZqkFqASNGk"
+            "default": {
+              "anchor": {
+                "ref": "PAST",
+                "uid": "yZqkFqASNGk"
+              },
+              "dueInDays": 60
             },
-            "dueInDays": 60
+            "rules": [
+              {
+                "combination": "AND",
+                "condition": [
+                  {
+                    "lhs": {
+                      "ref": "today"
+                    },
+                    "op": "GREATER_THAN",
+                    "rhs": {
+                      "ref": "eventData",
+                      "uid": "RzVVXJ3lCdS"
+                    }
+                  }
+                ],
+                "dueDate": {
+                  "anchor": {
+                    "ref": "triggerEventDate"
+                  },
+                  "dueInDays": 14
+                }
+              }
+            ]
           },
           "priority": "low",
           "singleIncomplete": true,
@@ -538,11 +571,13 @@
           "hasEvent": true,
           "name": "Enroll Neonate into CBMNC - Neonatal Program",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "medium",
           "secondaryProgramUid": "J0EYs4wVHDQ",
@@ -633,11 +668,13 @@
           "hasEvent": true,
           "name": "Delivery Follow Up",
           "period": {
-            "anchor": {
-              "ref": "eventData",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "eventData",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "medium",
           "singleIncomplete": true,
@@ -698,11 +735,13 @@
           "hasEvent": true,
           "name": "ANC First Scheduled Visit",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -767,12 +806,14 @@
           "hasEvent": true,
           "name": "After Birth Follow Up",
           "period": {
-            "anchor": {
-              "ref": "eventData",
-              "type": "llP45OWGSGb",
-              "uid": "lVHn7c10EaS"
-            },
-            "dueInDays": 3
+            "default": {
+              "anchor": {
+                "ref": "eventData",
+                "type": "llP45OWGSGb",
+                "uid": "lVHn7c10EaS"
+              },
+              "dueInDays": 3
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -862,11 +903,13 @@
           "description": "First home visit for newborn 2500g and above on day 1 after discharge",
           "name": "Normal Birth Weight First Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -946,11 +989,13 @@
           "description": "Second home visit for newborn 2500g and above on day 3 after discharge",
           "name": "Normal Birth Weight Second Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 3
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 3
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1050,11 +1095,13 @@
           "description": "Third home visit for newborn 2500g and above on day 8 after discharge",
           "name": "Normal Birth Weight Third Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 8
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 8
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1154,11 +1201,13 @@
           "description": "First home visit for infant <2500g on day 1 after discharge",
           "name": "Low Birth Weight First Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1238,11 +1287,13 @@
           "description": "Second home visit for infant <2500g on day 2 after discharge",
           "name": "Low Birth Weight Second Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1342,11 +1393,13 @@
           "description": "Third home visit for infant <2500g on day 3 after discharge",
           "name": "Low Birth Weight Third Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 3
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 3
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1446,11 +1499,13 @@
           "description": "Fourth home visit for infant <2500g on day 8 after discharge",
           "name": "Low Birth Weight Fourth Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 8
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 8
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1550,11 +1605,13 @@
           "description": "Fifth home visit for infant <2500g on day 14 after discharge",
           "name": "Low Birth Weight Fifth Visit",
           "period": {
-            "anchor": {
-              "ref": "teiAttribute",
-              "uid": "Ws1LwPpV4Xg"
-            },
-            "dueInDays": 14
+            "default": {
+              "anchor": {
+                "ref": "teiAttribute",
+                "uid": "Ws1LwPpV4Xg"
+              },
+              "dueInDays": 14
+            }
           },
           "priority": "high",
           "singleIncomplete": true,
@@ -1623,11 +1680,13 @@
           "description": "Neonate Danger Sign Follow up",
           "name": "Neonate Danger Sign Follow-up",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 2
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 2
+            }
           },
           "priority": "high",
           "trigger": {
@@ -1684,11 +1743,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at Birth to Two Weeks",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 14
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 14
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -1764,11 +1825,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 6 Weeks",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 42
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 42
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -1864,11 +1927,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 10 Weeks",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 70
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 70
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -1974,11 +2039,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 14 Weeks",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 98
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 98
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2054,11 +2121,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 5 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 152
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 152
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2104,11 +2173,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 6 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 182
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 182
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2154,11 +2225,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 7 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 213
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 213
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2194,11 +2267,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 9 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 274
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 274
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2234,11 +2309,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 12 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 365
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 365
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2274,11 +2351,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 15 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 456
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 456
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2314,11 +2393,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 18 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 548
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 548
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2354,11 +2435,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 22 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 670
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 670
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2394,11 +2477,13 @@
           "description": "EPI Tasks, they need to be filled",
           "name": "Immunization at 24 Months",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": "HYlWwg511tF"
-            },
-            "dueInDays": 730
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": "HYlWwg511tF"
+              },
+              "dueInDays": 730
+            }
           },
           "priority": "medium",
           "trigger": {
@@ -2435,11 +2520,13 @@
           "description": "",
           "name": "",
           "period": {
-            "anchor": {
-              "ref": "",
-              "uid": ""
-            },
-            "dueInDays": 1
+            "default": {
+              "anchor": {
+                "ref": "",
+                "uid": ""
+              },
+              "dueInDays": 1
+            }
           },
           "priority": "medium",
           "singleIncomplete": false,

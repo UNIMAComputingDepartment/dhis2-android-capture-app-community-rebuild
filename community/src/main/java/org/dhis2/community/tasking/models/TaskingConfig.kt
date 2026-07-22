@@ -85,6 +85,22 @@ data class TaskingConfig(
 
 
             data class Period(
+                // Evaluated in order; the due date of the first rule whose condition matches is used.
+                // Nullable (rather than defaulting to emptyList()) because Gson deserializes this class
+                // via reflection, bypassing the Kotlin constructor — a JSON period with no "rules" key
+                // ends up with a real null here, not the declared default. Callers must use .orEmpty().
+                val rules: List<DueDateRule>? = null,
+                // Used when no rule matches (or none are configured) — same shape as the previous flat Period.
+                val default: DueDateSpec
+            )
+
+            data class DueDateRule(
+                val combination: String? = null,
+                override val condition: List<Condition>,
+                val dueDate: DueDateSpec
+            ) : HasConditions
+
+            data class DueDateSpec(
                 val anchor: Reference,
                 val dueInDays: Int
             )

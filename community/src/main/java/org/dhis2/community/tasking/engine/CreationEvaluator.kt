@@ -135,7 +135,8 @@ class CreationEvaluator(
             dueDate = calculateDueDate(
                 taskConfig,
                 sourceTeiUid,
-                programUid = targetProgramUid
+                programUid = targetProgramUid,
+                eventUid = eventUid
             ).toString(),
             priority = taskConfig.priority,
             status = Constants.OPEN,

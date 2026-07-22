@@ -393,6 +393,11 @@ class TaskingRepository(
         }
     }
 
+    fun getEventDate(eventUid: String): Date? {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        return event?.eventDate() ?: event?.dueDate() ?: event?.created()
+    }
+
     fun getLatestEvent(
         programUid: String,
         dataElementUid: String,
