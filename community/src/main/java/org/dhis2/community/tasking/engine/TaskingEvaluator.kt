@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
@@ -64,7 +65,7 @@ abstract class TaskingEvaluator(
             ?: today
 
         return if (resolvedDate.isBefore(referenceDate)) {
-            Timber.tag(this::class.java.simpleName).w(
+            Log.d(this::class.java.simpleName,
                 "calculateDueDate: computed due date $resolvedDate for task " +
                     "'${taskConfig.name}' is before reference date $referenceDate — clamping"
             )
@@ -123,6 +124,7 @@ abstract class TaskingEvaluator(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun parseDate(value: String): LocalDate? {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return dateFormat.parse(value)
@@ -198,6 +200,7 @@ abstract class TaskingEvaluator(
      * are compared as dates. Needed so conditions like "today is after `RzVVXJ3lCdS`" work — date
      * strings are not parseable as [Double].
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun compareNumericOrDate(
         lhsValue: String?,
         rhsValue: String?,
