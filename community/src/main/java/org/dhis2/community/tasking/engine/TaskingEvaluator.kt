@@ -1,7 +1,6 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
@@ -65,7 +64,7 @@ abstract class TaskingEvaluator(
             ?: today
 
         return if (resolvedDate.isBefore(referenceDate)) {
-            Log.d(this::class.java.simpleName,
+            Timber.tag(this::class.java.simpleName).w(
                 "calculateDueDate: computed due date $resolvedDate for task " +
                     "'${taskConfig.name}' is before reference date $referenceDate — clamping"
             )
@@ -102,11 +101,13 @@ abstract class TaskingEvaluator(
 
         val enrollmentUid = repository.getLatestEnrollment(teiUid, programUid)?.uid().orEmpty()
 
+        // Anchors (e.g. EDD) are enrollment-level facts, not tied to whichever event
+        // triggered this evaluation — search the whole enrollment.
         val periodAnchor = repository.getLatestEvent(
             programUid,
             spec.anchor.uid,
             enrollmentUid,
-            eventUid
+            eventUid = null
         )
             ?.trackedEntityDataValues()
             ?.firstOrNull { it.dataElement() == spec.anchor.uid }
@@ -274,8 +275,11 @@ abstract class TaskingEvaluator(
             }
 
             Constants.ALL_EVENTS_DATA -> {
+                // Unlike EVENT_DATA, this searches the whole enrollment rather than the
+                // specific triggering event — the value may live on a different event than
+                // the one that triggered this evaluation.
                 val latestEvent =
-                    repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid)
+                    repository.getLatestEvent(programUid, reference.uid, enrollment.uid(), eventUid = null)
                 latestEvent
                     ?.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == reference.uid }
