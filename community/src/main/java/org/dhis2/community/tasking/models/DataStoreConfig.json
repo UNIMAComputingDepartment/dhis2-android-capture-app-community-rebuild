@@ -499,29 +499,7 @@
               },
               "dueInDays": 60
             },
-            "rules": [
-              {
-                "combination": "AND",
-                "condition": [
-                  {
-                    "lhs": {
-                      "ref": "today"
-                    },
-                    "op": "GREATER_THAN",
-                    "rhs": {
-                      "ref": "allEventsData",
-                      "uid": "RzVVXJ3lCdS"
-                    }
-                  }
-                ],
-                "dueDate": {
-                  "anchor": {
-                    "ref": "triggerEventDate"
-                  },
-                  "dueInDays": 14
-                }
-              }
-            ]
+            "fallbackDueInDays": 14
           },
           "priority": "low",
           "singleIncomplete": true,

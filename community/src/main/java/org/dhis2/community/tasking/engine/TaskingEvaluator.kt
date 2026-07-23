@@ -42,15 +42,35 @@ abstract class TaskingEvaluator(
     ): String? {
 
         val today = Date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+        val tag = this::class.java.simpleName
 
-        val matchedRule = taskConfig.period.rules.orEmpty().firstOrNull { rule ->
+        val rules = taskConfig.period.rules.orEmpty()
+        Timber.tag(tag).d(
+            "calculateDueDate: '${taskConfig.name}' has ${rules.size} due-date rule(s) configured"
+        )
+
+        val matchedRule = rules.firstOrNull { rule ->
             val results = evaluateConditions(
                 conditions = rule,
                 teiUid = teiUid,
                 programUid = programUid,
                 eventUid = eventUid
             )
-            resolveCombination(rule.combination, results)
+            val matched = resolveCombination(rule.combination, results)
+            val conditionDump = rule.condition.mapIndexed { i, cond ->
+                val lhs = resolvedReference(cond.lhs, teiUid, programUid, eventUid)
+                val rhs = resolvedReference(cond.rhs, teiUid, programUid, eventUid)
+                "#$i: [${cond.lhs.ref}]$lhs ${cond.op} [${cond.rhs.ref}]$rhs -> ${results.getOrNull(i)}"
+            }
+            Timber.tag(tag).d(
+                "calculateDueDate: '${taskConfig.name}' rule check: $conditionDump " +
+                    "combination=${rule.combination} matched=$matched"
+            )
+            matched
+        }
+
+        if (matchedRule == null && rules.isNotEmpty()) {
+            Timber.tag(tag).d("calculateDueDate: '${taskConfig.name}' no rule matched, using default")
         }
 
         val spec = matchedRule?.dueDate ?: taskConfig.period.default
@@ -64,11 +84,22 @@ abstract class TaskingEvaluator(
             ?: today
 
         return if (resolvedDate.isBefore(referenceDate)) {
-            Timber.tag(this::class.java.simpleName).w(
+            val fallbackDueInDays = taskConfig.period.fallbackDueInDays
+            val clampedDate = if (fallbackDueInDays != null) {
+                referenceDate.plusDays(fallbackDueInDays.toLong())
+            } else {
+                referenceDate
+            }
+            Timber.tag(tag).w(
                 "calculateDueDate: computed due date $resolvedDate for task " +
-                    "'${taskConfig.name}' is before reference date $referenceDate — clamping"
+                    "'${taskConfig.name}' is before reference date $referenceDate — clamping to " +
+                    if (fallbackDueInDays != null) {
+                        "$clampedDate (reference + $fallbackDueInDays days)"
+                    } else {
+                        "$clampedDate"
+                    }
             )
-            referenceDate.toString()
+            clampedDate.toString()
         } else {
             resolvedDate.toString()
         }
