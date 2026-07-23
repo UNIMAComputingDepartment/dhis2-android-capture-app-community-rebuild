@@ -13,10 +13,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.dhis2.App
 import org.dhis2.R
 import org.dhis2.commons.sync.OnDismissListener
@@ -65,13 +68,17 @@ class ProgramFragment :
         savedInstanceState: Bundle?,
     ): View =
         ComposeView(requireContext()).apply {
-            val taskProgramUids = taskingRepository.getTaskProgramUids()
             setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 val items by programViewModel.programs.observeAsState()
                 val downloadState by programViewModel.downloadState().collectAsState()
+                val taskProgramUids by produceState(initialValue = emptyList<String>()) {
+                    value = withContext(Dispatchers.IO) {
+                        taskingRepository.getTaskProgramUids()
+                    }
+                }
 
                 LaunchedEffect(downloadState) {
                     programViewModel.setIsDownloading()

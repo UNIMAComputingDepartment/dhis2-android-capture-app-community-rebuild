@@ -32,6 +32,11 @@ object Constants {
     const val  TEI_ATTRIBUTE = "teiAttribute"
     const val  STATIC = "static"
     const val  ALL_EVENTS_DATA = "allEventsData"
+    const val  TODAY = "today"
+    // Anchors a due date on the occurred/due date of the event that triggered evaluation
+    // (Task.sourceEventUid on update), rather than on a data element value. Stable across
+    // re-evaluations, unlike anchoring on "today".
+    const val  TRIGGER_EVENT_DATE = "triggerEventDate"
 
     const val MEDIUM = "medium"
     const val LOW = "low"

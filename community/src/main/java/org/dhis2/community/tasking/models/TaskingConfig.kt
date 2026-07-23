@@ -50,6 +50,7 @@ data class TaskingConfig(
             val singleIncomplete: Boolean = false,
             val anchorDate: String
         ) {
+
             interface HasConditions {
                 val condition: List<Condition>
             }
@@ -84,6 +85,29 @@ data class TaskingConfig(
 
 
             data class Period(
+                // Evaluated in order; the due date of the first rule whose condition matches is used.
+                // Nullable (rather than defaulting to emptyList()) because Gson deserializes this class
+                // via reflection, bypassing the Kotlin constructor — a JSON period with no "rules" key
+                // ends up with a real null here, not the declared default. Callers must use .orEmpty().
+                val rules: List<DueDateRule>? = null,
+                // Used when no rule matches (or none are configured) — same shape as the previous flat Period.
+                val default: DueDateSpec,
+                // If the resolved due date would land before the reference (triggering event) date,
+                // the safety clamp normally falls back to the reference date itself. When set, it
+                // falls back to referenceDate + this many days instead — e.g. "due 60 days before
+                // EDD, but if that's already in the past, due 14 days from the visit" without needing
+                // any extra lookup: the clamp already detects "naive due date is in the past" using
+                // data (default anchor, reference date) that's already been resolved.
+                val fallbackDueInDays: Int? = null
+            )
+
+            data class DueDateRule(
+                val combination: String? = null,
+                override val condition: List<Condition>,
+                val dueDate: DueDateSpec
+            ) : HasConditions
+
+            data class DueDateSpec(
                 val anchor: Reference,
                 val dueInDays: Int
             )

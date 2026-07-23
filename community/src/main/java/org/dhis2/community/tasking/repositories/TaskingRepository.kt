@@ -393,6 +393,11 @@ class TaskingRepository(
         }
     }
 
+    fun getEventDate(eventUid: String): Date? {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        return event?.eventDate() ?: event?.dueDate() ?: event?.created()
+    }
+
     fun getLatestEvent(
         programUid: String,
         dataElementUid: String,
@@ -406,7 +411,15 @@ class TaskingRepository(
                     .byProgramStage().eq(it.uid())
                     .byDataElement().eq(dataElementUid)
                     .blockingGet().isNotEmpty()
-            } ?: return null
+            }
+
+        if (stage == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: no stage of program $programUid declares data element " +
+                    "$dataElementUid as a stage data element — cannot search for it"
+            )
+            return null
+        }
 
         val events = if (eventUid == null)
             d2.eventModule().events()
@@ -420,10 +433,29 @@ class TaskingRepository(
                 .withTrackedEntityDataValues()
                 .blockingGet()
 
-        return events
-            .maxByOrNull {
-                it.created() ?: it.eventDate() ?: Date(0)
-            }
+        fun hasTargetValue(event: Event): Boolean =
+            event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true
+
+        val result = events.maxByOrNull {
+            it.created() ?: it.eventDate() ?: Date(0)
+        }
+
+        if (result == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: stage ${stage.uid()} declares $dataElementUid but no matching " +
+                    "event found (enrollment=$enrollmentUd, eventUid=$eventUid, candidates=${events.size})"
+            )
+        } else if (!hasTargetValue(result)) {
+            val eventsWithValue = events.filter { hasTargetValue(it) }
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: picked event ${result.uid()} for $dataElementUid has no value; " +
+                    "${events.size} candidate event(s) in stage ${stage.uid()}, " +
+                    "${eventsWithValue.size} of them do have a value " +
+                    "(${eventsWithValue.map { it.uid() + "@" + (it.eventDate() ?: it.created()) }})"
+            )
+        }
+
+        return result
     }
 
     fun countEventsByDataValue(
