@@ -132,6 +132,9 @@ android {
             // custom application suffix which allows to
             // install debug and release builds at the same time
             applicationIdSuffix = ".debug"
+            isDebuggable = true
+            isMinifyEnabled = false
+            isShrinkResources = false
 
             buildConfigField("int", "MATOMO_ID", "2")
             buildConfigField("String", "BUILD_DATE", "\"" + getBuildDate() + "\"")

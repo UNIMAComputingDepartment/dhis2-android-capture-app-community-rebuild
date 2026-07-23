@@ -276,14 +276,17 @@ class MainActivity :
 
         checkNotificationPermission()
 
-        // Schedule daily task reminder notifications (7 AM Malawi time)
+        // Schedule daily task reminder notifications (7 AM Malawi time) OFF main thread
         // This ensures notifications fire even if app isn't open
-        try {
-            TaskReminderScheduler.scheduleTaskReminder(this)
-            // Also schedule WorkManager as backup for maximum reliability
-            TaskReminderWorkScheduler.scheduleTaskReminderWork(this)
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to schedule task reminders in MainActivity")
+        // Defer to background to avoid blocking UI during onCreate
+        lifecycleScope.launch {
+            try {
+                TaskReminderScheduler.scheduleTaskReminder(this@MainActivity)
+                // Also schedule WorkManager as backup for maximum reliability
+                TaskReminderWorkScheduler.scheduleTaskReminderWork(this@MainActivity)
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to schedule task reminders in MainActivity")
+            }
         }
 
         registerOnBackPressedCallback()
