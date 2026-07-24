@@ -104,7 +104,8 @@ class TaskingRepository(
                 )
             }
 
-            val config = Gson().fromJson(value, TaskingConfig::class.java)
+            val parsed = Gson().fromJson(value, TaskingConfig::class.java)
+            val config = parsed.sanitized()
             Timber.d("Successfully parsed tasking config: ${config.taskProgramConfig.size} task programs")
             config
         } catch (e: Exception) {
@@ -125,6 +126,66 @@ class TaskingRepository(
 
     private fun TaskingConfig.hasAnyConfig(): Boolean {
         return programTasks.isNotEmpty() || taskProgramConfig.isNotEmpty()
+    }
+
+    /**
+     * Drops structurally-incomplete task configs so evaluation never dereferences a null
+     * [Reference][TaskingConfig.ProgramTasks.TaskConfig.Reference].
+     *
+     * Gson builds these data classes by reflection, bypassing the Kotlin constructor — so a
+     * `condition` whose JSON omits `lhs`/`rhs`, or a `dueDate` missing `anchor`, ends up holding a
+     * real `null` in a field declared non-null (the same hazard documented on [Period.rules]).
+     * The engine later reads `.ref` on those references and throws
+     * `NullPointerException: ... Reference.getRef() on a null object reference`. A malformed entry
+     * can't be evaluated meaningfully anyway, so we log and drop it rather than crash the worker.
+     */
+    private fun TaskingConfig.sanitized(): TaskingConfig {
+        val safePrograms = (programTasks ?: emptyList()).map { program ->
+            val configs = program.taskConfigs ?: emptyList()
+            val validConfigs = configs.filter { it.isStructurallyValid() }
+            val dropped = configs.size - validConfigs.size
+            if (dropped > 0) {
+                Timber.w(
+                    "Dropped $dropped malformed task config(s) with null references in program " +
+                        "'${program.programUid}'"
+                )
+            }
+            program.copy(taskConfigs = validConfigs)
+        }
+        return copy(programTasks = safePrograms)
+    }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Reference?.isPresent(): Boolean =
+        this != null && this.ref != null
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Condition?.isValid(): Boolean =
+        this != null && this.lhs.isPresent() && this.rhs.isPresent()
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.DueDateSpec?.isValid(): Boolean =
+        this != null && this.anchor.isPresent()
+
+    /** A (possibly null) condition list is valid only if every element resolves both references. */
+    private fun List<TaskingConfig.ProgramTasks.TaskConfig.Condition>?.allValid(): Boolean =
+        this == null || this.all { it.isValid() }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.isStructurallyValid(): Boolean {
+        val trigger = this.trigger ?: return false
+        if (!trigger.condition.allValid()) return false
+
+        val period = this.period ?: return false
+        if (!period.default.isValid()) return false
+        period.rules?.forEach { rule ->
+            if (rule == null) return false
+            if (!rule.condition.allValid()) return false
+            if (!rule.dueDate.isValid()) return false
+        }
+
+        val completion = this.completion ?: return false
+        if (!completion.condition.allValid()) return false
+
+        return true
     }
 
     fun getOrgUnit(taskTeiUid: String): String? {
@@ -393,6 +454,11 @@ class TaskingRepository(
         }
     }
 
+    fun getEventDate(eventUid: String): Date? {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        return event?.eventDate() ?: event?.dueDate() ?: event?.created()
+    }
+
     fun getLatestEvent(
         programUid: String,
         dataElementUid: String,
@@ -406,7 +472,15 @@ class TaskingRepository(
                     .byProgramStage().eq(it.uid())
                     .byDataElement().eq(dataElementUid)
                     .blockingGet().isNotEmpty()
-            } ?: return null
+            }
+
+        if (stage == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: no stage of program $programUid declares data element " +
+                    "$dataElementUid as a stage data element — cannot search for it"
+            )
+            return null
+        }
 
         val events = if (eventUid == null)
             d2.eventModule().events()
@@ -420,10 +494,29 @@ class TaskingRepository(
                 .withTrackedEntityDataValues()
                 .blockingGet()
 
-        return events
-            .maxByOrNull {
-                it.created() ?: it.eventDate() ?: Date(0)
-            }
+        fun hasTargetValue(event: Event): Boolean =
+            event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true
+
+        val result = events.maxByOrNull {
+            it.created() ?: it.eventDate() ?: Date(0)
+        }
+
+        if (result == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: stage ${stage.uid()} declares $dataElementUid but no matching " +
+                    "event found (enrollment=$enrollmentUd, eventUid=$eventUid, candidates=${events.size})"
+            )
+        } else if (!hasTargetValue(result)) {
+            val eventsWithValue = events.filter { hasTargetValue(it) }
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: picked event ${result.uid()} for $dataElementUid has no value; " +
+                    "${events.size} candidate event(s) in stage ${stage.uid()}, " +
+                    "${eventsWithValue.size} of them do have a value " +
+                    "(${eventsWithValue.map { it.uid() + "@" + (it.eventDate() ?: it.created()) }})"
+            )
+        }
+
+        return result
     }
 
     fun countEventsByDataValue(

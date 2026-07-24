@@ -381,6 +381,9 @@ class TEIDataFragment :
                     },
                     onRemoveRelationship = { type, uid ->
                         cmtPresenter.onRemoveRelationship(type, uid)
+                    },
+                    onPromoteToHead = { type, uid ->
+                        cmtPresenter.onPromoteToHead(type, uid)
                     }
                 )
             }
@@ -829,6 +832,30 @@ class TEIDataFragment :
 
         )
         dialog.show(parentFragmentManager, AlertBottomDialog::class.java.simpleName)
+    }
+
+    override fun confirmPromoteToHead(
+        type: String,
+        teiUid: String
+    ) {
+        val bottomSheetDialogUiModel = BottomSheetDialogUiModel(
+            title = "Set as Household Head",
+            message = "Are you sure you want to make this person the household head? The current head will be replaced and the household's details will be updated with their information.",
+            iconResource = R.drawable.ic_question_positive,
+            mainButton = MainButton(R.string.yes),
+            secondaryButton = DialogButtonStyle.SecondaryButton(R.string.no),
+        )
+        val dialog = BottomSheetDialog(
+            bottomSheetDialogUiModel,
+            { cmtPresenter.promoteToHead(type, teiUid) },
+            { /*Unused*/ },
+
+        )
+        dialog.show(parentFragmentManager, AlertBottomDialog::class.java.simpleName)
+    }
+
+    override fun refreshDashboardHeader() {
+        dashboardViewModel.updateDashboard()
     }
 
     companion object {
