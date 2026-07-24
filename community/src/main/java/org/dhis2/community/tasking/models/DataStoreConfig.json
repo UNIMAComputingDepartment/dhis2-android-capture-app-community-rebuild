@@ -773,7 +773,7 @@
                   "ref": "eventData",
                   "type": "MvNwuuB40gF",
                   "uid": "Wri2Zw6Qnyo",
-                  "value": "scheduled"
+                  "value": ""
                 },
                 "op": "EQUALS",
                 "rhs": {
@@ -835,7 +835,7 @@
                   "ref": "eventData",
                   "type": "MvNwuuB40gF",
                   "uid": "Wri2Zw6Qnyo",
-                  "value": "scheduled"
+                  "value": ""
                 },
                 "op": "EQUALS",
                 "rhs": {
@@ -907,7 +907,7 @@
                   "ref": "eventData",
                   "type": "MvNwuuB40gF",
                   "uid": "Wri2Zw6Qnyo",
-                  "value": "scheduled"
+                  "value": ""
                 },
                 "op": "EQUALS",
                 "rhs": {
