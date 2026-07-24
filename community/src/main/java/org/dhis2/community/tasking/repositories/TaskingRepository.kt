@@ -104,7 +104,8 @@ class TaskingRepository(
                 )
             }
 
-            val config = Gson().fromJson(value, TaskingConfig::class.java)
+            val parsed = Gson().fromJson(value, TaskingConfig::class.java)
+            val config = parsed.sanitized()
             Timber.d("Successfully parsed tasking config: ${config.taskProgramConfig.size} task programs")
             config
         } catch (e: Exception) {
@@ -125,6 +126,66 @@ class TaskingRepository(
 
     private fun TaskingConfig.hasAnyConfig(): Boolean {
         return programTasks.isNotEmpty() || taskProgramConfig.isNotEmpty()
+    }
+
+    /**
+     * Drops structurally-incomplete task configs so evaluation never dereferences a null
+     * [Reference][TaskingConfig.ProgramTasks.TaskConfig.Reference].
+     *
+     * Gson builds these data classes by reflection, bypassing the Kotlin constructor — so a
+     * `condition` whose JSON omits `lhs`/`rhs`, or a `dueDate` missing `anchor`, ends up holding a
+     * real `null` in a field declared non-null (the same hazard documented on [Period.rules]).
+     * The engine later reads `.ref` on those references and throws
+     * `NullPointerException: ... Reference.getRef() on a null object reference`. A malformed entry
+     * can't be evaluated meaningfully anyway, so we log and drop it rather than crash the worker.
+     */
+    private fun TaskingConfig.sanitized(): TaskingConfig {
+        val safePrograms = (programTasks ?: emptyList()).map { program ->
+            val configs = program.taskConfigs ?: emptyList()
+            val validConfigs = configs.filter { it.isStructurallyValid() }
+            val dropped = configs.size - validConfigs.size
+            if (dropped > 0) {
+                Timber.w(
+                    "Dropped $dropped malformed task config(s) with null references in program " +
+                        "'${program.programUid}'"
+                )
+            }
+            program.copy(taskConfigs = validConfigs)
+        }
+        return copy(programTasks = safePrograms)
+    }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Reference?.isPresent(): Boolean =
+        this != null && this.ref != null
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Condition?.isValid(): Boolean =
+        this != null && this.lhs.isPresent() && this.rhs.isPresent()
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.DueDateSpec?.isValid(): Boolean =
+        this != null && this.anchor.isPresent()
+
+    /** A (possibly null) condition list is valid only if every element resolves both references. */
+    private fun List<TaskingConfig.ProgramTasks.TaskConfig.Condition>?.allValid(): Boolean =
+        this == null || this.all { it.isValid() }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.isStructurallyValid(): Boolean {
+        val trigger = this.trigger ?: return false
+        if (!trigger.condition.allValid()) return false
+
+        val period = this.period ?: return false
+        if (!period.default.isValid()) return false
+        period.rules?.forEach { rule ->
+            if (rule == null) return false
+            if (!rule.condition.allValid()) return false
+            if (!rule.dueDate.isValid()) return false
+        }
+
+        val completion = this.completion ?: return false
+        if (!completion.condition.allValid()) return false
+
+        return true
     }
 
     fun getOrgUnit(taskTeiUid: String): String? {
