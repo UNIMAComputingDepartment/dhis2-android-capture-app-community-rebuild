@@ -87,5 +87,10 @@ class TEIDataContracts {
             type: String,
             teiUid: String
         )
+        fun confirmPromoteToHead(
+            type: String,
+            teiUid: String
+        )
+        fun refreshDashboardHeader()
     }
 }
