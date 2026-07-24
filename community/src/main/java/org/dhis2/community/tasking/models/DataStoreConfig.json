@@ -696,7 +696,7 @@
             ]
           },
           "description": "",
-          "name": "ANC First Sheduled Visit",
+          "name": "ANC First Scheduled Visit",
           "period": {
             "anchor": {
               "ref": "",
@@ -706,7 +706,7 @@
           },
           "priority": "high",
           "singleIncomplete": true,
-          "taskTypeId": "Sheduled ANC First Visit",
+          "taskTypeId": "Scheduled ANC First Visit",
           "trigger": {
             "combination": "OR",
             "condition": [
@@ -737,35 +737,88 @@
           "hasEvent": true,
           "anchorDate": "lVHn7c10EaS",
           "completion": {
+            "combination": "AND",
             "condition": [
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "ji4ZJk9B7sv",
-                  "value": ""
+                  "uid": "ji4ZJk9B7sv"
                 },
-                "op": "GREATER_THAN_OR_EQUALS",
+                "op": "NUM_EQUAL",
                 "rhs": {
-                  "value": 2
+                  "value": 1
                 }
               },
               {
                 "lhs": {
-                  "ref": "eventsData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "Wri2Zw6Qnyo",
-                  "value": "scheduled"
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
                 },
-                "op": "EQUAL",
+                "op": "EQUALS",
                 "rhs": {
                   "value": "1"
                 }
               }
             ]
           },
-          "description": "CHW second PNC visit due 3 days after discharge; complete when there are 2 scheduled 'After Birth' events (count >= 2).",
-          "name": "After Birth Follow Up",
+          "description": "CHW first PNC visit due 2 days after discharge; complete when visit number = 1.",
+          "name": "After Birth Follow Up First Visit",
+          "period": {
+            "anchor": {
+              "ref": "eventData",
+              "type": "llP45OWGSGb",
+              "uid": "lVHn7c10EaS"
+            },
+            "dueInDays": 2
+          },
+          "priority": "high",
+          "singleIncomplete": true,
+          "trigger": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "lVHn7c10EaS"
+                },
+                "op": "NOT_NULL",
+                "rhs": {
+                  "value": ""
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hasEvent": true,
+          "anchorDate": "lVHn7c10EaS",
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "NUM_EQUAL",
+                "rhs": {
+                  "value": 2
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          },
+          "description": "CHW second PNC visit due 3 days after discharge; complete when visit number = 2.",
+          "name": "After Birth Follow Up Second Visit",
           "period": {
             "anchor": {
               "ref": "eventData",
@@ -787,6 +840,72 @@
                 "op": "NUM_EQUAL",
                 "rhs": {
                   "value": 1
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "hasEvent": true,
+          "anchorDate": "lVHn7c10EaS",
+          "completion": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "GREATER_THAN_OR_EQUALS",
+                "rhs": {
+                  "value": 3
+                }
+              },
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "Wri2Zw6Qnyo"
+                },
+                "op": "EQUALS",
+                "rhs": {
+                  "value": "1"
+                }
+              }
+            ]
+          },
+          "description": "CHW third PNC visit due 8 days after discharge; complete when visit number >= 3.",
+          "name": "After Birth Follow Up Third Visit",
+          "period": {
+            "anchor": {
+              "ref": "eventData",
+              "type": "llP45OWGSGb",
+              "uid": "lVHn7c10EaS"
+            },
+            "dueInDays": 8
+          },
+          "priority": "high",
+          "singleIncomplete": true,
+          "trigger": {
+            "combination": "AND",
+            "condition": [
+              {
+                "lhs": {
+                  "ref": "eventData",
+                  "uid": "ji4ZJk9B7sv"
+                },
+                "op": "NUM_EQUAL",
+                "rhs": {
+                  "value": 2
                 }
               },
               {
