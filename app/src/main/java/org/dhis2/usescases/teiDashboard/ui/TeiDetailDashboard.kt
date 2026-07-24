@@ -37,6 +37,7 @@ fun TeiDetailDashboard(
     onEntitySelected: (CmtRelationshipViewModel, String) -> Unit,
     onCreateEntity: (String, String) -> Unit,
     onRemoveRelationship: (String, String) -> Unit,
+    onPromoteToHead: (String, String) -> Unit,
     quickActions: List<QuickActionUiModel>,
     modifier: Modifier = Modifier,
     isGrouped: Boolean = true,
@@ -88,7 +89,8 @@ fun TeiDetailDashboard(
                 onSearchTEIs = onSearchTEIs,
                 onEntitySelect = onEntitySelected,
                 onCreateEntity = onCreateEntity,
-                removeRelationship = onRemoveRelationship
+                removeRelationship = onRemoveRelationship,
+                onPromoteToHead = onPromoteToHead
             )
         }
 
