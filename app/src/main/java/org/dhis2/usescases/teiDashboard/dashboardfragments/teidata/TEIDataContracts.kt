@@ -83,11 +83,16 @@ class TEIDataContracts {
         )
 
         fun goToEnrollment(programUid: String, enrollmentUid: String,)
+        fun goToTeiDashboard(teiUid: String, programUid: String, enrollmentUid: String)
         fun confirmRelationshipRemove(
             type: String,
             teiUid: String
         )
         fun confirmPromoteToHead(
+            type: String,
+            teiUid: String
+        )
+        fun confirmPromoteToNewHousehold(
             type: String,
             teiUid: String
         )

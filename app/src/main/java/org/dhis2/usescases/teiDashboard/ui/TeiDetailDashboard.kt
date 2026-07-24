@@ -38,6 +38,7 @@ fun TeiDetailDashboard(
     onCreateEntity: (String, String) -> Unit,
     onRemoveRelationship: (String, String) -> Unit,
     onPromoteToHead: (String, String) -> Unit,
+    onPromoteToNewHousehold: (String, String) -> Unit,
     quickActions: List<QuickActionUiModel>,
     modifier: Modifier = Modifier,
     isGrouped: Boolean = true,
@@ -90,7 +91,8 @@ fun TeiDetailDashboard(
                 onEntitySelect = onEntitySelected,
                 onCreateEntity = onCreateEntity,
                 removeRelationship = onRemoveRelationship,
-                onPromoteToHead = onPromoteToHead
+                onPromoteToHead = onPromoteToHead,
+                onPromoteToNewHousehold = onPromoteToNewHousehold
             )
         }
 
