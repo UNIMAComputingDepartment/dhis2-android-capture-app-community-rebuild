@@ -64,6 +64,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.dhis2.commons.resources.ColorUtils
@@ -87,7 +88,8 @@ fun CollapsibleRelationshipSection(
     onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
     removeRelationship: (String, String) -> Unit = {_,_ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
-    onSearchTEIs: (String, String) -> Unit = { _, _ -> }
+    onSearchTEIs: (String, String) -> Unit = { _, _ -> },
+    onPromoteToHead: (String, String) -> Unit = { _, _ -> }
 ) {
     Dhis2CmtTheme {
         CollapsibleRelationshipSectionContent(
@@ -97,7 +99,8 @@ fun CollapsibleRelationshipSection(
             onEntitySelect = onEntitySelect,
             removeRelationship = removeRelationship,
             onCreateEntity = onCreateEntity,
-            onSearchTEIs = onSearchTEIs
+            onSearchTEIs = onSearchTEIs,
+            onPromoteToHead = onPromoteToHead
         )
     }
 }
@@ -114,7 +117,8 @@ private fun CollapsibleRelationshipSectionContent(
     onEntitySelect: (CmtRelationshipViewModel, String) -> Unit = { _, _ ->},
     removeRelationship: (String, String) -> Unit = {_, _ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
-    onSearchTEIs: (String, String) -> Unit = { _, _ -> }
+    onSearchTEIs: (String, String) -> Unit = { _, _ -> },
+    onPromoteToHead: (String, String) -> Unit = { _, _ -> }
 ) {
     val title = relationshipTypeView.description
     val existingRelationships = relationshipTypeView.relatedTeis
@@ -265,7 +269,9 @@ private fun CollapsibleRelationshipSectionContent(
                             RelationshipItem(
                                 item = rel,
                                 onClick = { onRelationshipClick(rel) },
-                                removeRelationship = { removeRelationship(relationshipTypeView.uid, rel.uid) }
+                                removeRelationship = { removeRelationship(relationshipTypeView.uid, rel.uid) },
+                                canPromote = relationshipTypeView.supportsHeadPromotion,
+                                onPromote = { onPromoteToHead(relationshipTypeView.uid, rel.uid) }
                             )
                             Divider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
@@ -363,7 +369,9 @@ private fun RelationshipItem(
     item: CmtRelationshipViewModel,
     onClick: () -> Unit,
     isSelection: Boolean = false,
-    removeRelationship: () -> Unit = {}
+    removeRelationship: () -> Unit = {},
+    canPromote: Boolean = false,
+    onPromote: () -> Unit = {}
 ) {
     val tieTypeIcon = res.getObjectStyleDrawableResource(item.iconName, R.drawable.ic_tei_default)
 
@@ -384,10 +392,21 @@ private fun RelationshipItem(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            Text(
-                text = item.primaryAttribute,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = item.primaryAttribute,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                if (item.isHead) {
+                    Text(
+                        text = "Head",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
             item.secondaryAttribute?.let {
                 Text(
                     text = it,
@@ -426,6 +445,21 @@ private fun RelationshipItem(
                     onDismissRequest = { showMenu = false },
                     modifier = Modifier.padding(horizontal = 4.dp),
                 ) {
+                    if (canPromote && !item.isHead) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Set as Household Head",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onPromote()
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = {
                             Text(

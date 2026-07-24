@@ -262,6 +262,12 @@ class RelationshipRepository(
         Timber.e("The Icon name: $iconName")
 
 
+        val isHead = relationship.headAttribute?.let { headAttribute ->
+            tei.trackedEntityAttributeValues()
+                ?.firstOrNull { it.trackedEntityAttribute() == headAttribute }
+                ?.value() == "true"
+        } ?: false
+
         return CmtRelationshipViewModel(
             uid = tei.uid()!!,
             primaryAttribute = tei.trackedEntityAttributeValues()
@@ -283,8 +289,8 @@ class RelationshipRepository(
                 .byProgram().eq(relationship.relatedProgram.programUid)
                 .blockingGet().firstOrNull()?.uid() ?: "",
             //iconResId = res.getObjectStyleDrawableResource(iconName, R.drawable.ic_default_icon)
-            iconName = iconName.toString()
-
+            iconName = iconName.toString(),
+            isHead = isHead
         )
     }
 
@@ -369,6 +375,59 @@ class RelationshipRepository(
         }
 
         return teiUid to enrollmentUid
+    }
+
+    fun promoteToHead(
+        relationship: org.dhis2.community.relationships.Relationship,
+        householdTeiUid: String,
+        newHeadTeiUid: String
+    ): Result<Unit> {
+        val headAttribute = relationship.headAttribute
+            ?: return Result.failure(IllegalStateException("Relationship has no headAttribute configured"))
+
+        return try {
+            val members = getRelatedTeis(
+                teiUid = householdTeiUid,
+                relationshipTypeUid = relationship.access.targetRelationshipUid,
+                relationship = relationship
+            )
+
+            members
+                .filter { it.isHead && it.uid != newHeadTeiUid }
+                .forEach { previousHead ->
+                    d2.trackedEntityModule().trackedEntityAttributeValues()
+                        .value(headAttribute, previousHead.uid)
+                        .blockingSet("false")
+                }
+
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(headAttribute, newHeadTeiUid)
+                .blockingSet("true")
+
+            // headPromotionAttributes is household-attribute -> member-attribute (same
+            // convention as attributeMappings); promotion runs it in reverse.
+            applyAttributeMappings(
+                sourceTeiUid = newHeadTeiUid,
+                targetTeiUid = householdTeiUid,
+                mappings = relationship.headPromotionAttributes.mapNotNull { mapping ->
+                    val householdAttribute = mapping.sourceAttribute
+                    if (householdAttribute.isNullOrBlank()) {
+                        null
+                    } else {
+                        AttributeMapping(
+                            sourceAttribute = mapping.targetAttribute,
+                            targetAttribute = householdAttribute,
+                            defaultValue = null
+                        )
+                    }
+                }
+            )
+
+            Result.success(Unit)
+        } catch (error: Exception) {
+            Timber.e(error, "Error promoting TEI to household head")
+            Result.failure(error)
+        }
     }
 
     private fun applyAttributeMappings(
