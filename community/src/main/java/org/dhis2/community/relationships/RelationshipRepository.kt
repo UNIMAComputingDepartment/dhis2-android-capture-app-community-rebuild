@@ -430,6 +430,106 @@ class RelationshipRepository(
         }
     }
 
+    fun promoteToNewHousehold(
+        membershipRelationship: org.dhis2.community.relationships.Relationship,
+        parentRelationshipType: String,
+        parentTeiUid: String,
+        targetProgram: String,
+        targetTeiType: String,
+        autoIncrementAttribute: String?,
+        oldHouseholdTeiUid: String,
+        memberTeiUid: String
+    ): Result<Pair<String, String>> {
+        return try {
+            val orgUnit = d2.trackedEntityModule()
+                .trackedEntityInstances()
+                .uid(oldHouseholdTeiUid)
+                .blockingGet()
+                ?.organisationUnit()
+                ?: throw IllegalStateException("Organisation unit not found for household $oldHouseholdTeiUid")
+
+            val newHouseholdUid = d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+                TrackedEntityInstanceCreateProjection.builder()
+                    .organisationUnit(orgUnit)
+                    .trackedEntityType(targetTeiType)
+                    .build()
+            )
+
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(newHouseholdUid)
+                    .program(targetProgram)
+                    .organisationUnit(orgUnit)
+                    .build()
+            )
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(Date())
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(Date())
+
+            // Same identity attributes used for in-place head promotion, copied
+            // member -> new household instead of member -> existing household.
+            applyAttributeMappings(
+                sourceTeiUid = memberTeiUid,
+                targetTeiUid = newHouseholdUid,
+                mappings = membershipRelationship.headPromotionAttributes.mapNotNull { mapping ->
+                    val householdAttribute = mapping.sourceAttribute
+                    if (householdAttribute.isNullOrBlank()) {
+                        null
+                    } else {
+                        AttributeMapping(
+                            sourceAttribute = mapping.targetAttribute,
+                            targetAttribute = householdAttribute,
+                            defaultValue = null
+                        )
+                    }
+                }
+            )
+
+            if (autoIncrementAttribute != null) {
+                val siblingCount = d2.relationshipModule().relationships()
+                    .byRelationshipType().eq(parentRelationshipType)
+                    .byItem(RelationshipHelper.teiItem(parentTeiUid))
+                    .blockingGetUids()
+                    .size
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(autoIncrementAttribute, newHouseholdUid)
+                    .blockingSet((siblingCount + 1).toString())
+            }
+
+            // Attach the new household to the same parent (Community) as the old one
+            createAndAddRelationship(
+                selectedTeiUid = parentTeiUid,
+                relationshipTypeUid = parentRelationshipType,
+                teiUid = newHouseholdUid,
+                relationshipSide = RelationshipConstraintSide.FROM
+            ).getOrThrow()
+
+            // Move the member: drop the old household link, attach to the new one
+            deleteRelationship(
+                relationshipType = membershipRelationship.access.targetRelationshipUid,
+                teiUid = oldHouseholdTeiUid,
+                relatedTeiUid = memberTeiUid
+            ).getOrThrow()
+
+            createAndAddRelationship(
+                selectedTeiUid = memberTeiUid,
+                relationshipTypeUid = membershipRelationship.access.targetRelationshipUid,
+                teiUid = newHouseholdUid,
+                relationshipSide = RelationshipConstraintSide.FROM
+            ).getOrThrow()
+
+            membershipRelationship.headAttribute?.let { headAttribute ->
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(headAttribute, memberTeiUid)
+                    .blockingSet("true")
+            }
+
+            Result.success(newHouseholdUid to enrollmentUid)
+        } catch (error: Exception) {
+            Timber.e(error, "Error promoting TEI to head of a new household")
+            Result.failure(error)
+        }
+    }
+
     private fun applyAttributeMappings(
         sourceTeiUid: String,
         targetTeiUid: String,
