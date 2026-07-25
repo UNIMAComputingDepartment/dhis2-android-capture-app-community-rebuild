@@ -11,6 +11,8 @@ data class Relationship(
     val view: View,
     val relatedProgram: RelatedProgram,
     val attributeMappings: List<AttributeMapping> = emptyList(),
+    val headAttribute: String? = null,
+    val headPromotionAttributes: List<AttributeMapping> = emptyList(),
 )
 
 data class Access(
@@ -32,7 +34,7 @@ data class RelatedProgram(
 )
 
 data class AttributeMapping(
-    val sourceAttribute: String,
+    val sourceAttribute: String? = null,
     val targetAttribute: String,
-    val defaultValue: String?,
+    val defaultValue: String? = null,
 )

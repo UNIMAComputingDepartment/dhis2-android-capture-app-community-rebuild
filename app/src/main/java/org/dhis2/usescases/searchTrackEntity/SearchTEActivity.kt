@@ -78,7 +78,10 @@ import org.hisp.dhis.android.core.arch.call.D2Progress
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
+import androidx.recyclerview.widget.ConcatAdapter
 import org.dhis2.community.IchisTheme
+import org.dhis2.community.enrollmentfilters.AttributeFilterState
+import org.dhis2.community.enrollmentfilters.ui.AttributeFilterAdapter
 import timber.log.Timber
 import java.io.Serializable
 import javax.inject.Inject
@@ -187,7 +190,13 @@ class SearchTEActivity :
             binding.mainComponent.clipWithRoundedCorners(16.dp)
         }
 
-        binding.filterRecyclerLayout.adapter = filtersAdapter
+        // Community: append the enrollment-list attribute filters below the core filters, sharing
+        // the same scrolling backdrop panel. Attributes resolve off the main thread, so start empty
+        // and submit once available.
+        val attributeFilterAdapter = AttributeFilterAdapter()
+        binding.filterRecyclerLayout.adapter =
+            ConcatAdapter(filtersAdapter, attributeFilterAdapter)
+        viewModel.attributeFilters.observe(this) { attributeFilterAdapter.submit(it) }
 
         binding.executePendingBindings()
 
@@ -271,6 +280,8 @@ class SearchTEActivity :
             FilterManager.getInstance().clearAssignToMe()
             FilterManager.getInstance().clearFollowUp()
             presenter.clearOtherFiltersIfWebAppIsConfig()
+            // Community: attribute filters live in a process-global singleton — reset on exit.
+            AttributeFilterState.clearAll()
         }
         super.onDestroy()
     }
@@ -696,6 +707,8 @@ class SearchTEActivity :
         if (viewModel.filterIsOpen()) {
             filtersAdapter.notifyDataSetChanged()
             FilterManager.getInstance().clearAllFilters()
+            // Community: also reset the enrollment-list attribute filters.
+            AttributeFilterState.clearAll()
         }
     }
 

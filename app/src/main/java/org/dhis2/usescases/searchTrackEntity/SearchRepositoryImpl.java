@@ -6,6 +6,8 @@ import androidx.annotation.Nullable;
 import org.dhis2.R;
 import org.dhis2.bindings.ExtensionsKt;
 import org.dhis2.bindings.ValueExtensionsKt;
+import org.dhis2.community.enrollmentfilters.AttributeFilterConfigRepository;
+import org.dhis2.community.enrollmentfilters.AttributeFilterInjector;
 import org.dhis2.commons.Constants;
 import org.dhis2.commons.data.EntryMode;
 import org.dhis2.commons.data.EventModel;
@@ -125,6 +127,8 @@ public class SearchRepositoryImpl implements SearchRepository {
     private final MetadataIconProvider metadataIconProvider;
     private final ProfilePictureProvider profilePictureProvider;
     private CustomIntentRepository customIntentRepository;
+    // Community: pushes enrollment-list attribute filters (eq/like/in) into the SDK query.
+    private final AttributeFilterInjector attributeFilterInjector;
 
     SearchRepositoryImpl(String teiType,
                          @Nullable String initialProgram,
@@ -165,6 +169,7 @@ public class SearchRepositoryImpl implements SearchRepository {
         this.metadataIconProvider = metadataIconProvider;
         this.profilePictureProvider = profilePictureProvider;
         this.customIntentRepository = customIntentRepository;
+        this.attributeFilterInjector = new AttributeFilterInjector(d2, new AttributeFilterConfigRepository(d2));
     }
 
 
@@ -240,6 +245,12 @@ public class SearchRepositoryImpl implements SearchRepository {
                 trackedEntityInstanceQuery = getTrackedEntityQuery(dataId, dataValues, isUnique, isOptionSet);
             }
         }
+
+        // Community: apply enrollment-list attribute filters (keyword/options/boolean) to the query.
+        String selectedProgramUid = searchParametersModel.getSelectedProgram() != null
+                ? searchParametersModel.getSelectedProgram().uid()
+                : null;
+        trackedEntityInstanceQuery = attributeFilterInjector.applyTo(trackedEntityInstanceQuery, selectedProgramUid);
 
         return trackedEntityInstanceQuery;
     }

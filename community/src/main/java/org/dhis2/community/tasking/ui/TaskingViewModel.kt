@@ -34,6 +34,7 @@ interface TaskingViewModelContract {
     val allTasksForProgress: List<TaskingUiModel>
     val progressTasks: StateFlow<List<TaskingUiModel>>
     fun onFilterChanged()
+    fun onSearchQueryChanged(query: String)
     fun tasksForProgressBar(): List<TaskingUiModel>
     fun updateTasks(tasks: List<TaskingUiModel>)
 }
@@ -168,13 +169,15 @@ class TaskingViewModel @Inject constructor(
         Timber.tag("TaskingViewModel").d("applyFilters called")
         val filter = filterState.currentFilter
         val allTasks = _allTasks.value
-        // Task list: filter by all filters including status
+        val searchQuery = filterState.searchQuery.trim()
+        // Task list: filter by all filters including status and search text
         _filteredTasks.value = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
             (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
             (filter.statusFilters.isEmpty() || filter.statusFilters.any { status -> status.label == task.status.label }) &&
-            matchesDateFilter(task, filter.dueDateRange)
+            matchesDateFilter(task, filter.dueDateRange) &&
+            matchesSearchQuery(task, searchQuery)
         }
         updateProgressTasks()
     }
@@ -182,14 +185,20 @@ class TaskingViewModel @Inject constructor(
     private fun updateProgressTasks() {
         val filter = filterState.currentFilter
         val allTasks = _allTasks.value
-        // Progress bar: filter by all filters except status
+        val searchQuery = filterState.searchQuery.trim()
+        // Progress bar: filter by all filters except status, and respect the same search query
         val progressFiltered = allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
                     (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
                     (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-                    matchesDateFilter(task, filter.dueDateRange)
+                    matchesDateFilter(task, filter.dueDateRange) &&
+                    matchesSearchQuery(task, searchQuery)
         }
         _progressTasks.value = progressFiltered
+    }
+
+    private fun matchesSearchQuery(task: TaskingUiModel, searchQuery: String): Boolean {
+        return searchQuery.isEmpty() || task.teiPrimary.contains(searchQuery, ignoreCase = true)
     }
 
     private fun matchesDateFilter(task: TaskingUiModel, dateRange: DateRangeFilter?): Boolean {
@@ -294,14 +303,21 @@ class TaskingViewModel @Inject constructor(
         }
     }
 
+    override fun onSearchQueryChanged(query: String) {
+        filterState.searchQuery = query
+        applyFilters()
+    }
+
     override fun tasksForProgressBar(): List<TaskingUiModel> {
         val filter = filterState.currentFilter
         val allTasks = _allTasks.value
+        val searchQuery = filterState.searchQuery.trim()
         return allTasks.filter { task ->
             (filter.programFilters.isEmpty() || filter.programFilters.contains(task.sourceProgramUid)) &&
             (filter.orgUnitFilters.isEmpty() || filter.orgUnitFilters.contains(task.orgUnit)) &&
             (filter.priorityFilters.isEmpty() || filter.priorityFilters.contains(task.priority)) &&
-            matchesDateFilter(task, filter.dueDateRange)
+            matchesDateFilter(task, filter.dueDateRange) &&
+            matchesSearchQuery(task, searchQuery)
         }
     }
 

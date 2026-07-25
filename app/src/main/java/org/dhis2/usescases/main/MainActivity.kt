@@ -174,6 +174,7 @@ class MainActivity :
             { titleRes, showFilterButton, showBottomNavigation ->
                 setTitle(getString(titleRes))
                 setFilterButtonVisibility(showFilterButton)
+                setSearchButtonVisibility(mainNavigator.isTasks())
                 setBottomNavigationVisibility(showBottomNavigation)
             },
             { menuItemId ->
@@ -199,6 +200,12 @@ class MainActivity :
         binding.filterRecycler.adapter = newAdapter
 
         setUpNavigationBar()
+        binding.searchActionButton.setOnClickListener {
+            val fragment = org.dhis2.community.tasking.ui.TaskingFragment.findInstance(supportFragmentManager)
+            if (mainNavigator.isTasks() && fragment != null) {
+                fragment.toggleSearchBar()
+            }
+        }
         setUpDevelopmentMode()
 
         val restoreScreenName = savedInstanceState?.getString(FRAGMENT)
@@ -276,14 +283,17 @@ class MainActivity :
 
         checkNotificationPermission()
 
-        // Schedule daily task reminder notifications (7 AM Malawi time)
+        // Schedule daily task reminder notifications (7 AM Malawi time) OFF main thread
         // This ensures notifications fire even if app isn't open
-        try {
-            TaskReminderScheduler.scheduleTaskReminder(this)
-            // Also schedule WorkManager as backup for maximum reliability
-            TaskReminderWorkScheduler.scheduleTaskReminderWork(this)
-        } catch (e: Exception) {
-            Timber.w(e, "Failed to schedule task reminders in MainActivity")
+        // Defer to background to avoid blocking UI during onCreate
+        lifecycleScope.launch {
+            try {
+                TaskReminderScheduler.scheduleTaskReminder(this@MainActivity)
+                // Also schedule WorkManager as backup for maximum reliability
+                TaskReminderWorkScheduler.scheduleTaskReminderWork(this@MainActivity)
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to schedule task reminders in MainActivity")
+            }
         }
 
         registerOnBackPressedCallback()
@@ -620,6 +630,15 @@ class MainActivity :
             }
         binding.syncActionButton.visibility =
             if (showFilterButton) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+    }
+
+    private fun setSearchButtonVisibility(showSearchButton: Boolean) {
+        binding.searchActionButton.visibility =
+            if (showSearchButton) {
                 View.VISIBLE
             } else {
                 View.GONE

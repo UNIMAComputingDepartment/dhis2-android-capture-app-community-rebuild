@@ -86,10 +86,15 @@ class DefaultingEvaluator(
             Constants.DEFAULTED,
             task.teiUid
         )
-        repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-            .setStatus(EnrollmentStatus.CANCELLED)
-        repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-            .setCompletedDate(Date())
+        // taskTeiEnrollmentUid is null when the TEI has no ACTIVE enrollment in the task
+        // program; calling uid(null).setStatus(...) makes the SDK cast a null lookup to
+        // non-null and throws NPE, so only touch the enrollment when one actually exists.
+        if (taskTeiEnrollmentUid != null) {
+            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                .setStatus(EnrollmentStatus.CANCELLED)
+            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                .setCompletedDate(Date())
+        }
     }
 
     private fun defaultForEnrollment(
