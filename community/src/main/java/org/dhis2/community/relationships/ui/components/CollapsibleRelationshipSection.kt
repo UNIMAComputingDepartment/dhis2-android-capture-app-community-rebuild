@@ -89,7 +89,8 @@ fun CollapsibleRelationshipSection(
     removeRelationship: (String, String) -> Unit = {_,_ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> },
-    onPromoteToHead: (String, String) -> Unit = { _, _ -> }
+    onPromoteToHead: (String, String) -> Unit = { _, _ -> },
+    onPromoteToNewHousehold: (String, String) -> Unit = { _, _ -> }
 ) {
     Dhis2CmtTheme {
         CollapsibleRelationshipSectionContent(
@@ -100,7 +101,8 @@ fun CollapsibleRelationshipSection(
             removeRelationship = removeRelationship,
             onCreateEntity = onCreateEntity,
             onSearchTEIs = onSearchTEIs,
-            onPromoteToHead = onPromoteToHead
+            onPromoteToHead = onPromoteToHead,
+            onPromoteToNewHousehold = onPromoteToNewHousehold
         )
     }
 }
@@ -118,7 +120,8 @@ private fun CollapsibleRelationshipSectionContent(
     removeRelationship: (String, String) -> Unit = {_, _ -> },
     onCreateEntity: (String, String) -> Unit = { _, _ -> },
     onSearchTEIs: (String, String) -> Unit = { _, _ -> },
-    onPromoteToHead: (String, String) -> Unit = { _, _ -> }
+    onPromoteToHead: (String, String) -> Unit = { _, _ -> },
+    onPromoteToNewHousehold: (String, String) -> Unit = { _, _ -> }
 ) {
     val title = relationshipTypeView.description
     val existingRelationships = relationshipTypeView.relatedTeis
@@ -271,7 +274,9 @@ private fun CollapsibleRelationshipSectionContent(
                                 onClick = { onRelationshipClick(rel) },
                                 removeRelationship = { removeRelationship(relationshipTypeView.uid, rel.uid) },
                                 canPromote = relationshipTypeView.supportsHeadPromotion,
-                                onPromote = { onPromoteToHead(relationshipTypeView.uid, rel.uid) }
+                                onPromote = { onPromoteToHead(relationshipTypeView.uid, rel.uid) },
+                                canPromoteToNewHousehold = relationshipTypeView.supportsNewHouseholdPromotion,
+                                onPromoteToNewHousehold = { onPromoteToNewHousehold(relationshipTypeView.uid, rel.uid) }
                             )
                             Divider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
@@ -371,7 +376,9 @@ private fun RelationshipItem(
     isSelection: Boolean = false,
     removeRelationship: () -> Unit = {},
     canPromote: Boolean = false,
-    onPromote: () -> Unit = {}
+    onPromote: () -> Unit = {},
+    canPromoteToNewHousehold: Boolean = false,
+    onPromoteToNewHousehold: () -> Unit = {}
 ) {
     val tieTypeIcon = res.getObjectStyleDrawableResource(item.iconName, R.drawable.ic_tei_default)
 
@@ -457,6 +464,21 @@ private fun RelationshipItem(
                             onClick = {
                                 showMenu = false
                                 onPromote()
+                            }
+                        )
+                    }
+                    if (canPromoteToNewHousehold && !item.isHead) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Move to New Household",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                onPromoteToNewHousehold()
                             }
                         )
                     }

@@ -107,7 +107,8 @@ class CmtRelationshipTEIDataPresenter(
                                 relatedProgramName = relationship.relatedProgram.teiTypeName,
                                 relatedProgramUid = relationship.relatedProgram.programUid,
                                 maxCount = relationship.maxCount,
-                                supportsHeadPromotion = relationship.headAttribute != null
+                                supportsHeadPromotion = relationship.headAttribute != null,
+                                supportsNewHouseholdPromotion = relationship.parentRelationshipType != null
                             )
                         }
                 }
@@ -373,6 +374,50 @@ class CmtRelationshipTEIDataPresenter(
                             Timber.d("Promoted $uid to household head")
                             retrieveRelationships()
                             view.refreshDashboardHeader()
+                        }.onFailure { Timber.e(it) }
+                    },
+                    { Timber.e(it) }
+                )
+        )
+    }
+
+    fun onPromoteToNewHousehold(type: String, uid: String) {
+        view.confirmPromoteToNewHousehold(type, uid)
+    }
+
+    fun promoteToNewHousehold(type: String, uid: String) {
+        val relationship = relationshipsConfig.firstOrNull { it.access.targetRelationshipUid == type }
+            ?: return
+        val parentRelationshipType = relationship.parentRelationshipType ?: return
+        val parentTeiUid = relationships.value
+            ?.find { it.uid == parentRelationshipType }
+            ?.relatedTeis?.firstOrNull()?.uid
+            ?: return
+
+        val attributeToIncrement = workflowConfig.autoIncrementAttributes
+            .find { it.programUid == relationship.access.targetProgramUid }
+            ?.attributeUid
+
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.promoteToNewHousehold(
+                    membershipRelationship = relationship,
+                    parentRelationshipType = parentRelationshipType,
+                    parentTeiUid = parentTeiUid,
+                    targetProgram = relationship.access.targetProgramUid,
+                    targetTeiType = relationship.access.targetTeiTypeUid,
+                    autoIncrementAttribute = attributeToIncrement,
+                    oldHouseholdTeiUid = teiUid,
+                    memberTeiUid = uid
+                )
+            }.subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { result ->
+                        result.onSuccess { (newHouseholdUid, enrollmentUid) ->
+                            Timber.d("Promoted $uid to head of new household $newHouseholdUid")
+                            retrieveRelationships()
+                            view.goToTeiDashboard(newHouseholdUid, relationship.access.targetProgramUid, enrollmentUid)
                         }.onFailure { Timber.e(it) }
                     },
                     { Timber.e(it) }
