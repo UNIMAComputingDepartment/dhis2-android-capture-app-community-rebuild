@@ -13,6 +13,7 @@ data class Relationship(
     val attributeMappings: List<AttributeMapping> = emptyList(),
     val headAttribute: String? = null,
     val headPromotionAttributes: List<AttributeMapping> = emptyList(),
+    val parentRelationshipType: String? = null,
 )
 
 data class Access(

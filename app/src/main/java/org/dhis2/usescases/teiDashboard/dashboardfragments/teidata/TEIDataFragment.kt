@@ -384,6 +384,9 @@ class TEIDataFragment :
                     },
                     onPromoteToHead = { type, uid ->
                         cmtPresenter.onPromoteToHead(type, uid)
+                    },
+                    onPromoteToNewHousehold = { type, uid ->
+                        cmtPresenter.onPromoteToNewHousehold(type, uid)
                     }
                 )
             }
@@ -800,6 +803,21 @@ class TEIDataFragment :
         dashboardActivity.executeOnUIThread()
     }
 
+    override fun goToTeiDashboard(
+        teiUid: String,
+        programUid: String,
+        enrollmentUid: String,
+    ) {
+        requireActivity().startActivity(
+            TeiDashboardMobileActivity.intent(
+                requireContext(),
+                teiUid,
+                programUid,
+                enrollmentUid,
+            ),
+        )
+    }
+
     override fun goToEnrollment(
         programUid: String,
         enrollmentUid: String,
@@ -848,6 +866,26 @@ class TEIDataFragment :
         val dialog = BottomSheetDialog(
             bottomSheetDialogUiModel,
             { cmtPresenter.promoteToHead(type, teiUid) },
+            { /*Unused*/ },
+
+        )
+        dialog.show(parentFragmentManager, AlertBottomDialog::class.java.simpleName)
+    }
+
+    override fun confirmPromoteToNewHousehold(
+        type: String,
+        teiUid: String
+    ) {
+        val bottomSheetDialogUiModel = BottomSheetDialogUiModel(
+            title = "Move to New Household",
+            message = "Are you sure you want to move this person to a new household? A new household will be created for them as its head, their details will be copied onto it, and they will be removed from this household.",
+            iconResource = R.drawable.ic_question_positive,
+            mainButton = MainButton(R.string.yes),
+            secondaryButton = DialogButtonStyle.SecondaryButton(R.string.no),
+        )
+        val dialog = BottomSheetDialog(
+            bottomSheetDialogUiModel,
+            { cmtPresenter.promoteToNewHousehold(type, teiUid) },
             { /*Unused*/ },
 
         )

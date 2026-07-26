@@ -22,7 +22,8 @@ data class CmtRelationshipTypeViewModel(
     val relatedProgramUid: String,
     val relatedTeis: List<CmtRelationshipViewModel>,
     val maxCount: Int = Int.MAX_VALUE,
-    val supportsHeadPromotion: Boolean = false
+    val supportsHeadPromotion: Boolean = false,
+    val supportsNewHouseholdPromotion: Boolean = false
 ) {
 
 }
