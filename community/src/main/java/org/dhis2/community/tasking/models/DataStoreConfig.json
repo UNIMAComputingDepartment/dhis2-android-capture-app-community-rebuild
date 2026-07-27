@@ -759,24 +759,22 @@
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "ji4ZJk9B7sv",
-                  "value": ""
+                  "uid": "ji4ZJk9B7sv"
                 },
                 "op": "NUM_EQUAL",
                 "rhs": {
+                  "ref": "static",
                   "value": 1
                 }
               },
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "Wri2Zw6Qnyo",
-                  "value": ""
+                  "uid": "Wri2Zw6Qnyo"
                 },
                 "op": "EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": "1"
                 }
               }
@@ -806,6 +804,7 @@
                 },
                 "op": "NOT_NULL",
                 "rhs": {
+                  "ref": "static",
                   "value": ""
                 }
               }
@@ -821,24 +820,22 @@
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "ji4ZJk9B7sv",
-                  "value": ""
+                  "uid": "ji4ZJk9B7sv"
                 },
                 "op": "NUM_EQUAL",
                 "rhs": {
+                  "ref": "static",
                   "value": 2
                 }
               },
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "Wri2Zw6Qnyo",
-                  "value": ""
+                  "uid": "Wri2Zw6Qnyo"
                 },
                 "op": "EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": "1"
                 }
               }
@@ -868,6 +865,7 @@
                 },
                 "op": "NUM_EQUAL",
                 "rhs": {
+                  "ref": "static",
                   "value": 1
                 }
               },
@@ -878,6 +876,7 @@
                 },
                 "op": "EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": "1"
                 }
               }
@@ -893,24 +892,22 @@
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "ji4ZJk9B7sv",
-                  "value": ""
+                  "uid": "ji4ZJk9B7sv"
                 },
                 "op": "GREATER_THAN_OR_EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": 3
                 }
               },
               {
                 "lhs": {
                   "ref": "eventData",
-                  "type": "MvNwuuB40gF",
-                  "uid": "Wri2Zw6Qnyo",
-                  "value": ""
+                  "uid": "Wri2Zw6Qnyo"
                 },
                 "op": "EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": "1"
                 }
               }
@@ -940,6 +937,7 @@
                 },
                 "op": "NUM_EQUAL",
                 "rhs": {
+                  "ref": "static",
                   "value": 2
                 }
               },
@@ -950,6 +948,7 @@
                 },
                 "op": "EQUALS",
                 "rhs": {
+                  "ref": "static",
                   "value": "1"
                 }
               }
