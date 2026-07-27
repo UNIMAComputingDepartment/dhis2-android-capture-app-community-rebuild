@@ -1,6 +1,6 @@
 package org.dhis2.community.workflow
 
-import com.google.gson.Gson
+import org.dhis2.community.common.readCommunityConfig
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
@@ -23,59 +23,8 @@ class WorkflowRepository(
     private val d2: org.hisp.dhis.android.core.D2
 ) {
 
-    fun getWorkflowConfig(): WorkflowConfig {
-        Timber.d("getWorkflowConfig() called - START")
-        return try {
-            val entries = d2.dataStoreModule()
-                .dataStore()
-                .byNamespace()
-                .eq("community_redesign")
-                .blockingGet()
-
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
-
-            val workflowEntry = entries.firstOrNull { it.key() == "workflow" }
-
-            if (workflowEntry == null) {
-                Timber.w("No workflow entry found in dataStore")
-                return WorkflowConfig(emptyList())
-            }
-
-            Timber.d("Found workflow entry: ${workflowEntry.key()}")
-
-            val rawValue = workflowEntry.value()
-            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
-            Timber.d("Raw workflow config value (first 200 chars): ${rawValue?.take(200)}")
-
-            if (rawValue.isNullOrBlank()) {
-                Timber.w("Workflow config value is null or blank")
-                return WorkflowConfig(emptyList())
-            }
-
-            // Extract JSON from JsonWrapper format if needed
-            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
-                Timber.d("Detected JsonWrapper format, extracting JSON")
-                // Remove "JsonWrapper(json=" prefix and trailing ")"
-                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
-            } else {
-                rawValue
-            }
-
-            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
-
-            if (!value.trim().startsWith("{")) {
-                Timber.w("Workflow config value does not start with '{': ${value.take(100)}")
-                return WorkflowConfig(emptyList())
-            }
-
-            val config = Gson().fromJson(value, WorkflowConfig::class.java)
-            Timber.d("Successfully parsed workflow config: ${config.teiCreatablePrograms.size} creatable programs")
-            config
-        } catch (e: Exception) {
-            Timber.e(e, "Error parsing workflow config")
-            WorkflowConfig(emptyList())
-        }
-    }
+    fun getWorkflowConfig(): WorkflowConfig =
+        d2.readCommunityConfig("workflow", WorkflowConfig(emptyList()))
 
     fun getTeiAttributes(teiUid: String): Map<String, String> {
 
@@ -168,39 +117,50 @@ class WorkflowRepository(
                     .build()
             )
 
-        val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
-            EnrollmentCreateProjection.builder()
-                .trackedEntityInstance(targetTeiUid)
-                .program(autoCreationConfig.targetProgram)
-                .organisationUnit(orgUnit)
-                .build()
-        )
-
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setEnrollmentDate(Date())
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setIncidentDate(Date())
-
-        // Copy main attributes from source TEI to target TEI
-        autoCreationConfig.attributesMappings.forEach { pair ->
-            val sourceValue = sourceTei.trackedEntityAttributeValues()?.find {
-                it.trackedEntityAttribute() == pair.sourceAttribute
-            }?.value() ?: pair.defaultValue
-            if (sourceValue != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(pair.targetAttribute, targetTeiUid)
-                    .blockingSet(sourceValue)
-        }
-
-        d2.relationshipModule().relationships().blockingAdd(
-            RelationshipHelper.teiToTeiRelationship(
-                teiUid, targetTeiUid, autoCreationConfig.relationshipType
+        // Roll the freshly created TEI back if any later step fails, so a failure can't leave a
+        // bare orphan TEI (no enrollment / no relationship) queued for sync.
+        return try {
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(targetTeiUid)
+                    .program(autoCreationConfig.targetProgram)
+                    .organisationUnit(orgUnit)
+                    .build()
             )
-        )
 
-        return targetTeiUid to enrollmentUid
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setEnrollmentDate(Date())
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setIncidentDate(Date())
+
+            // Copy main attributes from source TEI to target TEI
+            autoCreationConfig.attributesMappings.forEach { pair ->
+                val sourceValue = sourceTei.trackedEntityAttributeValues()?.find {
+                    it.trackedEntityAttribute() == pair.sourceAttribute
+                }?.value() ?: pair.defaultValue
+                if (sourceValue != null)
+                    d2.trackedEntityModule().trackedEntityAttributeValues()
+                        .value(pair.targetAttribute, targetTeiUid)
+                        .blockingSet(sourceValue)
+            }
+
+            d2.relationshipModule().relationships().blockingAdd(
+                RelationshipHelper.teiToTeiRelationship(
+                    teiUid, targetTeiUid, autoCreationConfig.relationshipType
+                )
+            )
+
+            targetTeiUid to enrollmentUid
+        } catch (error: Exception) {
+            try {
+                d2.trackedEntityModule().trackedEntityInstances().uid(targetTeiUid).blockingDelete()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to roll back orphan TEI $targetTeiUid")
+            }
+            throw error
+        }
     }
 
     fun enrollAblePrograms(programUids: List<String>, trackedEntityId: String): List<String> {
@@ -225,11 +185,21 @@ class WorkflowRepository(
 
                     // Check if value is date and convert it years
                     val isDate = attributeValue.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))
-                    val valueToCheck = if (isDate) {
+                    val birthDate = if (isDate) {
                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val birthDate = dateFormat.parse(attributeValue)
+                            .apply { isLenient = false }
+                        try {
+                            dateFormat.parse(attributeValue)
+                        } catch (e: Exception) {
+                            // Regex-shaped but not a real date (e.g. month 13); treat as non-date.
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    val valueToCheck = if (birthDate != null) {
                         val now = Calendar.getInstance().time
-                        val diffMillis = now.time - birthDate!!.time
+                        val diffMillis = now.time - birthDate.time
                         val years = diffMillis / (365.2425 * 24 * 60 * 60 * 1000)
                         years.toString()
                     } else {

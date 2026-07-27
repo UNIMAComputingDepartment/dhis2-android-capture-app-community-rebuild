@@ -52,13 +52,18 @@ class TaskingWorker(
                     teiUids.forEach { teiUid ->
                         val sourceTeiOrgUnitUid = repository.getOrgUnit(teiUid)
                         val sourceTeiProgramEnrollmentUid = repository.getLatestEnrollment(teiUid, targetProgramUid)?.uid()
-                        val eventUid = repository.getEnrollmentLatestEvent(sourceTeiProgramEnrollmentUid!!, targetProgramUid)?.uid()
+
+                        // Guard before dereferencing: a TEI without an enrollment in the target
+                        // program used to NPE on the getEnrollmentLatestEvent(...!!) below, and
+                        // because the whole worker is wrapped in a rethrowing try/catch, that one
+                        // TEI aborted the entire periodic sweep for every remaining TEI/program.
+                        if (sourceTeiOrgUnitUid.isNullOrEmpty() || sourceTeiProgramEnrollmentUid.isNullOrEmpty())
+                            return@forEach
+
+                        val eventUid = repository.getEnrollmentLatestEvent(sourceTeiProgramEnrollmentUid, targetProgramUid)?.uid()
 
                         if (eventUid.isNullOrBlank())
                             updateEvaluator.evaluateForUpdate(teiUid, targetProgramUid)
-
-                        if (sourceTeiOrgUnitUid.isNullOrEmpty() || sourceTeiProgramEnrollmentUid.isEmpty())
-                            return@forEach
 
                         // Defaulting is a global, argument-free scan of all tasks; it is already
                         // run once per sync via defaultingWorker(). Calling it here re-scanned every
