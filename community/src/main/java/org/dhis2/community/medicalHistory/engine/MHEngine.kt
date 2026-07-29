@@ -49,7 +49,7 @@ class MHEngine(
         if (baseProgramUid == configBaseProgramUid && baseProgramStage == configBaseProgramStage) {
             try {
 
-                summariesBuilder.buildImmunizationSummaries(
+               /* summariesBuilder.buildImmunizationSummaries(
                     teiUid = teiUid, baseProgramUid = baseProgramUid
                 )
 
@@ -59,6 +59,11 @@ class MHEngine(
 
                 summariesBuilder.buildNCDSummaries(
                     teiUid = teiUid, baseProgramUid = baseProgramUid
+                )*/
+
+                summariesBuilder.buildSummary(
+                    teiUid = teiUid,
+                    baseProgramUid = baseProgramUid
                 )
 
             } catch (t: Throwable) {

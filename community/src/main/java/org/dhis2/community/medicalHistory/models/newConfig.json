@@ -1,0 +1,134 @@
+{
+  "baseProgram": [
+    {
+      "baseProgramName": "Personal Register",
+      "baseProgramStageUid": "HcANeJhzIjB",
+      "baseProgramUid": "NFnp1h3IMzl"
+    }
+  ],
+  "medicalHistoryConfig": [
+    {
+      "name": "immunization",
+      "description": "Summarizes the latest immunization information from the EPI program.",
+      "targetDE": "bkNzUAQWBsS",
+      "source": [
+        {
+          "sourceProgramName": "EPI",
+          "sourceProgramUid": "Ur5UakrSEYj",
+          "sourceProgramStageUid": "qeUfz2UTHNt",
+          "sourceDEs": [
+            "pOmfBiixrBw",
+            "BNidQ6DxZpz",
+            "LVOCoQq2vhn"
+          ]
+        }
+      ],
+      "summary": {
+        "type": "LIST",
+        "separator": "\n",
+        "emptyValue": "None recorded",
+        "format": "{label}: {value}",
+        "mappings": [
+          {
+            "sourceValue": "true",
+            "targetValue": "Yes"
+          },
+          {
+            "sourceValue": "false",
+            "targetValue": "No"
+          }
+        ],
+        "rules": []
+      }
+    },
+    {
+      "name": "hivStatus",
+      "description": "Determines the overall HIV status from all configured data sources.",
+      "targetDE": "qsSNP29muwn",
+      "source": [
+        {
+          "sourceProgramName": "eIDSR Disease Surveillance",
+          "sourceProgramUid": "vqECSqMRSaV",
+          "sourceProgramStageUid": "OE7KmULkoLS",
+          "sourceDEs": [
+            "X3FXnnsLu9e"
+          ]
+        },
+        {
+          "sourceProgramName": "Personal Register",
+          "sourceProgramUid": "NFnp1h3IMzl",
+          "sourceProgramStageUid": "cOvFHTZSl9O",
+          "sourceDEs": [
+            "Y0cZfA5WuU4"
+          ]
+        }
+      ],
+      "summary": {
+        "type": "STATUS",
+        "separator": "",
+        "emptyValue": "Unknown",
+        "format": "{value}",
+        "mappings": [],
+        "rules": [
+          {
+            "values": [
+              "positive",
+              "true",
+              "yes",
+              "1"
+            ],
+            "result": "Positive",
+            "condition": "ANY_MATCH",
+            "action": "RETURN"
+          },
+          {
+            "values": [
+              "negative",
+              "false",
+              "no",
+              "0"
+            ],
+            "result": "Negative",
+            "condition": "ANY_MATCH",
+            "action": "RETURN"
+          }
+        ]
+      }
+    },
+    {
+      "name": "chronicConditions",
+      "description": "Summarizes chronic conditions captured in Disease Surveillance.",
+      "targetDE": "Cr133YqFaRW",
+      "source": [
+        {
+          "sourceProgramName": "eIDSR - Disease Surveillance",
+          "sourceProgramUid": "vqECSqMRSaV",
+          "sourceProgramStageUid": "rWoGwBZYFpG",
+          "sourceDEs": [
+            "jpipAsYQ1k2",
+            "JgoITvPkXVr",
+            "s6E1GNhMWru",
+            "i5YltrU2ClS"
+          ]
+        }
+      ],
+      "summary": {
+        "type": "LIST",
+        "separator": "\n",
+        "emptyValue": "None recorded",
+        "format": "{label}: {value}",
+        "mappings": [
+          {
+            "sourceValue": "true",
+            "targetValue": "Yes"
+          },
+          {
+            "sourceValue": "false",
+            "targetValue": "No"
+          }
+        ],
+        "rules": []
+      }
+    }
+  ]
+}
