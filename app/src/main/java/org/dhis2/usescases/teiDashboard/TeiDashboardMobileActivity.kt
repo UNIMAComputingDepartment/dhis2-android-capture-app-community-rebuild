@@ -84,6 +84,7 @@ import org.dhis2.utils.isPortrait
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
 import org.dhis2.community.IchisTheme
+import org.dhis2.usescases.main.MainActivity
 import javax.inject.Inject
 
 class TeiDashboardMobileActivity :
@@ -205,6 +206,7 @@ class TeiDashboardMobileActivity :
 
         setRelationshipMapIcon()
         setSyncButtonListener()
+        setBackButtonLongClickListener()
         setFormViewForLandScape()
         setEditButton()
         observeErrorMessages()
@@ -232,6 +234,23 @@ class TeiDashboardMobileActivity :
         if (intent.shouldLaunchSyncDialog()) {
             openSyncDialog()
         }
+    }
+
+    private fun setBackButtonLongClickListener() {
+        binding.back?.setOnLongClickListener() {
+            goHome()
+            true
+        }
+    }
+
+
+    private fun goHome() {
+        startActivity(
+            MainActivity.intent(this).apply {
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+        )
+        finish()
     }
 
     private fun observeDashboardModel() {
