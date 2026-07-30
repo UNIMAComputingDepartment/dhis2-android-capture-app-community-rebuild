@@ -6,11 +6,9 @@ import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.utils.Constants
 import timber.log.Timber
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
-import java.util.Locale
 
 abstract class TaskingEvaluator(
     private val repository: TaskingRepository
@@ -156,13 +154,16 @@ abstract class TaskingEvaluator(
         }
     }
 
+    /** Strict ISO parse (tolerating a trailing time), so a malformed anchor value yields null
+     *  instead of silently rolling over as [SimpleDateFormat] would. */
     @RequiresApi(Build.VERSION_CODES.O)
     private fun parseDate(value: String): LocalDate? {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.parse(value)
-            ?.toInstant()
-            ?.atZone(ZoneId.systemDefault())
-            ?.toLocalDate()
+        val trimmed = value.trim().takeIf { it.length >= 10 } ?: return null
+        return try {
+            LocalDate.parse(trimmed.substring(0, 10))
+        } catch (e: Exception) {
+            null
+        }
     }
 
     /**
@@ -286,7 +287,7 @@ abstract class TaskingEvaluator(
             ?: return null
 
         if (reference.uid.isNullOrBlank())
-            return reference.value.toString()
+            return reference.value?.toString()
 
         return when (reference.ref) {
             Constants.TEI_ATTRIBUTE -> repository.d2.trackedEntityModule()
