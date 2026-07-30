@@ -10,7 +10,7 @@ class MHSummaries(
     private val repository: MHRepository
 )  {
 
-    suspend fun buildSummary(
+      fun buildSummary(
         teiUid: String,
         baseProgramUid: String
     ): Map<String, String> {
@@ -44,7 +44,7 @@ class MHSummaries(
         return summaries
     }
 
-    private suspend fun buildStatusSummary(
+    private fun buildStatusSummary(
         item: MedicalHistoryItem,
         teiUid: String
     ): String {
@@ -80,7 +80,7 @@ class MHSummaries(
         return item.summary.emptyValue
     }
 
-    private suspend fun buildListSummary(
+    private fun buildListSummary(
         item: MedicalHistoryItem,
         teiUid: String
     ): String {
@@ -122,174 +122,6 @@ class MHSummaries(
             collected.distinct()
                 .joinToString(item.summary.separator)
     }
-    suspend fun buildImmunizationSummaries(
-        teiUid: String, baseProgramUid: String
-    ): Map<String, String> = withContext(Dispatchers.IO) {
 
-        val config =
-            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.IMMUNIZATION }
 
-        val summaries = mutableMapOf<String, String>()
-
-        config.forEach { item ->
-
-            val collected = mutableListOf<String>()
-
-            item.source.forEach { source ->
-                val programUid = source.sourceProgramUid
-                val programStageUid = source.sourceProgramStageUid
-
-                source.sourceDEs.forEach { deUId ->
-
-                    val value = repository.getLatestValueFromProgram(
-                        teiUid = teiUid,
-                        programUid = programUid,
-                        deUid = deUId,
-                        programStageUid = programStageUid
-                    )
-                    print("program value : $value")
-
-                    if (!value.isNullOrBlank()) {
-                        val formName = repository.getDataElementDisplayName(deUId)
-                        val formatedValue = when (value.lowercase()) {
-                            Constants.TRUE -> Constants.YES
-                            Constants.FALSE -> Constants.NO
-                            else -> value
-                        }
-                        collected.add("$formName: $formatedValue")
-                    }
-                }
-
-                val summaryText = if (collected.isEmpty()) {
-                    "None recorded"
-                } else {
-                    collected.distinct().joinToString("\n")
-                }
-                summaries[item.targetDE] = summaryText
-
-                repository.updateSummaryValues(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
-                )
-            }
-        }
-        summaries
-    }
-
-    suspend fun buildHIVStatusSummary(
-        teiUid: String, baseProgramUid: String
-    ): Map<String, String> = withContext(Dispatchers.IO) {
-        val config =
-            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.HIV_STATUS_CONF }
-
-        val summaries = mutableMapOf<String, String>()
-
-        config.forEach { item ->
-
-            var hasPositive = false
-            var hasNegative = false
-
-            item.source.forEach { source ->
-
-                val programUid = source.sourceProgramUid
-                val programUStageUid = source.sourceProgramStageUid
-
-                source.sourceDEs.forEach { deUid ->
-                    val value = repository.getLatestValueFromProgram(
-                        teiUid = teiUid,
-                        programUid = programUid,
-                        deUid = deUid,
-                        programStageUid = programUStageUid
-                    )
-
-                    when {
-                        value.isNullOrBlank() -> {}
-
-                        value.equals(Constants.UNKNOWN_STATUS, ignoreCase = true) -> {}
-
-                        value.lowercase() in listOf(
-                            Constants.YES,
-                            Constants.ONE,
-                            Constants.POSITIVE,
-                            Constants.TRUE
-                        ) -> {
-                            hasPositive = true
-                        }
-
-                        else -> {
-                            hasNegative = true
-                        }
-                    }
-                }
-            }
-
-            val summaryText = when {
-                //hasPositive && hasNegative -> ("${Constants.HIV_STATUS}: ${Constants.UNKNOWN_STATUS}")
-                hasPositive -> (Constants.POST_STATUS)
-                hasNegative -> (Constants.NEG_STATUS)
-                else -> (Constants.UNKNOWN_STATUS)
-            }
-
-            summaries[item.targetDE] = summaryText
-        }
-
-        repository.updateSummaryValues(
-            teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
-        )
-
-        summaries
-    }
-
-    suspend fun buildNCDSummaries(
-        teiUid: String, baseProgramUid: String
-    ): Map<String, String> = withContext(Dispatchers.IO) {
-
-        val config =
-            repository.getMedicalHistoryConfigs().medicalHistoryConfig.filter { it.name == Constants.CHRONIC_CONDITIONS }
-
-        val summaries = mutableMapOf<String, String>()
-
-        config.forEach { item ->
-
-            val collected = mutableListOf<String>()
-
-            item.source.forEach { source ->
-                val programUid = source.sourceProgramUid
-                val programStageUid = source.sourceProgramStageUid
-
-                source.sourceDEs.forEach { deUId ->
-
-                    val value = repository.getLatestValueFromProgram(
-                        teiUid = teiUid,
-                        programUid = programUid,
-                        deUid = deUId,
-                        programStageUid = programStageUid
-                    )
-                    print("program value : $value")
-
-                    if (!value.isNullOrBlank()) {
-                        val formName = repository.getDataElementDisplayName(deUId)
-                        val formatedValue = when (value.lowercase()) {
-                            Constants.TRUE -> Constants.YES
-                            Constants.FALSE -> Constants.NO
-                            else -> value
-                        }
-                        val formatedFormName = formName.trim().removeSuffix("?")
-                        collected.add("$formatedFormName: $formatedValue")
-                    }
-                }
-
-                val summaryText = if (collected.isEmpty()) {
-                    "None recorded"
-                } else {
-                    collected.distinct().joinToString("\n")
-                }
-                summaries[item.targetDE] = summaryText
-
-                repository.updateSummaryValues(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid, summaries = summaries
-                )
-            }
-        }
-        summaries
-    }
 }
