@@ -183,8 +183,8 @@ class MHRepository(
         return d2.eventModule().events()
             .byEnrollmentUid().eq(enrollment)
             .byProgramStageUid().eq(programStageUid)
-            .byEventDate().after(startDate)
-            .byEventDate().before(endDate)
+            .byEventDate().afterOrEqual(startDate)
+            .byEventDate().beforeOrEqual(endDate)
             .one()
             .blockingExists()
     }

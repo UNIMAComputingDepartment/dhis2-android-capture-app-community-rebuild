@@ -44,16 +44,14 @@ class MHWorker(
                         endDate = endDate
                     )
 
-                if (exists) {
-                    return@forEach
+                if (!exists) {
+                    repository.createNewEvent(
+                        teiUid = teiUid,
+                        programUid = baseProgramUid,
+                        programStageUid = baseProgramStage,
+                        eventDate = startDate
+                    )
                 }
-
-                repository.createNewEvent(
-                    teiUid = teiUid,
-                    programUid = baseProgramUid,
-                    programStageUid = baseProgramStage,
-                    eventDate = startDate
-                )
 
                 summariesBuilder.buildSummary(
                     teiUid = teiUid,
