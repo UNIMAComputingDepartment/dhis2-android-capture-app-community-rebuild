@@ -90,9 +90,20 @@
                         android:layout_marginEnd="8dp"
                         android:onClick="@{()->presenter.onSyncAllClick()}"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/filterActionButton"
+                        app:layout_constraintEnd_toStartOf="@id/searchActionButton"
                         app:layout_constraintTop_toTopOf="parent"
                         app:srcCompat="@drawable/ic_sync"
+                        app:tint="?colorOnPrimary"
+                        tools:ignore="ContentDescription" />
+
+                    <ImageView
+                        android:id="@+id/searchActionButton"
+                        style="@style/ActionIcon"
+                        android:layout_marginEnd="8dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/filterActionButton"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:srcCompat="@drawable/ic_search"
                         app:tint="?colorOnPrimary"
                         tools:ignore="ContentDescription" />
 

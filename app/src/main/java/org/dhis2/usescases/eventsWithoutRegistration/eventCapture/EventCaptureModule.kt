@@ -12,10 +12,9 @@ import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.community.medicalHistory.engine.MHEngine
-import org.dhis2.community.medicalHistory.repository.MHRepository
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -47,7 +46,7 @@ class EventCaptureModule(
         pageConfigurator: NavigationPageConfigurator,
         resourceManager: ResourceManager,
         taskingEngine: TaskingEngine,
-        mHEngine: MHEngine
+        workflowRepository: WorkflowRepository,
     ): EventCaptureContract.Presenter =
         EventCapturePresenterImpl(
             view,
@@ -58,7 +57,7 @@ class EventCaptureModule(
             pageConfigurator,
             resourceManager,
             taskingEngine,
-            mHEngine
+            workflowRepository,
         )
 
     @Provides
@@ -140,15 +139,7 @@ class EventCaptureModule(
 
     @Provides
     @PerActivity
-    fun provideMHRepository(d2: D2): MHRepository {
-        return MHRepository(d2)
-    }
-
-    @Provides
-    @PerActivity
-    fun provideMHEngine(
-        repository: MHRepository
-    ): MHEngine {
-        return MHEngine(repository)
+    fun provideWorkflowRepository(d2: D2): WorkflowRepository {
+        return WorkflowRepository(d2)
     }
 }

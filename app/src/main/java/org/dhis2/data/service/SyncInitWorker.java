@@ -32,7 +32,6 @@ public class SyncInitWorker extends Worker {
 
             ((App) getApplicationContext()).userComponent().plus(new SyncInitWorkerModule()).inject(this);
 
-            presenter.taskingDefault();
             presenter.taskingWorker();
             if (getInputData().getBoolean(INIT_META, false))
                 presenter.startPeriodicMetaWork();

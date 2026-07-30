@@ -1,6 +1,7 @@
 package org.dhis2.community.tasking.engine
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
@@ -24,7 +25,7 @@ class CreationEvaluator(
         eventUid: String? = null
     ) {
         if (sourceTeiUid == null) {
-            Timber.e("CreationEvaluator: sourceTeiUid is null")
+            Log.d("CreationEvaluator:","CreationEvaluator: sourceTeiUid is null")
             return
         }
 
@@ -32,7 +33,7 @@ class CreationEvaluator(
         val configsForProgram =
             config.programTasks.firstOrNull() { it.programUid == targetProgramUid }
         if (configsForProgram == null) {
-            Timber.e("CreationEvaluator: No tasking config found for program $targetProgramUid")
+            Log.d("CREATION_EVALUTOR","CreationEvaluator: No tasking config found for program $targetProgramUid")
             return
         }
 
@@ -99,9 +100,10 @@ class CreationEvaluator(
         val allAvailableTasks = repository.getAllTasks()
         val taskAlreadyExist = allAvailableTasks.any { task ->
             task.sourceProgramUid == targetProgramUid &&
-                    task.status == Constants.OPEN &&
+                    ((task.status == Constants.OPEN) || (taskConfig.singleIncomplete && task.status == Constants.COMPLETED)) &&
                     task.sourceEnrollmentUid == sourceTeiProgramEnrollment &&
                     task.name == taskConfig.name
+
         }
         Timber.d("Task ${taskConfig.name} already exists: $taskAlreadyExist")
         return !taskAlreadyExist
@@ -134,7 +136,8 @@ class CreationEvaluator(
             dueDate = calculateDueDate(
                 taskConfig,
                 sourceTeiUid,
-                programUid = targetProgramUid
+                programUid = targetProgramUid,
+                eventUid = eventUid
             ).toString(),
             priority = taskConfig.priority,
             status = Constants.OPEN,

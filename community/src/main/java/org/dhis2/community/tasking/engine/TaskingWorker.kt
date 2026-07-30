@@ -25,12 +25,18 @@ class TaskingWorker(
     @RequiresApi(Build.VERSION_CODES.O)
     fun periodicWorker(
     ){
-        val config = repository.getTaskingConfig()
-
         try {
+            val config = repository.getTaskingConfig()
             val taskProgramConfig = repository.getTaskingConfig().taskProgramConfig.first()
             val taskProgramUid = taskProgramConfig.programUid
             val taskTIETypeUid = taskProgramConfig.teiTypeUid
+            val taskingProgramUid = config.taskProgramConfig.first().programUid
+            val hasTaskingProgramAccess = repository.hasDataAccessToTasking()
+
+            if(!hasTaskingProgramAccess){
+                Timber.tag(TAG).d("User does not have access to tasking program with uid: $taskingProgramUid. Skipping tasking evaluation.")
+                return
+            }
 
             config.programTasks.forEach { programTask ->
 
@@ -54,8 +60,9 @@ class TaskingWorker(
                         if (sourceTeiOrgUnitUid.isNullOrEmpty() || sourceTeiProgramEnrollmentUid.isEmpty())
                             return@forEach
 
-                        defaultingEvaluator.periodicCheck()
-
+                        // Defaulting is a global, argument-free scan of all tasks; it is already
+                        // run once per sync via defaultingWorker(). Calling it here re-scanned every
+                        // task for every (programTask x taskConfig x teiUid) combination.
                         completionEvaluator.taskCompletion(
                             tasks = repository.getTasks(),
                             sourceProgramEnrollmentUid = sourceTeiProgramEnrollmentUid,

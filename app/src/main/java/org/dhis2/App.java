@@ -105,7 +105,7 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
 
         setUpAppComponent();
         if (BuildConfig.DEBUG) {
-            Timber.tag(String.valueOf(new DebugTree()));
+            Timber.plant(new DebugTree());
         }
 
         setUpSecurityProvider();

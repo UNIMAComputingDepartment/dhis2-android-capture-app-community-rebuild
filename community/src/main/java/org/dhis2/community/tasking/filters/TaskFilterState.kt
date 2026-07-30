@@ -11,6 +11,7 @@ import timber.log.Timber
 
 class TaskFilterState {
     var uiState by mutableStateOf(FilterUiState())
+    var searchQuery by mutableStateOf("")
 
     // Default status and due date filter
     private val defaultFilter = TaskFilterModel(
