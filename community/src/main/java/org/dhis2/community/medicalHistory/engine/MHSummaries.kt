@@ -1,10 +1,7 @@
 package org.dhis2.community.medicalHistory.engine
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.dhis2.community.medicalHistory.models.MedicalHistoryConfig.MedicalHistoryItem
 import org.dhis2.community.medicalHistory.repository.MHRepository
-import org.dhis2.community.medicalHistory.utils.Constants
 
 class MHSummaries(
     private val repository: MHRepository
@@ -58,7 +55,7 @@ class MHSummaries(
                 repository.getLatestValueFromProgram(
                     teiUid,
                     source.sourceProgramUid,
-                    deUid,
+                    deUid.uid,
                     source.sourceProgramStageUid
                 )?.let {
                     values.add(it.lowercase())
@@ -66,7 +63,9 @@ class MHSummaries(
             }
         }
 
-        item.summary.rules?.forEach { rule ->
+        item.summary.rules
+            ?.sortedBy { it.priority }
+            ?.forEach { rule ->
 
             if (values.any { value ->
                     rule.values.any {
@@ -85,7 +84,16 @@ class MHSummaries(
         teiUid: String
     ): String {
 
+        //val summary = item.summary
+        //val display = summary.display
+
         val collected = mutableListOf<String>()
+
+        val visibleItems = mutableListOf<String>()
+        val allItems = mutableListOf<String>()
+
+        var hiddenCount = 0
+        var deIndex = 0
 
         item.source.forEach { source ->
 
@@ -94,17 +102,20 @@ class MHSummaries(
                 val value = repository.getLatestValueFromProgram(
                     teiUid,
                     source.sourceProgramUid,
-                    deUid,
+                    deUid.uid,
                     source.sourceProgramStageUid
-                ) ?: return@forEach
+                ) ?: run {
+                    deIndex++
+                    return@forEach
+                }
 
-                val label = repository
-                    .getDataElementDisplayName(deUid)
+                val label = deUid.label?: repository
+                    .getDataElementDisplayName(deUid.uid)
                     .trim()
                     .removeSuffix("?")
 
                 val mappedValue = item.summary.mappings
-                    .firstOrNull {
+                    ?.firstOrNull {
                         it.sourceValue.equals(value, true)
                     }?.targetValue ?: value
 
@@ -112,15 +123,53 @@ class MHSummaries(
                     .replace("{label}", label)
                     .replace("{value}", mappedValue)
 
-                collected.add(text)
+                if (item.summary.display == null){
+                    collected.add(text)
+                } else {
+                    if (deIndex < item.summary.display.visibleItems) {
+                        visibleItems.add(text)
+                    } else hiddenCount++
+                }
+
+                //collected.add(text)
+                deIndex++
             }
         }
 
-        return if (collected.isEmpty())
+        if (item.summary.display == null) {
+            return if (collected.isEmpty()) {
+                item.summary.emptyValue
+            } else collected.distinct().joinToString( item.summary.separator )
+        }
+
+        if(visibleItems.isEmpty() && hiddenCount == 0){
+            return item.summary.emptyValue
+        }
+
+        return buildString {
+
+            append(visibleItems.joinToString( item.summary.separator))
+
+            if (hiddenCount > 0) {
+
+                if (visibleItems.isNotEmpty()){
+                    append(item.summary.separator)
+                }
+
+                append(
+                    item.summary.display.overflowFormat.replace(
+                        "{remaining}",
+                        hiddenCount.toString()
+                    )
+                )
+            }
+        }
+
+       /* return if (collected.isEmpty())
             item.summary.emptyValue
         else
             collected.distinct()
-                .joinToString(item.summary.separator)
+                .joinToString(item.summary.separator)*/
     }
 
 

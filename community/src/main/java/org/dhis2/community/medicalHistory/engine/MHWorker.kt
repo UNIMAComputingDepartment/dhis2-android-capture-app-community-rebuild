@@ -1,5 +1,7 @@
 package org.dhis2.community.medicalHistory.engine
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import org.dhis2.community.medicalHistory.repository.MHRepository
 import timber.log.Timber
 import java.time.ZoneId
@@ -12,6 +14,7 @@ class MHWorker(
     private val TAG = MHEngine::class.java.simpleName
     private val summariesBuilder = MHSummaries(repository)
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun medicalHistoryWorker(){
 
         try{

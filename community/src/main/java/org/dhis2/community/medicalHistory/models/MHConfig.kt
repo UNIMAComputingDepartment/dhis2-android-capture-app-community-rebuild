@@ -13,9 +13,14 @@ data class MedicalHistoryConfig(
     ){
         data class Source(
             val sourceProgramUid: String,
-            val sourceDEs: List<String>,
+            val sourceDEs: List<SourceDataElement>,
             val sourceProgramName: String,
             val sourceProgramStageUid: String,
+        )
+
+        data class SourceDataElement(
+            val uid: String,
+            val label: String? = null
         )
 
         data class SummaryConfig(
@@ -23,7 +28,8 @@ data class MedicalHistoryConfig(
             val separator: String,
             val emptyValue: String,
             val format: String,
-            val mappings: List<ValueMapping>,
+            val mappings: List<ValueMapping>?,
+            val display: DisplayConfig? = null,
             val rules: List<SummaryRule>?
         ){
             data class ValueMapping(
@@ -31,7 +37,13 @@ data class MedicalHistoryConfig(
                 val targetValue: String
             )
 
+            data class DisplayConfig(
+                val visibleItems: Int,
+                val overflowFormat: String
+            )
+
             data class SummaryRule(
+                val priority: Int,
                 val values: List<String>,
                 val result: String,
                 val condition: String?,

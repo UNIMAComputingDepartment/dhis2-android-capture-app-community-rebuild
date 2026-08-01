@@ -91,6 +91,10 @@ class MHRepository(
             d2.trackedEntityModule().trackedEntityDataValues()
                 .value(eventUid, deUid)
                 .blockingSet(newValue)
+
+            d2.eventModule().events()
+                .uid(eventUid)
+                .setStatus(EventStatus.COMPLETED)
         }
     }
 

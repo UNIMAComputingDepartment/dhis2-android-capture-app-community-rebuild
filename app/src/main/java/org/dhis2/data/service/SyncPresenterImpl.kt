@@ -837,6 +837,7 @@ class SyncPresenterImpl(
         TaskingWorker( TaskingRepository(d2)).periodicWorker()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun medicalHistoryWorker() {
         MHWorker(MHRepository(d2)).medicalHistoryWorker()
     }

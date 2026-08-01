@@ -17,12 +17,9 @@
           "sourceProgramUid": "Ur5UakrSEYj",
           "sourceProgramStageUid": "qeUfz2UTHNt",
           "sourceDEs": [
-            {"uid": "LVOCoQq2vhn"},
-            {"uid": "BNidQ6DxZpz"},
             {"uid": "pOmfBiixrBw"},
-            {"uid": "ETmwrRaI25Y"},
-            {"uid": "Fc3lDKsux3s"},
-            {"uid": "aoALwwoX4IT"}
+            {"uid": "BNidQ6DxZpz"},
+            {"uid":"LVOCoQq2vhn"}
           ]
         }
       ],
@@ -124,7 +121,10 @@
           "sourceDEs": [
             {"uid": "jpipAsYQ1k2"},
             {"uid": "JgoITvPkXVr"},
-            {"uid": "s6E1GNhMWru"},
+            {
+              "uid": "s6E1GNhMWru",
+              "label":  "BCG"
+            },
             {"uid": "i5YltrU2ClS"}
           ]
         }
@@ -153,24 +153,13 @@
       "targetDE": "sAUQkneLQwj",
       "source": [
         {
-          "sourceProgramName": "Personal Register",
-          "sourceProgramUid": "NFnp1h3IMzl",
-          "sourceProgramStageUid": "cOvFHTZSl9O",
-          "sourceDEs": [
-            {
-              "uid": "ACG3T4Bnt0l"
-            }
-
-          ]
-        },
-        {
           "sourceProgramName": "CBMNC - Woman Program",
           "sourceProgramUid": "cJEpYzKPHqg",
           "sourceProgramStageUid": "llP45OWGSGb",
           "sourceDEs": [
             {
               "uid": "fWG6KdfkJWG",
-              "label": "last pregnancy outcome"
+              "label": "Pregnancy outcome"
             },
             {
               "uid": "OmIp5EnJOA0",
