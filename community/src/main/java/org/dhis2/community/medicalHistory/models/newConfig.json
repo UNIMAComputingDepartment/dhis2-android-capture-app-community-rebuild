@@ -122,28 +122,46 @@
           "sourceProgramUid": "vqECSqMRSaV",
           "sourceProgramStageUid": "rWoGwBZYFpG",
           "sourceDEs": [
-            {"uid": "jpipAsYQ1k2"},
-            {"uid": "JgoITvPkXVr"},
-            {"uid": "s6E1GNhMWru"},
-            {"uid": "i5YltrU2ClS"}
+            {
+              "uid": "jpipAsYQ1k2",
+              "summaryGroup": "Cancer"
+            },
+            {
+              "uid": "JgoITvPkXVr",
+              "summaryGroup": "Lung Disease"
+            },
+            {
+              "uid": "s6E1GNhMWru",
+              "summaryGroup": "Diabetes"
+            },
+            {
+              "uid": "i5YltrU2ClS",
+              "summaryGroup": "Hypertension"
+            }
           ]
         }
       ],
       "summary": {
-        "type": "LIST",
+        "type": "CONDITIONAL_LIST",
         "separator": "\n",
         "emptyValue": "None recorded",
         "format": "{label}: {value}",
-        "mappings": [
-          {
-            "sourceValue": "true",
-            "targetValue": "Yes"
-          },
-          {
-            "sourceValue": "false",
-            "targetValue": "No"
-          }
-        ],
+        "mappings": [],
+        "evaluation": {
+          "strategy": "ANY_TRUE",
+          "trueValues": [
+            "positive",
+            "true",
+            "yes",
+            "1"
+          ],
+          "falseValues": [
+            "negative",
+            "false",
+            "no",
+            "0"
+          ]
+        },
         "rules": []
       }
     },

@@ -1,84 +1,72 @@
 package org.dhis2.community.medicalHistory.engine
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import android.os.Build
+import androidx.annotation.RequiresApi
 import org.dhis2.community.medicalHistory.repository.MHRepository
+import timber.log.Timber
+import java.time.ZoneId
+import java.util.Date
 
 class MHEngine(
     private val repository: MHRepository,
-    //private val summariesBuilder: MHSummaries,
-    private val ioDispatchers: CoroutineDispatcher = Dispatchers.IO
 ) {
+
     private val TAG = MHEngine::class.java.simpleName
     private val summariesBuilder = MHSummaries(repository)
-    private val scope = CoroutineScope(SupervisorJob() + ioDispatchers)
 
-    fun clear() = (scope.coroutineContext[Job])?.cancel()
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun medicalHistoryWorker(){
 
-    suspend fun run(
-        teiUid: String,
-        baseProgramUid: String,
-        baseProgramStage: String
-    ) = withContext(ioDispatchers) {
-        runInternal(
-            teiUid = teiUid,
-            baseProgramUid = baseProgramUid,
-            baseProgramStage = baseProgramStage
-        )
-    }
+        try{
+            val config = repository.getMedicalHistoryConfigs()
+            val baseProgramConfig = config.baseProgram.firstOrNull()
+            val baseProgramUid = baseProgramConfig?.baseProgramUid
+            val baseProgramStage = baseProgramConfig?.baseProgramStageUid
 
-    fun runAsync(
-        teiUid: String,
-        baseProgramUid: String,
-        baseProgramStage: String
-    ): Job = scope.launch {
-        runInternal(
-            teiUid = teiUid,
-            baseProgramUid = baseProgramUid,
-            baseProgramStage = baseProgramStage
-        )
-    }
+            if(baseProgramUid.isNullOrEmpty() || baseProgramStage.isNullOrEmpty()){
+                return
+            }
 
-    private fun runInternal(
-        teiUid: String,
-        baseProgramUid: String,
-        baseProgramStage: String
-    ) {
+            val teiUids = repository.getTeiUidsWithActiveEnrollmentForProgram(baseProgramUid)
+            val startDate = Date.from(
+                repository.quarterDatesCalculator().first.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            )
+            val endDate = Date.from(
+                repository.quarterDatesCalculator().second.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            )
 
-        val configBaseProgramUid =
-            repository.getMedicalHistoryConfigs().baseProgram.firstOrNull()?.baseProgramUid
+            teiUids.forEach { teiUid ->
 
-        val configBaseProgramStage =
-            repository.getMedicalHistoryConfigs().baseProgram.firstOrNull()?.baseProgramStageUid
+                val exists =
+                    repository.eventExistInQuarter(
+                        teiUid = teiUid,
+                        programUid = baseProgramUid,
+                        programStageUid = baseProgramStage,
+                        startDate = startDate,
+                        endDate = endDate
+                    )
 
-        if (baseProgramUid == configBaseProgramUid && baseProgramStage == configBaseProgramStage) {
-            try {
+                //TODO:
+                // Update the existing event for now
+                // When we are done with testing only write once to the event in a quarter
 
-               /* summariesBuilder.buildImmunizationSummaries(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid
-                )
-
-                summariesBuilder.buildHIVStatusSummary(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid
-                )
-
-                summariesBuilder.buildNCDSummaries(
-                    teiUid = teiUid, baseProgramUid = baseProgramUid
-                )*/
+                if (!exists) {
+                    repository.createNewEvent(
+                        teiUid = teiUid,
+                        programUid = baseProgramUid,
+                        programStageUid = baseProgramStage,
+                        eventDate = startDate
+                    )
+                }
 
                 summariesBuilder.buildSummary(
                     teiUid = teiUid,
                     baseProgramUid = baseProgramUid
                 )
-
-            } catch (t: Throwable) {
-                throw t
             }
-        } else return
+        } catch (throwable: Throwable){
+            Timber.tag(TAG).e(throwable, "Error running medical history worker")
+            throw throwable
+        }
     }
 }

@@ -24,7 +24,7 @@ import org.dhis2.commons.prefs.Preference.Companion.TIME_DAILY
 import org.dhis2.commons.prefs.Preference.Companion.TIME_DATA
 import org.dhis2.commons.prefs.Preference.Companion.TIME_META
 import org.dhis2.commons.prefs.PreferenceProvider
-import org.dhis2.community.medicalHistory.engine.MHWorker
+import org.dhis2.community.medicalHistory.engine.MHEngine
 import org.dhis2.community.medicalHistory.repository.MHRepository
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.community.tasking.engine.TaskingWorker
@@ -839,6 +839,6 @@ class SyncPresenterImpl(
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun medicalHistoryWorker() {
-        MHWorker(MHRepository(d2)).medicalHistoryWorker()
+        MHEngine(MHRepository(d2)).medicalHistoryWorker()
     }
 }

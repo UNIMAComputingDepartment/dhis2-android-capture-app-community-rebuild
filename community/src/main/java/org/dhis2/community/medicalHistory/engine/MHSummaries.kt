@@ -2,6 +2,7 @@ package org.dhis2.community.medicalHistory.engine
 
 import org.dhis2.community.medicalHistory.models.MedicalHistoryConfig.MedicalHistoryItem
 import org.dhis2.community.medicalHistory.repository.MHRepository
+import org.dhis2.community.medicalHistory.utils.Constants
 
 class MHSummaries(
     private val repository: MHRepository
@@ -27,6 +28,9 @@ class MHSummaries(
 
                 MedicalHistoryItem.SummaryConfig.SummaryType.STATUS ->
                     buildStatusSummary(item, teiUid)
+
+                MedicalHistoryItem.SummaryConfig.SummaryType.CONDITION_LIST ->
+                    buildConditionalListSummary(item, teiUid)
             }
 
             summaries[item.targetDE] = summary
@@ -39,6 +43,63 @@ class MHSummaries(
         )
 
         return summaries
+    }
+
+    private fun buildConditionalListSummary(
+        item: MedicalHistoryItem,
+        teiUid: String
+    ): String {
+        val groupedValue = mutableMapOf<String, MutableList<String>>()
+
+        item.source.forEach { source ->
+
+            source.sourceDEs.forEach { deUid ->
+
+                val group = deUid.summaryGroup ?: return@forEach
+
+                repository.getLatestValueFromProgram(
+                    teiUid = teiUid,
+                    programUid = source.sourceProgramUid,
+                    deUid = deUid.uid,
+                    programStageUid = source.sourceProgramStageUid
+                )?.let {
+
+                    groupedValue
+                        .getOrPut(group) { mutableListOf() }
+                        .add(it.lowercase())
+                }
+            }
+        }
+
+        if (groupedValue.isEmpty()) {
+            return item.summary.emptyValue
+        }
+
+        val lines = mutableListOf<String>()
+
+        groupedValue.forEach { (group, values) ->
+
+            val result = evaluateConditions(
+                values = values,
+                evaluation = item.summary.evaluation
+            ) ?: return@forEach
+
+            val mapped = item.summary.mappings
+                ?.firstOrNull {
+                    it.sourceValue.equals(result, true)
+                }?.targetValue ?: result
+
+            lines.add(
+
+                item.summary.format
+                    .replace("{label}", group)
+                    .replace("{value}", mapped)
+            )
+        }
+
+        return if (lines.isEmpty()) {
+            item.summary.emptyValue
+        } else lines.joinToString(item.summary.separator)
     }
 
     private fun buildStatusSummary(
@@ -84,13 +145,8 @@ class MHSummaries(
         teiUid: String
     ): String {
 
-        //val summary = item.summary
-        //val display = summary.display
-
         val collected = mutableListOf<String>()
-
         val visibleItems = mutableListOf<String>()
-        val allItems = mutableListOf<String>()
 
         var hiddenCount = 0
         var deIndex = 0
@@ -130,8 +186,6 @@ class MHSummaries(
                         visibleItems.add(text)
                     } else hiddenCount++
                 }
-
-                //collected.add(text)
                 deIndex++
             }
         }
@@ -164,13 +218,46 @@ class MHSummaries(
                 )
             }
         }
-
-       /* return if (collected.isEmpty())
-            item.summary.emptyValue
-        else
-            collected.distinct()
-                .joinToString(item.summary.separator)*/
     }
 
+    private fun evaluateConditions(
+        values: List<String>,
+        evaluation: MedicalHistoryItem.SummaryConfig.EvaluationConfig?
+    ): String? {
 
+        if (evaluation == null) return null
+
+        val hasTrue = values.any { value ->
+            evaluation.trueValues.any { it.equals(value, true) }
+        }
+
+        val allTrue = values.all { value ->
+            evaluation.trueValues.any { it.equals(value, true) }
+        }
+
+        val allFalse = values.all { value ->
+            evaluation.falseValues.any { it.equals(value, true) }
+        }
+
+        return when (evaluation.strategy){
+
+            MedicalHistoryItem.SummaryConfig.Strategy.ALL_TRUE -> {
+
+                when {
+                    allTrue -> Constants.TRUE
+                    allFalse -> Constants.FALSE
+                    else -> null
+                }
+            }
+
+            MedicalHistoryItem.SummaryConfig.Strategy.ANY_TRUE -> {
+
+                when {
+                    hasTrue -> Constants.TRUE
+                    allFalse -> Constants.FALSE
+                    else -> null
+                }
+            }
+        }
+    }
 }
