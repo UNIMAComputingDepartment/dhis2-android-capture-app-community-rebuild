@@ -41,6 +41,7 @@ import org.dhis2.tracker.relationships.model.RelationshipOwnerType;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.teiDownload.TeiDownloader;
 import org.dhis2.utils.ValueUtils;
+import org.dhis2.community.mappers.di.DataMappers;
 import org.hisp.dhis.android.core.D2;
 import org.hisp.dhis.android.core.arch.call.D2Progress;
 import org.hisp.dhis.android.core.arch.helpers.UidsHelper;
@@ -354,6 +355,13 @@ public class SearchRepositoryImpl implements SearchRepository {
                         .map(enrollmentUid -> {
                             d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(dateUtils.getStartOfDay(new Date()));
                             d2.enrollmentModule().enrollments().uid(enrollmentUid).setFollowUp(false);
+
+                            // Enrolling from search reaches here for an existing TEI as well as a new
+                            // one (teiUid is only null in the latter case), so cross-programme mapping
+                            // has to run. For a genuinely new TEI there is nothing to read and the
+                            // engine simply reports nothing applied.
+                            DataMappers.INSTANCE.runForNewEnrollment(d2, uid, programUid, enrollmentUid);
+
                             return new Pair<>(enrollmentUid, uid);
                         })
         ).toObservable();

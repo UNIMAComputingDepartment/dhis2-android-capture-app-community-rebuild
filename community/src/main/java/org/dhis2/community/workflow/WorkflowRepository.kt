@@ -1,6 +1,7 @@
 package org.dhis2.community.workflow
 
 import org.dhis2.community.common.readCommunityConfig
+import org.dhis2.community.mappers.di.DataMappers
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
@@ -152,6 +153,11 @@ class WorkflowRepository(
                 )
             )
 
+            // Deliberately not running the mapping engine here: this path creates a *different* TEI
+            // and copies across a relationship, whereas the engine's TriggerContext addresses a single
+            // TEI. Cross-TEI mapping is the deferred relationship-hop case (see the design doc's open
+            // questions); calling it with the new TEI would read a source enrollment that TEI does not
+            // have. The legacy attributesMappings above remain the mechanism for this path.
             targetTeiUid to enrollmentUid
         } catch (error: Exception) {
             try {
@@ -270,12 +276,58 @@ class WorkflowRepository(
                 d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setStatus(EnrollmentStatus.ACTIVE)
                 enrolledPrograms.add(rule.targetProgram)
                 Timber.d("Auto-enrolled TEI $teiUid into program ${rule.targetProgram}")
+
+                // Carry the TEI's existing data into the enrollment we just created. Without this the
+                // new enrollment starts empty and a health worker retypes what another program
+                // already recorded. Mapping never throws back — an enrollment must not fail because a
+                // value could not be carried.
+                DataMappers.runForNewEnrollment(
+                    d2 = d2,
+                    teiUid = teiUid,
+                    targetProgramUid = rule.targetProgram,
+                    targetEnrollmentUid = newEnrollmentUid,
+                    sourceProgramUid = triggerProgramUid,
+                    sourceEnrollmentUid = enrollmentUid,
+                    sourceEventUid = eventUid,
+                )?.let { report ->
+                    Timber.d(
+                        "Data mapping into ${rule.targetProgram}: ${report.applied} applied, " +
+                            "${report.skipped} skipped, ${report.failed} failed",
+                    )
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed auto-enrolling TEI $teiUid into program ${rule.targetProgram}")
             }
         }
 
         return enrolledPrograms
+    }
+
+    /**
+     * Propagates a just-saved event's values into target programs the TEI is *already* enrolled in.
+     *
+     * Auto-enrollment only maps enrollments it creates, so without this a value corrected on a later
+     * visit would never reach a target enrollment that already existed. Exposed here rather than
+     * called directly from presenters because this is the layer that holds [d2].
+     */
+    fun propagateMappedData(
+        triggerProgramUid: String,
+        teiUid: String,
+        enrollmentUid: String?,
+        eventUid: String?,
+    ) {
+        DataMappers.runForSavedEvent(
+            d2 = d2,
+            teiUid = teiUid,
+            sourceProgramUid = triggerProgramUid,
+            sourceEnrollmentUid = enrollmentUid,
+            sourceEventUid = eventUid,
+        )?.let { report ->
+            Timber.d(
+                "Data mapping after saving in $triggerProgramUid: ${report.applied} applied, " +
+                    "${report.skipped} skipped, ${report.failed} failed",
+            )
+        }
     }
 
     private fun isAutoEnrollmentConditionMet(

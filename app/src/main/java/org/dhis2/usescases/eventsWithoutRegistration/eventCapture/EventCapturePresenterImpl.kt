@@ -269,12 +269,24 @@ class EventCapturePresenterImpl(
         compositeDisposable.add(
             Flowable.fromCallable {
                 val triggerProgramUid = eventCaptureRepository.getProgramUid().blockingFirst()
-                workflowRepository.evaluateAutoEnrollment(
+                val enrolled = workflowRepository.evaluateAutoEnrollment(
                     triggerProgramUid = triggerProgramUid,
                     teiUid = sourceTeiUid,
                     enrollmentUid = enrollmentUid,
                     eventUid = eventUid,
                 )
+
+                // Propagate this event's values into target programs the TEI is *already* enrolled in.
+                // Auto-enrollment above only covers enrollments created just now, so without this a
+                // value corrected on a later visit would never reach an existing target enrollment.
+                workflowRepository.propagateMappedData(
+                    triggerProgramUid = triggerProgramUid,
+                    teiUid = sourceTeiUid,
+                    enrollmentUid = enrollmentUid,
+                    eventUid = eventUid,
+                )
+
+                enrolled
             }.defaultSubscribe(
                 schedulerProvider,
                 { enrolledProgramUids ->

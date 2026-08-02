@@ -7,6 +7,7 @@ import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.usescases.main.program.ProgramDownloadState;
 import org.dhis2.usescases.main.program.ProgramUiModel;
 import org.dhis2.usescases.main.program.ProgramViewModelMapper;
+import org.dhis2.community.mappers.di.DataMappers;
 import org.hisp.dhis.android.core.D2;
 import org.hisp.dhis.android.core.common.State;
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection;
@@ -145,7 +146,16 @@ public class TeiProgramListRepositoryImpl implements TeiProgramListRepository {
                     }
                     enrollmentRepository.setEnrollmentDate(enrollmentDate);
                     enrollmentRepository.setFollowUp(false);
-                    return enrollmentRepository.blockingGet().uid();
+                    String newEnrollmentUid = enrollmentRepository.blockingGet().uid();
+
+                    // Enrolling an existing TEI into another programme by hand is the commonest way a
+                    // cross-programme mapping should fire — a child already in EPI being enrolled into
+                    // IMCI has EPI data worth carrying across. Running it here, before the observable
+                    // emits, means the enrolment form opens with those values already in place.
+                    // No source programme is named, so every transfer into this programme applies.
+                    DataMappers.INSTANCE.runForNewEnrollment(d2, teiUid, programUid, newEnrollmentUid);
+
+                    return newEnrollmentUid;
                 }).toObservable();
     }
 
