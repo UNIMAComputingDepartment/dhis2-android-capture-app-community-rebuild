@@ -40,6 +40,7 @@ import org.dhis2.commons.filters.Filters
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.commons.orgunitselector.OUTreeModel
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.sync.OnDismissListener
@@ -76,6 +77,8 @@ import org.dhis2.utils.analytics.SHOW_HELP
 import org.dhis2.utils.analytics.TYPE_QR
 import org.dhis2.utils.analytics.TYPE_SHARE
 import org.dhis2.utils.customviews.MoreOptionsWithDropDownMenuButton
+import org.dhis2.utils.customviews.hint.SpotlightHint
+import org.dhis2.utils.customviews.hint.SpotlightHintOverlay
 import org.dhis2.utils.customviews.navigationbar.NavigationPageConfigurator
 import org.dhis2.utils.granularsync.SyncStatusDialog
 import org.dhis2.utils.granularsync.shouldLaunchSyncDialog
@@ -84,6 +87,7 @@ import org.dhis2.utils.isPortrait
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBar
 import org.dhis2.community.IchisTheme
+import org.dhis2.usescases.main.MainActivity
 import javax.inject.Inject
 
 class TeiDashboardMobileActivity :
@@ -122,6 +126,11 @@ class TeiDashboardMobileActivity :
 
     @Inject
     lateinit var eventResourcesProvider: EventResourcesProvider
+
+    @Inject
+    lateinit var preferences: PreferenceProvider
+
+    private val spotlightHint by lazy { SpotlightHint(preferences) }
 
     var teiUid: String? = null
     var programUid: String? = null
@@ -205,6 +214,7 @@ class TeiDashboardMobileActivity :
 
         setRelationshipMapIcon()
         setSyncButtonListener()
+        setBackButtonLongClickListener()
         setFormViewForLandScape()
         setEditButton()
         observeErrorMessages()
@@ -213,6 +223,7 @@ class TeiDashboardMobileActivity :
         setUpNavigationBar()
         showLoadingProgress(false)
         setupMoreOptionsMenu()
+        maybeShowGoHomeHint()
     }
 
     private fun observeErrorMessages() {
@@ -231,6 +242,50 @@ class TeiDashboardMobileActivity :
         binding.syncButton.setOnClickListener { openSyncDialog() }
         if (intent.shouldLaunchSyncDialog()) {
             openSyncDialog()
+        }
+    }
+
+    private fun setBackButtonLongClickListener() {
+        binding.back?.setOnLongClickListener() {
+            goHome()
+            true
+        }
+    }
+
+
+    private fun goHome() {
+        spotlightHint.markDismissed(GO_HOME_HINT_ID)
+        startActivity(
+            MainActivity.intent(this).apply {
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+        )
+        finish()
+    }
+
+    private fun maybeShowGoHomeHint() {
+        val backButton = binding.back ?: return
+        val overlay = binding.hintOverlay ?: return
+        if (!spotlightHint.isDue(GO_HOME_HINT_ID)) return
+
+        backButton.post {
+            val targetBounds = SpotlightHint.computeTargetBounds(backButton, overlay)
+
+            overlay.visibility = View.VISIBLE
+            overlay.setContent {
+                IchisTheme {
+                    SpotlightHintOverlay(
+                        targetBounds = targetBounds,
+                        message = "Long-press here to jump straight to Home",
+                        onDismiss = { overlay.visibility = View.GONE },
+                        onDontShowAgain = {
+                            spotlightHint.markDismissed(GO_HOME_HINT_ID)
+                            overlay.visibility = View.GONE
+                        },
+                    )
+                }
+            }
+            spotlightHint.markShown(GO_HOME_HINT_ID)
         }
     }
 
@@ -802,6 +857,7 @@ class TeiDashboardMobileActivity :
 
     companion object {
         private const val TEI_SYNC = "SYNC_TEI"
+        private const val GO_HOME_HINT_ID = "tei_dashboard_go_home"
 
         @JvmStatic
         fun intent(
