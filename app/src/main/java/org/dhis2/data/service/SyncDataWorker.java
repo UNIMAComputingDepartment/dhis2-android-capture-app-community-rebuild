@@ -73,6 +73,7 @@ public class SyncDataWorker extends Worker {
                 20);
 
         try {
+            presenter.medicalHistoryWorker();
             presenter.taskingWorker();
             presenter.syncAndDownloadEvents();
         } catch (Exception e) {
