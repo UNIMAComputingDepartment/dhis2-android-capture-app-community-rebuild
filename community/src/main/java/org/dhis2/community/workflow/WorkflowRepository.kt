@@ -1,6 +1,7 @@
 package org.dhis2.community.workflow
 
 import com.google.gson.Gson
+import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
@@ -451,6 +452,176 @@ class WorkflowRepository(
             .byProgram().eq(targetProgramUid)
             .one()
             .blockingExists()
+    }
+
+    fun getTeiAttributeValue(
+        teiUid: String,
+        attributeUid: String
+    ): String? {
+        if (teiUid.isBlank() || attributeUid.isBlank()) return null
+
+        return d2.trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byTrackedEntityAttribute().eq(attributeUid)
+            .one()
+            .blockingGet()
+            ?.value()
+    }
+
+    fun countRelatedTeis(
+        teiUid: String,
+        relationshipTypeUid: String?,
+        relatedProgramUid: String?,
+    ): Int {
+
+        if (teiUid.isBlank()) return 0
+
+        val relationships = d2.relationshipModule().relationships()
+            .byRelationshipType().eq(relationshipTypeUid)
+            .byItem(RelationshipHelper.teiItem(teiUid))
+            .withItems()
+            .blockingGet()
+
+        if (relationships.isEmpty()) return 0
+
+        return relationships.count { relationship ->
+
+            if (relationship.from() == null || relationship.to() == null) {
+                return@count false
+            }
+            
+           if (
+                relationshipTypeUid != null &&
+                relationship.relationshipType() != relationshipTypeUid
+            ) {
+                return@count false
+            }
+
+            val fromTeiUid = relationship.from()
+                ?.trackedEntityInstance()
+                ?.trackedEntityInstance()
+            val toTeiUid = relationship.to()
+                ?.trackedEntityInstance()
+                ?.trackedEntityInstance()
+
+            val relatedTei =
+                when (teiUid) {
+                    fromTeiUid -> toTeiUid
+                    toTeiUid -> fromTeiUid
+                    else -> null
+                } ?: return@count false
+
+            if (relatedProgramUid == null) {
+                return@count true
+            }
+
+            val enrolled = d2.enrollmentModule().enrollments()
+                .byTrackedEntityInstance().eq(relatedTei)
+                .byProgram().eq(relatedProgramUid)
+                .blockingGet()
+
+            enrolled.isNotEmpty()
+        }
+    }
+
+    fun getLatestDataElement(
+        teiUid: String,
+        programUid: String,
+        programStageUid: String?,
+        uid: String,
+        dataElementUid: String?
+    ): String? {
+        if (teiUid.isBlank() || programUid.isBlank() || uid.isBlank()) return null
+
+        val enrollments = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        if (enrollments.isEmpty()) return null
+
+        val enrollmentUids = enrollments.map { it.uid() }
+
+        val eventRepository = d2.eventModule().events()
+            .byEnrollmentUid().`in`(enrollmentUids)
+
+        programStageUid?.let {
+            eventRepository.byProgramStageUid().eq(it)
+        }
+
+        val latestEvent = eventRepository
+            .orderByEventDate(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+            .firstOrNull()
+
+        return latestEvent
+            ?.trackedEntityDataValues()
+            ?.firstOrNull {it.dataElement() == dataElementUid}
+            ?.value()
+    }
+
+    fun updateDataValue(
+        eventUid: String?,
+        deUid: String,
+        memberNumber: Int?
+    ) {
+        if (eventUid != null) {
+            d2.trackedEntityModule().trackedEntityDataValues()
+                .value(eventUid, deUid)
+                .blockingSet(memberNumber.toString())
+        }
+    }
+
+    fun resolveAutoAddValues(
+        teiUid: String,
+        programUid: String,
+    ): String? {
+
+        val autoFillConfig = getWorkflowConfig()
+            .autoFillValues.firstOrNull { it.triggerProgram == programUid }
+
+        val source = autoFillConfig?.valueSource ?: return null
+
+
+        return when (source.valueSourceType) {
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.CONSTANT -> source.value
+            AutoFillValuesConfig.ValueSource.ValueSourceType.TEI_ATTRIBUTE -> {
+                val uid = source.uid ?: return null
+                getTeiAttributeValue(
+                    teiUid = teiUid,
+                    attributeUid = uid
+                )
+            }
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.EVENT_DATA_ELEMENT -> {
+                val uid = source.uid ?: return null
+                getLatestDataElement(
+                    teiUid = teiUid,
+                    programUid = programUid,
+                    uid = uid,
+                    programStageUid = source.computation?.programStageUid,
+                    dataElementUid = source.computation?.dataElementUid
+                )
+            }
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.COMPUTATION -> {
+                val computationConfig = source.computation ?: return null
+                when (computationConfig.computationType) {
+                    AutoFillValuesConfig.ValueSource.ComputationConfig.ComputationType.RELATED_TEI_COUNT -> {
+                        countRelatedTeis(
+                            teiUid = teiUid,
+                            relationshipTypeUid = computationConfig.relationshipTypeUid,
+                            relatedProgramUid = computationConfig.relatedProgramUid,
+                            //programStageUId = source.computation.programStageUId,
+                            //dataElementUid = source.computation.dataElementUid
+                        ).toString()
+                    }
+                }
+            }
+        }
+
     }
 
 }
