@@ -25,9 +25,7 @@ import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
-import org.dhis2.community.tasking.engine.CreationEvaluator
 import org.dhis2.community.tasking.engine.TaskingEngine
-import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.icons.DHIS2Icons
@@ -108,6 +106,24 @@ class EventCapturePresenterImpl(
 
         viewModelScope.launch {
             loadBottomBarItems()
+            runResolveAutoFillValues()
+        }
+    }
+
+    private fun runResolveAutoFillValues(){
+
+        val autoFillConfigs = workflowRepository
+            .getWorkflowConfig()
+            .autoFillValues
+            .firstOrNull { it.targetProgramStage == programStage() }
+            ?: return
+
+        eventCaptureRepository.getTeiUid()?.let{
+            workflowRepository.updateDataValueNew(
+                teiUid = it,
+                eventUid = eventUid,
+                config = autoFillConfigs,
+            )
         }
     }
 
