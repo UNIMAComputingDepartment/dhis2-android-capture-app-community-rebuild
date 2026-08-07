@@ -118,23 +118,12 @@ class EventCapturePresenterImpl(
             .firstOrNull { it.targetProgramStage == programStage() }
             ?: return
 
-        val deUid =autoFillConfigs.targetElement
-
-        eventCaptureRepository.getTeiUid()?.let {
-
-            val memberNumber =
-                workflowRepository.resolveAutoAddValues(
+        eventCaptureRepository.getTeiUid()?.let{
+            workflowRepository.updateDataValueNew(
                 teiUid = it,
-                programUid = eventCaptureRepository.getProgramUid().blockingFirst()
+                eventUid = eventUid,
+                config = autoFillConfigs,
             )
-
-            if (memberNumber != null) {
-                workflowRepository.updateDataValue(
-                    eventUid = eventUid,
-                    deUid = deUid,
-                    memberNumber = memberNumber.toInt()
-                )
-            }
         }
     }
 

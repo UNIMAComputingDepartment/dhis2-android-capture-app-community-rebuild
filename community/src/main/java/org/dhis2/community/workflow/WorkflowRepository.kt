@@ -107,7 +107,6 @@ class WorkflowRepository(
     }
 
 
-
     fun searchTeiByAttributes(
         teiType: String,
         attributes: List<Pair<String, String>>
@@ -135,7 +134,7 @@ class WorkflowRepository(
 
 
         // 3️⃣ Fetch TEI and ensure correct TEI type
-         return d2.trackedEntityModule()
+        return d2.trackedEntityModule()
             .trackedEntityInstances()
             .byUid().`in`(intersectedUids.toList())
             .byTrackedEntityType().eq(teiType)
@@ -220,7 +219,8 @@ class WorkflowRepository(
             .filter { programUid ->
                 programEnrollmentControl.none { control ->
                     val attribute = attributes.find {
-                        it.trackedEntityAttribute() == control.attributeUid }
+                        it.trackedEntityAttribute() == control.attributeUid
+                    }
 
                     val attributeValue = attribute?.value() ?: return@none false
 
@@ -250,7 +250,8 @@ class WorkflowRepository(
         eventUid: String? = null,
     ): List<String> {
         val config = getWorkflowConfig()
-        val autoEnrollmentRules = config.autoEnrollment.filter { it.triggerProgram == triggerProgramUid }
+        val autoEnrollmentRules =
+            config.autoEnrollment.filter { it.triggerProgram == triggerProgramUid }
         if (autoEnrollmentRules.isEmpty()) {
             return emptyList()
         }
@@ -278,7 +279,14 @@ class WorkflowRepository(
         val enrolledPrograms = mutableListOf<String>()
 
         autoEnrollmentRules.forEach { rule ->
-            if (!isAutoEnrollmentConditionMet(rule, teiAttributes, triggerProgramUid, enrollmentUid, eventUid)) {
+            if (!isAutoEnrollmentConditionMet(
+                    rule,
+                    teiAttributes,
+                    triggerProgramUid,
+                    enrollmentUid,
+                    eventUid
+                )
+            ) {
                 return@forEach
             }
 
@@ -298,7 +306,8 @@ class WorkflowRepository(
 
                 d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setEnrollmentDate(Date())
                 d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setIncidentDate(Date())
-                d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setStatus(EnrollmentStatus.ACTIVE)
+                d2.enrollmentModule().enrollments().uid(newEnrollmentUid)
+                    .setStatus(EnrollmentStatus.ACTIVE)
                 enrolledPrograms.add(rule.targetProgram)
                 Timber.d("Auto-enrolled TEI $teiUid into program ${rule.targetProgram}")
             } catch (e: Exception) {
@@ -353,12 +362,12 @@ class WorkflowRepository(
         return when (condition.sourceType.lowercase()) {
             SOURCE_TYPE_ATTRIBUTE,
             SOURCE_TYPE_TEI_ATTRIBUTE,
-            -> teiAttributes[condition.sourceUid]
+                -> teiAttributes[condition.sourceUid]
 
             SOURCE_TYPE_DATA_ELEMENT,
             SOURCE_TYPE_DATA_ELEMENT_ALT,
             SOURCE_TYPE_EVENT_DATA,
-            -> getLatestDataElementValue(
+                -> getLatestDataElementValue(
                 enrollmentUid = enrollmentUid,
                 triggerProgramUid = triggerProgramUid,
                 dataElementUid = condition.sourceUid,
@@ -383,7 +392,8 @@ class WorkflowRepository(
                 .withTrackedEntityDataValues()
                 .one()
                 .blockingGet()
-            val matchesStage = programStageUid.isNullOrBlank() || event?.programStage() == programStageUid
+            val matchesStage =
+                programStageUid.isNullOrBlank() || event?.programStage() == programStageUid
             if (event?.program() == triggerProgramUid && matchesStage) {
                 val eventValue = event.trackedEntityDataValues()
                     ?.firstOrNull { it.dataElement() == dataElementUid }
@@ -490,8 +500,8 @@ class WorkflowRepository(
             if (relationship.from() == null || relationship.to() == null) {
                 return@count false
             }
-            
-           if (
+
+            if (
                 relationshipTypeUid != null &&
                 relationship.relationshipType() != relationshipTypeUid
             ) {
@@ -557,20 +567,36 @@ class WorkflowRepository(
 
         return latestEvent
             ?.trackedEntityDataValues()
-            ?.firstOrNull {it.dataElement() == dataElementUid}
+            ?.firstOrNull { it.dataElement() == dataElementUid }
             ?.value()
     }
 
-    fun updateDataValue(
+    fun updateDataValueNew(
+        teiUid: String,
         eventUid: String?,
-        deUid: String,
-        memberNumber: Int?
+        config: AutoFillValuesConfig
     ) {
-        if (eventUid != null) {
-            d2.trackedEntityModule().trackedEntityDataValues()
-                .value(eventUid, deUid)
-                .blockingSet(memberNumber.toString())
-        }
+
+        if (eventUid == null) return
+
+        val currentValue = d2.trackedEntityModule().trackedEntityDataValues()
+            .value(eventUid, config.targetElement)
+            .blockingGet()
+            ?.value()
+
+        if (!currentValue.isNullOrBlank() && config.updateExisting == false) return
+
+        val newValue = resolveAutoAddValues(
+            teiUid = teiUid,
+            programUid = config.triggerProgram
+        )
+
+        if (newValue.isNullOrBlank()) return
+
+        d2.trackedEntityModule().trackedEntityDataValues()
+            .value(eventUid, config.targetElement)
+            .blockingSet(newValue)
+
     }
 
     fun resolveAutoAddValues(
@@ -582,7 +608,6 @@ class WorkflowRepository(
             .autoFillValues.firstOrNull { it.triggerProgram == programUid }
 
         val source = autoFillConfig?.valueSource ?: return null
-
 
         return when (source.valueSourceType) {
 
@@ -614,8 +639,6 @@ class WorkflowRepository(
                             teiUid = teiUid,
                             relationshipTypeUid = computationConfig.relationshipTypeUid,
                             relatedProgramUid = computationConfig.relatedProgramUid,
-                            //programStageUId = source.computation.programStageUId,
-                            //dataElementUid = source.computation.dataElementUid
                         ).toString()
                     }
                 }
