@@ -8,7 +8,52 @@ data class WorkflowConfig(
     val autoIncrementAttributes: List<AutoIncrementAttributes> = emptyList(),
     val programEnrollmentControl: List<ProgramEnrollmentControl> = emptyList(),
     val autoEnrollment: List<AutoEnrollmentConfig> = emptyList(),
+    val autoFillValues: List<AutoFillValuesConfig> = emptyList()
 )
+
+data class AutoFillValuesConfig(
+    val triggerProgram: String,
+    val targetProgram: String,
+    val targetProgramStage: String,
+    val targetElement: String,
+    val updateExisting: Boolean? = false,
+    val valueSource: ValueSource,
+    val combination: String = COMBINATION_AND,
+    val conditions: List<AutoFillValuesCondition> = emptyList(),
+){
+    data class AutoFillValuesCondition(
+        val sourceType: String,
+        val sourceUid: String,
+        val condition: String,
+        val value: String,
+        val programStageUid: String? = null,
+    )
+    data class ValueSource(
+        val valueSourceType: ValueSourceType,
+        val uid: String? = null,
+        val value: String? = null,
+        val computation: ComputationConfig? = null,
+    ){
+        data class ComputationConfig(
+            val computationType: ComputationType,
+            val relationshipTypeUid: String,
+            val relatedProgramUid: String,
+            val programStageUid: String? = null,
+            val dataElementUid: String? = null,
+        ){
+            enum class ComputationType{
+                RELATED_TEI_COUNT
+            }
+        }
+        enum class ValueSourceType{
+            CONSTANT,
+            TEI_ATTRIBUTE,
+            EVENT_DATA_ELEMENT,
+            COMPUTATION
+        }
+    }
+}
+
 
 data class EntityAutoCreationConfig(
     val triggerProgram: String,
