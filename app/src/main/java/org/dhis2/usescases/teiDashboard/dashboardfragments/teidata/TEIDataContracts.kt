@@ -9,13 +9,16 @@ import io.reactivex.functions.Consumer
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.StageSection
+import org.dhis2.community.relationships.CmtRelationshipView
 import org.dhis2.form.model.EventMode
 import org.dhis2.usescases.general.AbstractActivityContracts
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
 
 class TEIDataContracts {
-    interface View : AbstractActivityContracts.View {
+    // CmtRelationshipView carries the community relationships callbacks; the presenter that uses
+    // them now lives in :community and depends only on that interface, not on this contract.
+    interface View : AbstractActivityContracts.View, CmtRelationshipView {
         fun viewLifecycleOwner(): LifecycleOwner
 
         fun setEvents(events: List<EventModel>)
@@ -82,20 +85,8 @@ class TEIDataContracts {
             programUid: String,
         )
 
-        fun goToEnrollment(programUid: String, enrollmentUid: String,)
-        fun goToTeiDashboard(teiUid: String, programUid: String, enrollmentUid: String)
-        fun confirmRelationshipRemove(
-            type: String,
-            teiUid: String
-        )
-        fun confirmPromoteToHead(
-            type: String,
-            teiUid: String
-        )
-        fun confirmPromoteToNewHousehold(
-            type: String,
-            teiUid: String
-        )
-        fun refreshDashboardHeader()
+        // goToEnrollment / goToTeiDashboard / confirmRelationshipRemove / confirmPromoteToHead /
+        // confirmPromoteToNewHousehold / refreshDashboardHeader / showOrgUnitTreeSelector are
+        // inherited from CmtRelationshipView.
     }
 }

@@ -78,4 +78,6 @@ interface SyncPresenter {
     void taskingDefault();
 
     void taskingWorker();
+
+    void medicalHistoryWorker();
 }

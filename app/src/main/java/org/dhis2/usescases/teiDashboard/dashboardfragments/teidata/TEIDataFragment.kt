@@ -51,6 +51,7 @@ import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
 import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
 import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle.MainButton
 import org.dhis2.usescases.enrollment.EnrollmentActivity
+import org.dhis2.community.relationships.CmtRelationshipPresenter
 import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
@@ -98,7 +99,7 @@ class TEIDataFragment :
     lateinit var presenter: TEIDataPresenter
 
     @Inject
-    lateinit var cmtPresenter: CmtRelationshipTEIDataPresenter
+    lateinit var cmtPresenter: CmtRelationshipPresenter
 
     @Inject
     lateinit var colorUtils: ColorUtils
@@ -894,6 +895,20 @@ class TEIDataFragment :
 
     override fun refreshDashboardHeader() {
         dashboardViewModel.updateDashboard()
+    }
+
+    override fun showOrgUnitTreeSelector(
+        programUid: String,
+        onSelected: (orgUnitUid: String) -> Unit,
+    ) {
+        OUTreeFragment
+            .Builder()
+            .singleSelection()
+            .orgUnitScope(OrgUnitSelectorScope.ProgramCaptureScope(programUid))
+            .onSelection { selectedOrgUnits ->
+                if (selectedOrgUnits.isNotEmpty()) onSelected(selectedOrgUnits.first().uid())
+            }.build()
+            .show(parentFragmentManager, "OrgUnitEnrollment")
     }
 
     companion object {

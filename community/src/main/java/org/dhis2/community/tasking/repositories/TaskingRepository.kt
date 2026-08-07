@@ -439,6 +439,7 @@ class TaskingRepository(
             )
             if (enrollmentUid.isEmpty()) {
                 Timber.tag("CreationEvaluator").e("Enrollment creation failed: enrollmentUid is null")
+                deleteOrphanTei(newTeiUid)
                 return false
             }
             val today = Date()
@@ -450,7 +451,19 @@ class TaskingRepository(
         } catch (e: D2Error) {
             Timber.tag("CreationEvaluator")
                 .e("Enrollment failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            // The task TEI was already created; without the enrollment it is an orphan that
+            // would sync as a bare TEI, so roll it back.
+            deleteOrphanTei(newTeiUid)
             return false
+        }
+    }
+
+    /** Best-effort removal of a just-created TEI when a later step of its creation failed. */
+    private fun deleteOrphanTei(teiUid: String) {
+        try {
+            d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingDelete()
+        } catch (e: Exception) {
+            Timber.tag("CreationEvaluator").e(e, "Failed to roll back orphan TEI $teiUid")
         }
     }
 
