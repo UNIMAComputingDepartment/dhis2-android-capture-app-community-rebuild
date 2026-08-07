@@ -46,6 +46,7 @@ public class SyncGranularRxWorker extends RxWorker {
         String uid = getInputData().getString(UID);
         ConflictType conflictType = ConflictType.valueOf(getInputData().getString(CONFLICT_TYPE));
 
+        presenter.medicalHistoryWorker();
         presenter.taskingWorker();
         switch (conflictType) {
             case PROGRAM:
