@@ -112,6 +112,8 @@ class EventCapturePresenterImpl(
 
     private fun runResolveAutoFillValues(){
 
+        if (workflowRepository.getWorkflowConfig().autoFillValues.isEmpty()) return
+
         val autoFillConfigs = workflowRepository
             .getWorkflowConfig()
             .autoFillValues
