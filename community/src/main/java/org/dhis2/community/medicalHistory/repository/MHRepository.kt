@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.dhis2.commons.bindings.dataElement
+import org.dhis2.community.common.COMMUNITY_NAMESPACE
 import org.dhis2.community.medicalHistory.models.MedicalHistoryConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -25,7 +26,7 @@ class MHRepository(
             val entries = d2.dataStoreModule()
                 .dataStore()
                 .byNamespace()
-                .eq("community_redesign")
+                .eq(COMMUNITY_NAMESPACE)
                 .blockingGet()
 
             val entry = entries.firstOrNull { it.key() == "medicalHistory" }

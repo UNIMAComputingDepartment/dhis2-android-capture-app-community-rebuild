@@ -2,6 +2,7 @@ package org.dhis2.community.tasking.repositories
 
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.dhis2.community.common.COMMUNITY_NAMESPACE
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.utils.Constants
@@ -56,10 +57,10 @@ class TaskingRepository(
 
         val config = try {
             val entries = d2.dataStoreModule().dataStore()
-                .byNamespace().eq("community_redesign")
+                .byNamespace().eq(COMMUNITY_NAMESPACE)
                 .blockingGet()
 
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+            Timber.d("Found ${entries.size} entries in '$COMMUNITY_NAMESPACE' namespace")
 
             val taskingEntry = entries.firstOrNull { it.key() == "tasking" }
 

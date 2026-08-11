@@ -1,6 +1,7 @@
 package org.dhis2.community.enrollmentfilters
 
 import com.google.gson.Gson
+import org.dhis2.community.common.COMMUNITY_NAMESPACE
 import org.dhis2.community.enrollmentfilters.models.AttributeFilterConfig
 import org.dhis2.community.enrollmentfilters.models.FilterOption
 import org.dhis2.community.enrollmentfilters.models.FilterWidget
@@ -13,7 +14,7 @@ import timber.log.Timber
  * Resolves, per program, the ordered list of [FilterableAttribute] shown on the enrollment list.
  *
  * Source of truth:
- *  1. If the datastore config ([DATASTORE_NAMESPACE]/[DATASTORE_KEY]) has an entry for the program,
+ *  1. If the datastore config ([COMMUNITY_NAMESPACE]/[DATASTORE_KEY]) has an entry for the program,
  *     its `attributes` allow-list (in order) is used, with optional per-attribute `typeOverrides`.
  *  2. Otherwise, the program's attributes flagged `displayInList` (ordered by sort order) are used.
  *
@@ -107,7 +108,7 @@ class AttributeFilterConfigRepository(
         return try {
             val entry =
                 d2.dataStoreModule().dataStore()
-                    .byNamespace().eq(DATASTORE_NAMESPACE)
+                    .byNamespace().eq(COMMUNITY_NAMESPACE)
                     .blockingGet()
                     .firstOrNull { it.key() == DATASTORE_KEY }
                     ?: return null
@@ -129,7 +130,6 @@ class AttributeFilterConfigRepository(
     }
 
     companion object {
-        const val DATASTORE_NAMESPACE = "community_redesign"
         const val DATASTORE_KEY = "enrollmentListFilters"
     }
 }
