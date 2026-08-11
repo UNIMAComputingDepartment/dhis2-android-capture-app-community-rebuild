@@ -129,7 +129,7 @@ class AttributeFilterConfigRepository(
     }
 
     companion object {
-        const val DATASTORE_NAMESPACE = "community_redesign"
+        const val DATASTORE_NAMESPACE = "community_redesign_v1"
         const val DATASTORE_KEY = "enrollmentListFilters"
     }
 }

@@ -56,7 +56,7 @@ class DataMapperConfigRepository(
     }
 
     companion object {
-        /** Key within the `community_redesign` datastore namespace. */
+        /** Key within the `community_redesign_v1` datastore namespace. */
         const val DATASTORE_KEY = "dataMappers"
     }
 }

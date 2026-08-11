@@ -56,10 +56,10 @@ class TaskingRepository(
 
         val config = try {
             val entries = d2.dataStoreModule().dataStore()
-                .byNamespace().eq("community_redesign")
+                .byNamespace().eq("community_redesign_v1")
                 .blockingGet()
 
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+            Timber.d("Found ${entries.size} entries in 'community_redesign_v1' namespace")
 
             val taskingEntry = entries.firstOrNull { it.key() == "tasking" }
 

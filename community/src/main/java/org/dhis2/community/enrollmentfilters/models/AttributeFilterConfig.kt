@@ -7,7 +7,7 @@ import com.google.gson.annotations.JsonAdapter
 import java.lang.reflect.Type
 
 /**
- * Datastore config (namespace `community_redesign`, key `enrollmentListFilters`) that curates which
+ * Datastore config (namespace `community_redesign_v1`, key `enrollmentListFilters`) that curates which
  * attributes are filterable per program. Optional: when a program has no entry, the repository
  * falls back to that program's `displayInList` attributes.
  *

@@ -25,7 +25,7 @@ class MHRepository(
             val entries = d2.dataStoreModule()
                 .dataStore()
                 .byNamespace()
-                .eq("community_redesign")
+                .eq("community_redesign_v1")
                 .blockingGet()
 
             val entry = entries.firstOrNull { it.key() == "medicalHistory" }

@@ -5,7 +5,7 @@ import org.hisp.dhis.android.core.D2
 import timber.log.Timber
 
 /** Datastore namespace all community customizations read their config from. */
-const val COMMUNITY_NAMESPACE = "community_redesign"
+const val COMMUNITY_NAMESPACE = "community_redesign_v1"
 
 /**
  * Reads [key] from the community datastore namespace and returns the raw JSON, or null when the
