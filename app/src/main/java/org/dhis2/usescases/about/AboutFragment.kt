@@ -43,7 +43,7 @@ class AboutFragment :
                 aboutContact.movementMethod = LinkMovementMethod.getInstance()
                 aboutApp.text = getString(R.string.about_app).format(context?.buildInfo())
                 aboutIchisVersion.text =
-                    getString(R.string.about_ichis_version).format(BuildConfig.ICHIS_VERSION)
+                    getString(R.string.about_ichis).format(BuildConfig.ICHIS_VERSION)
                 appSDK.text = getString(R.string.about_sdk).format(BuildConfig.SDK_VERSION)
                 privacyPolicy.setOnClickListener { navigateToPrivacyPolicy() }
             }.root
