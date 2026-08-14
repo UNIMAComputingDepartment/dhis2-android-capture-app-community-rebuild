@@ -261,7 +261,7 @@ synced — it describes *this device's* write history, which is exactly the scop
 
 ## 4. Config schema
 
-Single datastore entry, namespace `community_redesign`, key `dataMappers`.
+Single datastore entry, namespace `R.string.community_redesign_namespace_version.toString()`, key `dataMappers`.
 
 ```json
 {
