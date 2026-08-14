@@ -42,6 +42,14 @@
                     android:layout_height="wrap_content"
                     app:layout_constraintStart_toStartOf="parent"
                     android:text="@string/about_sdk"
+                    app:layout_constraintTop_toBottomOf="@id/aboutIchisVersion" />
+
+                <TextView
+                    android:id="@+id/aboutIchisVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:text="@string/about_ichis"
                     app:layout_constraintTop_toBottomOf="@id/aboutApp" />
 
                 <TextView
