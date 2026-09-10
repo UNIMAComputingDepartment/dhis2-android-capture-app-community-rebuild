@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.ui.TaskingStatus
 import org.hisp.dhis.android.core.D2Manager
@@ -40,7 +41,7 @@ class TaskReminderWorker(
             }
 
             val d2 = D2Manager.getD2()
-            val repository = TaskingRepository(d2)
+            val repository = TaskingRepositoryProvider.get(d2)
             val notificationManager = NotificationManagerCompat.from(applicationContext)
 
             // OPTIMIZATION: Run all database queries on IO dispatcher to keep main thread free

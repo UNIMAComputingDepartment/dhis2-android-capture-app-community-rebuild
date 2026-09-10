@@ -262,11 +262,8 @@ class EnrollmentModule(
     }
 
 
-    @Provides
-    @PerActivity
-    fun provideTaskingRepository(d2: D2): TaskingRepository {
-        return TaskingRepository(d2)
-    }
+    // TaskingRepository comes from ServerModule at @PerServer scope - it caches task state and
+    // invalidates on write, so every caller must share one instance.
 
     @Provides
     @PerActivity

@@ -45,6 +45,7 @@ import org.dhis2.usescases.main.domain.LogoutUser
 import org.dhis2.usescases.settings.DeleteUserData
 import org.dhis2.usescases.sync.WAS_INITIAL_SYNC_DONE
 import org.dhis2.utils.TRUE
+import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.systeminfo.SystemInfo
 import org.hisp.dhis.android.core.user.User
@@ -323,11 +324,13 @@ class MainPresenter(
 
     fun onDataSuccess() {
         launch(dispatcherProvider.io()) {
-            userManager.d2
-                .dataStoreModule()
-                .localDataStore()
-                .value(WAS_INITIAL_SYNC_DONE)
-                .blockingSet(TRUE)
+            try {
+                userManager.d2.dataStoreModule().localDataStore()
+                    .value(WAS_INITIAL_SYNC_DONE).blockingSet(TRUE)
+            } catch (e: D2Error) {
+                Timber.e(e.originalException(), "WasInitialSyncDone failed: %s / %s",
+                    e.errorCode(), e.errorDescription())
+            }
         }
     }
 

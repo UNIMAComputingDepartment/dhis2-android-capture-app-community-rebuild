@@ -18,6 +18,8 @@ import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.EventResourcesProvider
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
+import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
@@ -105,6 +107,17 @@ class ServerModule {
     @Provides
     @PerServer
     fun providesRepository(d2: D2): ServerSettingsRepository = ServerSettingsRepository(d2)
+
+    /**
+     * One instance for the whole session. TaskingRepository memoises task state and invalidates it
+     * on write, so a second instance would hold a cache that the first instance's writes never
+     * clear - the sync sweep could then miss a task the capture screen just created. Scoped to the
+     * server component so it dies with D2 rather than outliving an account switch.
+     */
+    @Provides
+    @PerServer
+    fun providesTaskingRepository(d2: D2): TaskingRepository =
+        TaskingRepositoryProvider.publish(TaskingRepository(d2))
 
     @Provides
     @PerServer

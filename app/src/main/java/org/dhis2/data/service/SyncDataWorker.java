@@ -22,6 +22,7 @@ import org.dhis2.commons.Constants;
 import org.dhis2.commons.date.DateUtils;
 import org.dhis2.commons.network.NetworkUtils;
 import org.dhis2.commons.prefs.PreferenceProvider;
+import org.dhis2.community.derivation.CommunityDerivationScheduler;
 
 import java.util.Calendar;
 import java.util.Objects;
@@ -73,8 +74,6 @@ public class SyncDataWorker extends Worker {
                 20);
 
         try {
-            presenter.medicalHistoryWorker();
-            presenter.taskingWorker();
             presenter.syncAndDownloadEvents();
         } catch (Exception e) {
             if (!new NetworkUtils(getApplicationContext()).isOnline()) {
@@ -155,6 +154,11 @@ public class SyncDataWorker extends Worker {
         cancelNotification();
 
         presenter.startPeriodicDataWork();
+
+        // Community derivation used to run inline at the top of this method, which put it inside
+        // the sync's failure, transaction and time budget. It is its own worker now, enqueued
+        // after the download so it derives from fresh data instead of the previous sync's.
+        CommunityDerivationScheduler.runAfterSync(getApplicationContext());
 
         presenter.finishSync();
 

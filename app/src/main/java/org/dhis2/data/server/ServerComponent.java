@@ -7,6 +7,7 @@ import org.dhis2.commons.filters.di.FilterModule;
 import org.dhis2.commons.orgunitselector.OUTreeComponent;
 import org.dhis2.commons.orgunitselector.OUTreeModule;
 import org.dhis2.commons.resources.DhisPeriodUtils;
+import org.dhis2.community.tasking.repositories.TaskingRepository;
 import org.dhis2.data.user.UserComponent;
 import org.dhis2.data.user.UserModule;
 import org.dhis2.ui.ThemeManager;
@@ -33,6 +34,14 @@ public interface ServerComponent extends Charts.Dependencies {
     ServerStatus serverStatus();
 
     ThemeManager themeManager();
+
+    /**
+     * The single session-scoped tasking repository. Exposed so the call sites that live outside
+     * the Dagger graph (workers, services, broadcast receivers, fragments) reach the same cached
+     * instance instead of constructing their own.
+     */
+    @NonNull
+    TaskingRepository taskingRepository();
 
     @NonNull
     UserComponent plus(@NonNull UserModule userModule);

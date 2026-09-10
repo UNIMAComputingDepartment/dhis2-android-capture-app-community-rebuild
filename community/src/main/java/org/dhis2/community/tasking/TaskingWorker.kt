@@ -3,6 +3,7 @@ package org.dhis2.community.tasking
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
 import org.dhis2.community.tasking.engine.DefaultingEvaluator
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
@@ -17,7 +18,7 @@ class TaskingWorker(
     }
 
     private fun defaultInvalidTasks() {
-        val repo = TaskingRepository(d2)
+        val repo = TaskingRepositoryProvider.get(d2)
 
         DefaultingEvaluator(repo)
             .evaluateForDefaultingEnrollment(

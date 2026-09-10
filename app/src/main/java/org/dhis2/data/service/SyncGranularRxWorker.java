@@ -16,6 +16,7 @@ import androidx.work.WorkerParameters;
 
 import org.dhis2.commons.date.DateUtils;
 import org.dhis2.commons.sync.ConflictType;
+import org.dhis2.community.derivation.CommunityDerivationScheduler;
 import org.hisp.dhis.android.core.imports.TrackerImportConflict;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,8 +47,11 @@ public class SyncGranularRxWorker extends RxWorker {
         String uid = getInputData().getString(UID);
         ConflictType conflictType = ConflictType.valueOf(getInputData().getString(CONFLICT_TYPE));
 
-        presenter.medicalHistoryWorker();
-        presenter.taskingWorker();
+        // Was a full derivation sweep over every TEI, run before syncing a single record - and
+        // run before the sync, so it derived from data this worker had not fetched yet. The
+        // change-driven pass covers whatever this sync brings down.
+        CommunityDerivationScheduler.runAfterSync(getApplicationContext());
+
         switch (conflictType) {
             case PROGRAM:
                 return Single.fromObservable(presenter.syncGranularProgram(uid)).map(d2Progress -> {

@@ -1,7 +1,6 @@
 package org.dhis2.community.tasking.repositories
 
 import com.google.gson.Gson
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.dhis2.community.common.COMMUNITY_NAMESPACE
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
@@ -19,7 +18,6 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProje
 import timber.log.Timber
 import java.util.Collections
 import java.util.Date
-import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
 
 @Singleton
@@ -35,6 +33,16 @@ class TaskingRepository(
         get() = getTaskingConfig().taskProgramConfig.firstOrNull()?.taskProgressUid.orEmpty()
 
     private val programDisplayNames = mutableMapOf<String, String?>()
+
+    // program uid + data element uid -> the stage declaring that data element. Resolving this
+    // costs one query for every stage of the program, and the periodic sweep asks for the same
+    // handful of data elements once per TEI per task config, so memoise it. Metadata does not
+    // change while a sweep is running.
+    private val stageForDataElement = mutableMapOf<Pair<String, String>, String?>()
+
+    // Both cleared by invalidateTaskCache() on every task write - see getTasks()/getAllTasks().
+    private var cachedTasks: List<Task>? = null
+    private var cachedAllTasks: List<Task>? = null
 
     fun getCachedConfig() = cachedConfig
 
@@ -251,17 +259,39 @@ class TaskingRepository(
             .blockingGet()
     }
 
+    /**
+     * Loads every task TEI with its attribute values. Callers ask for this once per TEI in the
+     * periodic sweep, so it is memoised - but only until something writes a task. Any write path
+     * must call [invalidateTaskCache], so a caller can never observe a task it or a previous
+     * iteration has already updated. Freshness is enforced here rather than assumed at call sites.
+     */
+    @Synchronized
     fun getTasks(): List<Task> {
-        val teis = getTaskTei()
+        cachedTasks?.let { return it }
 
         val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
 
-        return teis.map { tei: TrackedEntityInstance ->
-            teiToTask(tei, programConfig)
-        }
+        return getTaskTei()
+            .map { tei: TrackedEntityInstance -> teiToTask(tei, programConfig) }
+            .also { cachedTasks = it }
     }
 
+    /**
+     * Clears every derived view of task state. Must be called by anything that writes a task
+     * attribute value or changes which TEIs are enrolled in the task program - those are the only
+     * two inputs [teiToTask] reads. Enrollment *status* changes do not need it: neither loader
+     * filters enrollments by status and no Task field is derived from the enrollment.
+     */
+    @Synchronized
+    fun invalidateTaskCache() {
+        cachedTasks = null
+        cachedAllTasks = null
+    }
+
+    @Synchronized
     fun getAllTasks(): List<Task> {
+        cachedAllTasks?.let { return it }
+
         val taskTeiUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.teiTypeUid
         val programUid = getTaskingConfig().taskProgramConfig.firstOrNull()?.programUid
         if (taskTeiUid.isNullOrEmpty()) return emptyList()
@@ -283,10 +313,9 @@ class TaskingRepository(
 
         val programConfig = getTaskingConfig().taskProgramConfig.firstOrNull()
 
-        return allTies.map { tei: TrackedEntityInstance ->
-            teiToTask(tei, programConfig)
-        }
-
+        return allTies
+            .map { tei: TrackedEntityInstance -> teiToTask(tei, programConfig) }
+            .also { cachedAllTasks = it }
     }
 
     fun TrackedEntityInstance.getAttributeValue(attributeUid: String?): String? {
@@ -332,9 +361,19 @@ class TaskingRepository(
         }
 
         try {
-            d2.trackedEntityModule().trackedEntityAttributeValues()
+            val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
                 .value(taskAttrUid, taskTieUid)
-                .blockingSet(newTaskAttrValue ?: "")
+
+            // Every sweep recomputes progress for every open task and most of the time it is
+            // identical. Writing it back anyway cost three things: a database write, an
+            // invalidation that made the task caches useless, and a TO_POST flag that re-uploaded
+            // an unchanged task on the next sync. Only write a value that actually differs.
+            val currentValue = valueRepository.blockingGet()?.value()
+            val nextValue = newTaskAttrValue ?: ""
+            if (currentValue == nextValue) return
+
+            valueRepository.blockingSet(nextValue)
+            invalidateTaskCache()
         } catch (ex: Exception) {
             Timber.tag("TaskingRepository").e(ex, "Error updating task attribute value")
             if (retries < 3 && taskTieUid.isNotEmpty()) {
@@ -363,11 +402,6 @@ class TaskingRepository(
         }
     }
 
-
-    // ===== CACHING FOR PERFORMANCE =====
-    private val _allTasksCache = MutableStateFlow<List<Task>>(emptyList())
-    private val allTasksCacheTimestamp = AtomicReference<Long>(0)
-    private val CACHE_TTL_TASKS = 30 * 1000L // 30 seconds for task list
 
     @Synchronized
     fun createTask(
@@ -448,6 +482,10 @@ class TaskingRepository(
             d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(today)
             d2.enrollmentModule().enrollments().uid(enrollmentUid)
                 .setStatus(EnrollmentStatus.ACTIVE)
+            // The enrollment is what makes this TEI visible to the task loaders, and
+            // updateTaskAttrValue returns early without invalidating when a configured attribute
+            // uid is blank - so never rely on the attribute writes above having done it.
+            invalidateTaskCache()
             return true
         } catch (e: D2Error) {
             Timber.tag("CreationEvaluator")
@@ -465,6 +503,8 @@ class TaskingRepository(
             d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingDelete()
         } catch (e: Exception) {
             Timber.tag("CreationEvaluator").e(e, "Failed to roll back orphan TEI $teiUid")
+        } finally {
+            invalidateTaskCache()
         }
     }
 
@@ -479,16 +519,18 @@ class TaskingRepository(
         enrollmentUd: String,
         eventUid: String?
     ): Event? {
-        val stage = d2.programModule().programStages().byProgramUid()
-            .eq(programUid).blockingGet()
-            .firstOrNull {
-                d2.programModule().programStageDataElements()
-                    .byProgramStage().eq(it.uid())
-                    .byDataElement().eq(dataElementUid)
-                    .blockingGet().isNotEmpty()
-            }
+        val stageUid = stageForDataElement.getOrPut(programUid to dataElementUid) {
+            d2.programModule().programStages().byProgramUid()
+                .eq(programUid).blockingGet()
+                .firstOrNull {
+                    d2.programModule().programStageDataElements()
+                        .byProgramStage().eq(it.uid())
+                        .byDataElement().eq(dataElementUid)
+                        .blockingGet().isNotEmpty()
+                }?.uid()
+        }
 
-        if (stage == null) {
+        if (stageUid == null) {
             Timber.tag("TaskingRepository").w(
                 "getLatestEvent: no stage of program $programUid declares data element " +
                     "$dataElementUid as a stage data element — cannot search for it"
@@ -499,7 +541,7 @@ class TaskingRepository(
         val events = if (eventUid == null)
             d2.eventModule().events()
                 .byEnrollmentUid().eq(enrollmentUd)
-                .byProgramStageUid().eq(stage.uid())
+                .byProgramStageUid().eq(stageUid)
                 .withTrackedEntityDataValues()
                 .blockingGet()
         else
@@ -517,14 +559,14 @@ class TaskingRepository(
 
         if (result == null) {
             Timber.tag("TaskingRepository").w(
-                "getLatestEvent: stage ${stage.uid()} declares $dataElementUid but no matching " +
+                "getLatestEvent: stage ${stageUid} declares $dataElementUid but no matching " +
                     "event found (enrollment=$enrollmentUd, eventUid=$eventUid, candidates=${events.size})"
             )
         } else if (!hasTargetValue(result)) {
             val eventsWithValue = events.filter { hasTargetValue(it) }
             Timber.tag("TaskingRepository").w(
                 "getLatestEvent: picked event ${result.uid()} for $dataElementUid has no value; " +
-                    "${events.size} candidate event(s) in stage ${stage.uid()}, " +
+                    "${events.size} candidate event(s) in stage ${stageUid}, " +
                     "${eventsWithValue.size} of them do have a value " +
                     "(${eventsWithValue.map { it.uid() + "@" + (it.eventDate() ?: it.created()) }})"
             )

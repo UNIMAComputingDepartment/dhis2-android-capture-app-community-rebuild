@@ -13,6 +13,7 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventCreateProjection
 import org.hisp.dhis.android.core.event.EventStatus
+import timber.log.Timber
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Calendar
@@ -21,6 +22,8 @@ import java.util.Date
 class MHRepository(
     private val d2: D2
 ) {
+    private val TAG = MHRepository::class.java.simpleName
+
     fun getMedicalHistoryConfigs(): MedicalHistoryConfig {
         return try {
             val entries = d2.dataStoreModule()
@@ -82,17 +85,39 @@ class MHRepository(
             getMedicalHistoryConfigs().baseProgram.firstOrNull()
                 ?.baseProgramStageUid
 
+        // ?.uid().toString() used to yield the literal string "null" when the TEI had no base
+        // event, and writing a data value against event "null" fails the same foreign key at
+        // commit - which poisons the database connection for every later write.
         val eventUid = getLatestEvent(
             teiUid = teiUid,
             programUid = baseProgramUid,
             programStageUid = baseProgramStageUid
-        )?.uid().toString()
+        )?.uid()
 
+        if (eventUid.isNullOrEmpty()) {
+            Timber.tag(TAG).w(
+                "No base event for TEI %s in program %s - skipping summary write",
+                teiUid,
+                baseProgramUid,
+            )
+            return
+        }
+
+        // Only write values that actually changed. Rewriting an identical summary flags the event
+        // TO_POST and re-uploads it on every sync, for every TEI, forever.
+        var changed = false
         summaries.forEach { (deUid, newValue) ->
-            d2.trackedEntityModule().trackedEntityDataValues()
+            val valueRepository = d2.trackedEntityModule().trackedEntityDataValues()
                 .value(eventUid, deUid)
-                .blockingSet(newValue)
 
+            if (valueRepository.blockingGet()?.value() != newValue) {
+                valueRepository.blockingSet(newValue)
+                changed = true
+            }
+        }
+
+        // Was inside the loop above, so it re-completed the event once per summary value.
+        if (changed) {
             d2.eventModule().events()
                 .uid(eventUid)
                 .setStatus(EventStatus.COMPLETED)
@@ -199,18 +224,61 @@ class MHRepository(
         programUid: String,
         programStageUid: String,
         eventDate: Date
-    ): String {
-        val enrollmentUid = d2.enrollmentModule()
+    ): String? {
+        val enrollment = d2.enrollmentModule()
             .enrollments()
             .byTrackedEntityInstance().eq(teiUid)
             .byProgram().eq(programUid)
             .byStatus().eq(EnrollmentStatus.ACTIVE)
             .one()
             .blockingGet()
-            ?.uid()
             ?: throw IllegalStateException(
                 "No active enrollment found for TEI $teiUid"
             )
+
+        val enrollmentUid = enrollment.uid()
+        val organisationUnitUid = enrollment.organisationUnit()
+
+        // Each reference below is a foreign key on the event table. SQLite enforces them at
+        // COMMIT, and a failed commit leaves the connection inside a transaction while Room has
+        // already discarded its own bookkeeping - after that every write in the process dies with
+        // "cannot start a transaction within a transaction". Never hand the SDK an insert that
+        // cannot commit; skip the TEI instead.
+        val unresolved = buildList {
+            if (!d2.programModule().programs().uid(programUid).blockingExists()) {
+                add("program=$programUid")
+            }
+
+            val programStage = d2.programModule()
+                .programStages()
+                .uid(programStageUid)
+                .blockingGet()
+
+            if (programStage == null) {
+                add("programStage=$programStageUid")
+            } else if (programStage.program()?.uid() != programUid) {
+                add("programStage=$programStageUid belongs to program=${programStage.program()?.uid()}")
+            }
+
+            if (organisationUnitUid.isNullOrEmpty()) {
+                add("organisationUnit=<none on enrollment $enrollmentUid>")
+            } else if (!d2.organisationUnitModule()
+                    .organisationUnits()
+                    .uid(organisationUnitUid)
+                    .blockingExists()
+            ) {
+                add("organisationUnit=$organisationUnitUid")
+            }
+        }
+
+        if (unresolved.isNotEmpty()) {
+            Timber.tag(TAG).w(
+                "Skipping medical history event for TEI %s - unresolved references: %s",
+                teiUid,
+                unresolved.joinToString(),
+            )
+            return null
+        }
 
         val eventUid = d2.eventModule()
             .events()
@@ -219,13 +287,7 @@ class MHRepository(
                     .enrollment(enrollmentUid)
                     .program(programUid)
                     .programStage(programStageUid)
-                    .organisationUnit(
-                        d2.enrollmentModule()
-                            .enrollments()
-                            .uid(enrollmentUid)
-                            .blockingGet()!!
-                            .organisationUnit()
-                    )
+                    .organisationUnit(organisationUnitUid)
                     .build()
             )
 

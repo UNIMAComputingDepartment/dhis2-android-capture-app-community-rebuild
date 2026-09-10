@@ -80,6 +80,11 @@ class TaskingEngine(
         eventUid: String?
     ) {
         try {
+            // Task caches are per-repository-instance, and the capture screens hold a different
+            // instance from the sync sweep. Start every evaluation from the database so a pass
+            // can never open with task state another instance has already changed.
+            repository.invalidateTaskCache()
+
             val config = repository.getTaskingConfig().taskProgramConfig.first()
             val taskProgramUid = config.programUid
             val taskTIETypeUid = config.teiTypeUid
