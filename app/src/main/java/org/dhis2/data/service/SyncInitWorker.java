@@ -7,6 +7,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import org.dhis2.App;
+import org.dhis2.community.derivation.CommunityDerivationScheduler;
 
 import javax.inject.Inject;
 
@@ -32,8 +33,11 @@ public class SyncInitWorker extends Worker {
 
             ((App) getApplicationContext()).userComponent().plus(new SyncInitWorkerModule()).inject(this);
 
-            presenter.medicalHistoryWorker();
-            presenter.taskingWorker();
+            // Derivation is no longer run inline here. The time-driven pass is on its own daily
+            // schedule, and the change-driven pass is enqueued by SyncDataWorker once data has
+            // actually come down - running it at init derived from an empty database.
+            CommunityDerivationScheduler.scheduleDaily(getApplicationContext());
+
             if (getInputData().getBoolean(INIT_META, false))
                 presenter.startPeriodicMetaWork();
             if (getInputData().getBoolean(INIT_DATA, false))

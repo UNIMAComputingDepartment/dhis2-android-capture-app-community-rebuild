@@ -1,5 +1,6 @@
 package org.dhis2.community.tasking.services
 
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
 import org.dhis2.community.tasking.notifications.TaskStatusCounts
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.hisp.dhis.android.core.D2
@@ -41,7 +42,7 @@ class TaskCountService(private val d2: D2) {
         Timber.d("TaskCountService: Computing fresh task status counts (forceRefresh=$forceRefresh)")
 
         return try {
-            val repository = TaskingRepository(d2)
+            val repository = TaskingRepositoryProvider.get(d2)
 
             // Get all tasks - this is the expensive operation
             val allTasks = repository.getAllTasks()

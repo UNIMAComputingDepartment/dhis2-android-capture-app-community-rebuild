@@ -18,6 +18,7 @@ class TaskingWorker(
     private val defaultingEvaluator = DefaultingEvaluator(repository)
 
     fun defaultingWorker(){
+        repository.invalidateTaskCache()
         DefaultingEvaluator(repository)
             .periodicCheck()
     }
@@ -26,8 +27,10 @@ class TaskingWorker(
     fun periodicWorker(
     ){
         try {
+            repository.invalidateTaskCache()
+
             val config = repository.getTaskingConfig()
-            val taskProgramConfig = repository.getTaskingConfig().taskProgramConfig.first()
+            val taskProgramConfig = config.taskProgramConfig.first()
             val taskProgramUid = taskProgramConfig.programUid
             val taskTIETypeUid = taskProgramConfig.teiTypeUid
             val taskingProgramUid = config.taskProgramConfig.first().programUid
@@ -44,10 +47,16 @@ class TaskingWorker(
 
                 val tasksToRun = programTask.taskConfigs.filter { !it.frequency.isNullOrEmpty() }
 
-                tasksToRun.forEach { tasksToRun ->
+                // This used to be `tasksToRun.forEach { ... }` wrapping the sweep below, but the
+                // body never referenced the loop variable - evaluateForCreation iterates every
+                // taskConfig itself, and completion and update are config-independent too. So the
+                // whole per-TEI sweep ran once per frequency-bearing config, doing identical work
+                // each time (after the first pass notDuplicateTask suppresses every creation).
+                // The frequency list still gates the sweep; it just no longer multiplies it.
+                if (tasksToRun.isNotEmpty()) {
+
                     val teiUids =
                         repository.getTeiUidsWithActiveEnrollmentForProgram(programTask.programUid)
-
 
                     teiUids.forEach { teiUid ->
                         val sourceTeiOrgUnitUid = repository.getOrgUnit(teiUid)

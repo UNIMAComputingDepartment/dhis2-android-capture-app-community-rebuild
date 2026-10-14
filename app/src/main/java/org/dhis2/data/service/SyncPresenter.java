@@ -74,10 +74,4 @@ interface SyncPresenter {
     void finishSync();
 
     void setNetworkUnavailable();
-
-    void taskingDefault();
-
-    void taskingWorker();
-
-    void medicalHistoryWorker();
 }

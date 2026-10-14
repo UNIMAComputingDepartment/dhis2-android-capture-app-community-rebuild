@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.commons.orgunitselector.OUTreeFragment
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
 import org.dhis2.community.tasking.filters.TaskFilterRepository
 import org.dhis2.community.tasking.notifications.NotificationChannelManager
 import org.dhis2.community.tasking.notifications.TaskReminderScheduler
@@ -78,7 +79,7 @@ class TaskingFragment(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         d2 = org.hisp.dhis.android.core.D2Manager.getD2()
-        repository = TaskingRepository(d2)
+        repository = TaskingRepositoryProvider.get(d2)
         filterRepository = TaskFilterRepository()
         viewModel = TaskingViewModel(repository, filterRepository)
 

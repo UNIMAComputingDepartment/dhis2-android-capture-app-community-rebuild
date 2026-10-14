@@ -7,6 +7,7 @@ import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.dhis2.community.tasking.di.TaskingRepositoryProvider
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.ui.TaskingStatus
 import org.hisp.dhis.android.core.D2Manager
@@ -94,7 +95,7 @@ class TaskReminderBroadcastReceiver : BroadcastReceiver() {
 
                     // Try to post individual child notifications (UNLIMITED - no cap)
                     try {
-                        val repository = TaskingRepository(d2)
+                        val repository = TaskingRepositoryProvider.get(d2)
                         val allTasks = repository.getAllTasks()
 
                         // Filter for non-completed tasks this week and sort by DUE DATE DESCENDING (newest/2026 first)

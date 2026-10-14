@@ -15,7 +15,6 @@ import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisProgramUtils
 import org.dhis2.data.service.SyncStatusController
 import org.hisp.dhis.android.core.D2
-import org.dhis2.community.tasking.repositories.TaskingRepository
 
 @Module
 class ProgramModule(
@@ -62,10 +61,6 @@ class ProgramModule(
             schedulerProvider,
         )
 
-    @Provides
-    @PerFragment
-    internal fun provideTaskingRepository(
-        d2: D2,
-    ): TaskingRepository =
-        TaskingRepository(d2)
+    // TaskingRepository comes from ServerModule at @PerServer scope - it caches task state and
+    // invalidates on write, so every caller must share one instance.
 }
