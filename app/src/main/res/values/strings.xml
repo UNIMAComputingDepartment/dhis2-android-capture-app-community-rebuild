@@ -357,6 +357,7 @@
 
     <!--ABOUT-->
     <string name="about_app">App Version: %s</string>
+    <string name="about_ichis">iCHIS Version: %s</string>
     <string name="about_sdk">SDK Version: %s</string>
     <string name="about_connected">Connected to: %s</string>
     <string name="about_user">Current user: %s</string>

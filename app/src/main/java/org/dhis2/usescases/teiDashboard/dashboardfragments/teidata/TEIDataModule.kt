@@ -16,6 +16,7 @@ import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.relationships.CmtRelationshipPresenter
 import org.dhis2.community.relationships.RelationshipRepository
 import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
@@ -92,8 +93,8 @@ class TEIDataModule(
         schedulerProvider: SchedulerProvider,
         relationshipRepository: RelationshipRepository,
         workflowRepository: WorkflowRepository
-    ): CmtRelationshipTEIDataPresenter {
-        return CmtRelationshipTEIDataPresenter(
+    ): CmtRelationshipPresenter {
+        return CmtRelationshipPresenter(
             view,
             d2,
             programUid,

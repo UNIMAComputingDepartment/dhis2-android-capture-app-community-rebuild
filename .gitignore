@@ -14,3 +14,8 @@
 .kotlin/
 __pycache__/
 *.pyc
+# Kotlin/JVM (Eclipse-style) compile output
+bin/
+# Android product-flavor build outputs (flavors: dhis, dhis2)
+/app/dhis/
+/app/dhis2/

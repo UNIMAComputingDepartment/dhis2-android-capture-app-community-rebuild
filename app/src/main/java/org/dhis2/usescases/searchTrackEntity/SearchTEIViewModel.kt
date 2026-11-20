@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.filter
 import androidx.paging.map
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -24,6 +25,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -43,6 +46,9 @@ import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.community.enrollmentfilters.AttributeFilterState
+import org.dhis2.community.enrollmentfilters.AttributeFilterInjector
+import org.dhis2.community.enrollmentfilters.models.FilterableAttribute
 import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.search.SearchParametersModel
 import org.dhis2.form.model.FieldUiModelImpl
@@ -62,6 +68,7 @@ import org.dhis2.utils.customviews.navigationbar.NavigationPage
 import org.dhis2.utils.customviews.navigationbar.NavigationPageConfigurator
 import org.hisp.dhis.android.core.arch.helpers.Result
 import org.hisp.dhis.android.core.common.ValueType
+import org.hisp.dhis.android.core.trackedentity.search.TrackedEntitySearchItem
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
 import org.maplibre.geojson.Feature
@@ -82,8 +89,13 @@ class SearchTEIViewModel(
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
     private val filterManager: FilterManager,
-    private val workflowRepository: WorkflowRepository
+    private val workflowRepository: WorkflowRepository,
+    private val attributeFilterInjector: AttributeFilterInjector
 ) : ViewModel() {
+
+    /** Community: attributes that can be filtered on the enrollment list, resolved for this program. */
+    private val _attributeFilters = MutableLiveData<List<FilterableAttribute>>(emptyList())
+    val attributeFilters: LiveData<List<FilterableAttribute>> = _attributeFilters
     private var layersVisibility: Map<String, MapLayer> = emptyMap()
 
     private val pageConfiguration = MutableLiveData<NavigationPageConfigurator>()
@@ -166,6 +178,21 @@ class SearchTEIViewModel(
             .cachedIn(viewModelScope)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PagingData.empty())
 
+    /**
+     * Community: applies range attribute filters (number/age/date) client-side, since the SDK's
+     * public search API can't express ranges. No-op when no range filter is active.
+     */
+    private fun Flow<PagingData<TrackedEntitySearchItem>>.withAttributeRangeFilter():
+        Flow<PagingData<TrackedEntitySearchItem>> =
+        if (attributeFilterInjector.hasRangeFilters(initialProgramUid)) {
+            attributeFilterInjector.resetValueCache()
+            map { pagingData ->
+                pagingData.filter { attributeFilterInjector.rangeMatches(it, initialProgramUid) }
+            }
+        } else {
+            this
+        }
+
     init {
         viewModelScope.launch(dispatchers.io()) {
             createButtonScrollVisibility.postValue(
@@ -178,6 +205,19 @@ class SearchTEIViewModel(
             )
 
             setupWorkflow()
+
+            // Community: resolve filterable attributes off the main thread (d2 metadata queries).
+            _attributeFilters.postValue(
+                attributeFilterInjector.filterableAttributes(initialProgramUid),
+            )
+        }
+
+        // Community: re-run the search whenever the enrollment-list attribute filters change.
+        viewModelScope.launch {
+            AttributeFilterState.version.drop(1).collectLatest {
+                onNewSearch.emit(Unit)
+                _refreshData.postValue(Unit)
+            }
         }
     }
 
@@ -293,7 +333,8 @@ class SearchTEIViewModel(
         )
     }
 
-    private fun hasActiveFilters() = filtersActive.value == true
+    private fun hasActiveFilters() =
+        filtersActive.value == true || AttributeFilterState.activeCount() > 0
 
     fun setMapScreen() {
         _screenState.value.takeIf { it?.screenState == SearchScreenState.LIST }?.let {
@@ -474,7 +515,7 @@ class SearchTEIViewModel(
                 searchRepositoryKt.searchTrackedEntities(
                     searchParametersModel,
                     searching && networkUtils.isOnline(),
-                )
+                ).withAttributeRangeFilter()
 
             return@withContext getPagingData.map { pagingData ->
                 pagingData.map { item ->
@@ -514,7 +555,7 @@ class SearchTEIViewModel(
                 searchRepositoryKt.searchTrackedEntities(
                     searchParametersModel,
                     false,
-                )
+                ).withAttributeRangeFilter()
 
             return@withContext getPagingData.map { pagingData ->
                 pagingData.map { item ->

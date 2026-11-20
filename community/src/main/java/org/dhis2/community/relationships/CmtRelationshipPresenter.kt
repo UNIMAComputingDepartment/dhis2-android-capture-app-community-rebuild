@@ -1,27 +1,25 @@
-package org.dhis2.usescases.teiDashboard.dashboardfragments.teidata
+package org.dhis2.community.relationships
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Consumer
-import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.community.relationships.CmtRelationshipTypeViewModel
-import org.dhis2.community.relationships.Relationship
-import org.dhis2.community.relationships.RelationshipConfig
-import org.dhis2.community.relationships.RelationshipConstraintSide
-import org.dhis2.community.relationships.RelationshipRepository
 import org.dhis2.community.workflow.WorkflowConfig
 import org.dhis2.community.workflow.WorkflowRepository
-import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import timber.log.Timber
 import java.util.concurrent.Callable
 
-class CmtRelationshipTEIDataPresenter(
-    private val view: TEIDataContracts.View,
+/**
+ * Drives the community household-relationships block on the TEI dashboard: listing related TEIs,
+ * searching, enrolling new members, and the head / new-household promotions. It talks to the host
+ * screen only through [CmtRelationshipView], so it lives in `:community` rather than in core.
+ */
+class CmtRelationshipPresenter(
+    private val view: CmtRelationshipView,
     private val d2: D2,
     private var programUid: String?,
     private val teiUid: String,
@@ -87,7 +85,7 @@ class CmtRelationshipTEIDataPresenter(
         )
     }
 
-    internal fun retrieveRelationships() {
+    fun retrieveRelationships() {
         compositeDisposable.add(
             Single.zip(
                 relationshipsConfig.map { relationship ->
@@ -106,7 +104,9 @@ class CmtRelationshipTEIDataPresenter(
                                 relatedTeis = teis,
                                 relatedProgramName = relationship.relatedProgram.teiTypeName,
                                 relatedProgramUid = relationship.relatedProgram.programUid,
-                                maxCount = relationship.maxCount
+                                maxCount = relationship.maxCount,
+                                supportsHeadPromotion = relationship.headAttribute != null,
+                                supportsNewHouseholdPromotion = relationship.parentRelationshipType != null
                             )
                         }
                 }
@@ -143,27 +143,6 @@ class CmtRelationshipTEIDataPresenter(
                 )
         )
     }
-
-    /*private fun checkForAutoCreation(programUid: String, teiUid: String) {
-        val autoCreationConfig = workflowConfig.entityAutoCreation.firstOrNull {
-            it.triggerProgram == programUid
-        }
-        autoCreationConfig?.let {
-            compositeDisposable.add(
-                Single.fromCallable {
-                    workflowRepository.autoCreateEntity(
-                        teiUid = teiUid,
-                        autoCreationConfig = it
-                    )
-                }.subscribeOn(schedulerProvider.io())
-                    .observeOn(schedulerProvider.ui())
-                    .subscribe(
-                        { Timber.d("Created ${it.first}") },
-                        {error -> Timber.e(error)}
-                    )
-            )
-        }
-    }*/
 
     private fun checkForAutoCreation(programUid: String, teiUid: String) {
         val autoCreationConfig = workflowConfig.entityAutoCreation.firstOrNull {
@@ -258,6 +237,7 @@ class CmtRelationshipTEIDataPresenter(
         programUid: String,
         relationshipTypeUid: String
     ) {
+        val relationship = relationshipsConfig.first { it.access.targetRelationshipUid == relationshipTypeUid }
         compositeDisposable.add(
             d2.organisationUnitModule().organisationUnits()
                 .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
@@ -266,26 +246,15 @@ class CmtRelationshipTEIDataPresenter(
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
                     Consumer { allOrgUnits ->
-                        if (allOrgUnits!!.size > 1) {
-                            OUTreeFragment.Builder()
-                                .singleSelection()
-                                .onSelection { selectedOrgUnits ->
-                                    if (!selectedOrgUnits.isEmpty()) enrollInOrgUnit(
-                                        selectedOrgUnits[0].uid(),
-                                        programUid,
-                                        relationshipsConfig.first { it.access.targetRelationshipUid == relationshipTypeUid }
-                                    )
-                                    Unit
+                        when {
+                            allOrgUnits!!.size > 1 ->
+                                view.showOrgUnitTreeSelector(programUid) { orgUnitUid ->
+                                    enrollInOrgUnit(orgUnitUid, programUid, relationship)
                                 }
-                                .orgUnitScope(OrgUnitSelectorScope.ProgramCaptureScope(programUid))
-                                .build()
-                                .show(
-                                    view.getAbstracContext().supportFragmentManager,
-                                    "OrgUnitEnrollment"
-                                )
-                        } else if (allOrgUnits.size == 1) enrollInOrgUnit(
-                            allOrgUnits[0].uid(), programUid, relationshipsConfig.first { it.access.targetRelationshipUid == relationshipTypeUid }
-                        )
+
+                            allOrgUnits.size == 1 ->
+                                enrollInOrgUnit(allOrgUnits[0].uid(), programUid, relationship)
+                        }
                     },
                     Consumer { t: Throwable? -> Timber.d(t) }
                 )
@@ -343,6 +312,80 @@ class CmtRelationshipTEIDataPresenter(
                     {
                         Timber.d("Removed Relationship $uid")
                         retrieveRelationships()
+                    },
+                    { Timber.e(it) }
+                )
+        )
+    }
+
+    fun onPromoteToHead(type: String, uid: String) {
+        view.confirmPromoteToHead(type, uid)
+    }
+
+    fun promoteToHead(type: String, uid: String) {
+        val relationship = relationshipsConfig.firstOrNull { it.access.targetRelationshipUid == type }
+            ?: return
+
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.promoteToHead(
+                    relationship = relationship,
+                    householdTeiUid = teiUid,
+                    newHeadTeiUid = uid
+                )
+            }.subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { result ->
+                        result.onSuccess {
+                            Timber.d("Promoted $uid to household head")
+                            retrieveRelationships()
+                            view.refreshDashboardHeader()
+                        }.onFailure { Timber.e(it) }
+                    },
+                    { Timber.e(it) }
+                )
+        )
+    }
+
+    fun onPromoteToNewHousehold(type: String, uid: String) {
+        view.confirmPromoteToNewHousehold(type, uid)
+    }
+
+    fun promoteToNewHousehold(type: String, uid: String) {
+        val relationship = relationshipsConfig.firstOrNull { it.access.targetRelationshipUid == type }
+            ?: return
+        val parentRelationshipType = relationship.parentRelationshipType ?: return
+        val parentTeiUid = relationships.value
+            ?.find { it.uid == parentRelationshipType }
+            ?.relatedTeis?.firstOrNull()?.uid
+            ?: return
+
+        val attributeToIncrement = workflowConfig.autoIncrementAttributes
+            .find { it.programUid == relationship.access.targetProgramUid }
+            ?.attributeUid
+
+        compositeDisposable.add(
+            Single.fromCallable {
+                relationshipRepository.promoteToNewHousehold(
+                    membershipRelationship = relationship,
+                    parentRelationshipType = parentRelationshipType,
+                    parentTeiUid = parentTeiUid,
+                    targetProgram = relationship.access.targetProgramUid,
+                    targetTeiType = relationship.access.targetTeiTypeUid,
+                    autoIncrementAttribute = attributeToIncrement,
+                    oldHouseholdTeiUid = teiUid,
+                    memberTeiUid = uid
+                )
+            }.subscribeOn(schedulerProvider.io())
+                .observeOn(schedulerProvider.ui())
+                .subscribe(
+                    { result ->
+                        result.onSuccess { (newHouseholdUid, enrollmentUid) ->
+                            Timber.d("Promoted $uid to head of new household $newHouseholdUid")
+                            retrieveRelationships()
+                            view.goToTeiDashboard(newHouseholdUid, relationship.access.targetProgramUid, enrollmentUid)
+                        }.onFailure { Timber.e(it) }
                     },
                     { Timber.e(it) }
                 )

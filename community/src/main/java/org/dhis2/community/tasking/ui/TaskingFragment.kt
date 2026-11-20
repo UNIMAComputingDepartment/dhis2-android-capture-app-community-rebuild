@@ -60,6 +60,7 @@ class TaskingFragment(
 
     private lateinit var viewModel: TaskingViewModel
     val showFilterBar = MutableLiveData(false)
+    val showSearchBar = MutableLiveData(false)
 
     private val snackbarHostState = SnackbarHostState()
 
@@ -167,7 +168,8 @@ class TaskingFragment(
                     onOrgUnitFilterSelected = {
                         openOrgUnitTreeSelector()
                     },
-                    showFilterBar = showFilterBar.observeAsState(false).value
+                    showFilterBar = showFilterBar.observeAsState(false).value,
+                    showSearchBar = showSearchBar.observeAsState(false).value
                 )
             }
         }
@@ -238,5 +240,9 @@ class TaskingFragment(
 
     fun toggleFilterBar() {
         showFilterBar.value = showFilterBar.value != true
+    }
+
+    fun toggleSearchBar() {
+        showSearchBar.value = showSearchBar.value != true
     }
 }

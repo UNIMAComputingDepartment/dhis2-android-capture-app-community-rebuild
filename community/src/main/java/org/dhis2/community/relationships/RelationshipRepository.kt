@@ -1,6 +1,6 @@
 package org.dhis2.community.relationships
 
-import com.google.gson.Gson
+import org.dhis2.community.common.readCommunityConfig
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -14,63 +14,10 @@ import java.util.Date
 
 class RelationshipRepository(
     private val d2: D2,
-    //private val res: ResourceManager
-
 ) {
 
-    fun getRelationshipConfig(): RelationshipConfig {
-        Timber.d("getRelationshipConfig() called - START")
-        return try {
-            val entries = d2.dataStoreModule()
-                .dataStore()
-                .byNamespace()
-                .eq("community_redesign")
-                .blockingGet()
-
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
-
-            val relationshipEntry = entries.firstOrNull { it.key() == "relationships" }
-
-            if (relationshipEntry == null) {
-                Timber.w("No relationships entry found in dataStore")
-                return RelationshipConfig(emptyList())
-            }
-
-            Timber.d("Found relationships entry: ${relationshipEntry.key()}")
-
-            val rawValue = relationshipEntry.value()
-            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
-            Timber.d("Raw relationship config value (first 200 chars): ${rawValue?.take(200)}")
-
-            if (rawValue.isNullOrBlank()) {
-                Timber.w("Relationship config value is null or blank")
-                return RelationshipConfig(emptyList())
-            }
-
-            // Extract JSON from JsonWrapper format if needed
-            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
-                Timber.d("Detected JsonWrapper format, extracting JSON")
-                // Remove "JsonWrapper(json=" prefix and trailing ")"
-                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
-            } else {
-                rawValue
-            }
-
-            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
-
-            if (!value.trim().startsWith("{")) {
-                Timber.w("Relationship config value does not start with '{': ${value.take(100)}")
-                return RelationshipConfig(emptyList())
-            }
-
-            val config = Gson().fromJson(value, RelationshipConfig::class.java)
-            Timber.d("Successfully parsed relationship config: ${config.relationships.size} relationships")
-            config
-        } catch (e: Exception) {
-            Timber.e(e, "Error parsing relationship config")
-            RelationshipConfig(emptyList())
-        }
-    }
+    fun getRelationshipConfig(): RelationshipConfig =
+        d2.readCommunityConfig("relationships", RelationshipConfig(emptyList()))
 
     fun createAndAddRelationship(
         selectedTeiUid: String,
@@ -221,46 +168,35 @@ class RelationshipRepository(
         }
 
         return if (relatedTeiUids.isNotEmpty()) {
+            val programIcon = programIcon(relationship.relatedProgram.programUid)
             d2.trackedEntityModule().trackedEntityInstances()
                 .byUid().`in`(relatedTeiUids)
                 .withTrackedEntityAttributeValues()
                 .blockingGet().map {
-                    mapToCmtModel(it, relationship)
+                    mapToCmtModel(it, relationship, programIcon)
                 }
         } else {
             emptyList()
         }
     }
 
+    /** The related program's style icon; resolved once per list rather than per TEI. */
+    private fun programIcon(programUid: String): String? =
+        d2.programModule().programs()
+            .uid(programUid)
+            .blockingGet()
+            ?.style()?.icon()
+
     private fun mapToCmtModel(
         tei: TrackedEntityInstance,
-        relationship: org.dhis2.community.relationships.Relationship
+        relationship: org.dhis2.community.relationships.Relationship,
+        programIcon: String?
     ): CmtRelationshipViewModel {
-        val teiTypeUid = tei.trackedEntityType()
-
-
-
-        val program = d2.programModule().programs()
-            .uid(relationship.relatedProgram.programUid)
-            //.withStyle()
-            .blockingGet()
-
-        val iconName = program?.style()?.icon()
-
-        /*if (teiTypeUid != null) {
-            try {
-                val trackedEntityType = d2.trackedEntityModule()
-                    .trackedEntityTypes()
-                    //.uid(teiTypeUid)
-                    .blockingGet()
-                iconName = trackedEntityType?.style()?.icon()
-                //iconName = getDrawableResource(iconNameFromServer)
-            } catch (e: Exception) {
-                Timber.e(e, "Error fetching TEI type icon")
-            }
-        }*/
-        Timber.e("The Icon name: $iconName")
-
+        val isHead = relationship.headAttribute?.let { headAttribute ->
+            tei.trackedEntityAttributeValues()
+                ?.firstOrNull { it.trackedEntityAttribute() == headAttribute }
+                ?.value() == "true"
+        } ?: false
 
         return CmtRelationshipViewModel(
             uid = tei.uid()!!,
@@ -283,8 +219,8 @@ class RelationshipRepository(
                 .byProgram().eq(relationship.relatedProgram.programUid)
                 .blockingGet().firstOrNull()?.uid() ?: "",
             //iconResId = res.getObjectStyleDrawableResource(iconName, R.drawable.ic_default_icon)
-            iconName = iconName.toString()
-
+            iconName = programIcon.toString(),
+            isHead = isHead
         )
     }
 
@@ -292,6 +228,7 @@ class RelationshipRepository(
         relationship: org.dhis2.community.relationships.Relationship,
         keyword: String
     ): CmtRelationshipTypeViewModel {
+        val programIcon = programIcon(relationship.relatedProgram.programUid)
         val teis = d2.trackedEntityModule()
             .trackedEntityInstances()
             .byProgramUids(listOf(relationship.relatedProgram.programUid))
@@ -302,14 +239,8 @@ class RelationshipRepository(
                     it.value()?.contains(keyword, ignoreCase = true) == true
                 } == true
             }.map {
-                mapToCmtModel(it, relationship)
+                mapToCmtModel(it, relationship, programIcon)
             }
-
-        val program = d2.programModule().programs()
-            .uid(relationship.relatedProgram.programUid)
-            .blockingGet()
-
-        val iconName = program?.style()?.icon()
 
         return CmtRelationshipTypeViewModel(
             uid = relationship.access.targetRelationshipUid,
@@ -340,35 +271,218 @@ class RelationshipRepository(
                 .build()
         )
 
-        val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
-            EnrollmentCreateProjection.builder()
-                .trackedEntityInstance(teiUid)
-                .program(programUid)
-                .organisationUnit(orgUnit)
-                .build()
-        )
+        // Once the TEI exists, any later failure would leave it as an orphan (a bare TEI with no
+        // enrollment that still syncs), so roll it back before propagating the error.
+        return try {
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(teiUid)
+                    .program(programUid)
+                    .organisationUnit(orgUnit)
+                    .build()
+            )
 
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setEnrollmentDate(Date())
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setIncidentDate(Date())
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setEnrollmentDate(Date())
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setIncidentDate(Date())
 
-        applyAttributeMappings(
-            sourceTeiUid = sourceTeiUid,
-            targetTeiUid = teiUid,
-            mappings = relationship.attributeMappings
-        )
+            applyAttributeMappings(
+                sourceTeiUid = sourceTeiUid,
+                targetTeiUid = teiUid,
+                mappings = relationship.attributeMappings
+            )
 
-        // Handle auto-increment attributes if any
-        if (attributeIncrement != null) {
-            d2.trackedEntityModule().trackedEntityAttributeValues()
-                .value(attributeIncrement.first, teiUid)
-                .blockingSet(attributeIncrement.second)
+            // Handle auto-increment attributes if any
+            if (attributeIncrement != null) {
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(attributeIncrement.first, teiUid)
+                    .blockingSet(attributeIncrement.second)
+            }
+
+            teiUid to enrollmentUid
+        } catch (error: Exception) {
+            deleteTeiBestEffort(teiUid)
+            throw error
         }
+    }
 
-        return teiUid to enrollmentUid
+    fun promoteToHead(
+        relationship: org.dhis2.community.relationships.Relationship,
+        householdTeiUid: String,
+        newHeadTeiUid: String
+    ): Result<Unit> {
+        val headAttribute = relationship.headAttribute
+            ?: return Result.failure(IllegalStateException("Relationship has no headAttribute configured"))
+
+        return try {
+            val members = getRelatedTeis(
+                teiUid = householdTeiUid,
+                relationshipTypeUid = relationship.access.targetRelationshipUid,
+                relationship = relationship
+            )
+
+            members
+                .filter { it.isHead && it.uid != newHeadTeiUid }
+                .forEach { previousHead ->
+                    d2.trackedEntityModule().trackedEntityAttributeValues()
+                        .value(headAttribute, previousHead.uid)
+                        .blockingSet("false")
+                }
+
+            d2.trackedEntityModule().trackedEntityAttributeValues()
+                .value(headAttribute, newHeadTeiUid)
+                .blockingSet("true")
+
+            // headPromotionAttributes is household-attribute -> member-attribute (same
+            // convention as attributeMappings); promotion runs it in reverse.
+            applyAttributeMappings(
+                sourceTeiUid = newHeadTeiUid,
+                targetTeiUid = householdTeiUid,
+                mappings = relationship.headPromotionAttributes.mapNotNull { mapping ->
+                    val householdAttribute = mapping.sourceAttribute
+                    if (householdAttribute.isNullOrBlank()) {
+                        null
+                    } else {
+                        AttributeMapping(
+                            sourceAttribute = mapping.targetAttribute,
+                            targetAttribute = householdAttribute,
+                            defaultValue = null
+                        )
+                    }
+                }
+            )
+
+            Result.success(Unit)
+        } catch (error: Exception) {
+            Timber.e(error, "Error promoting TEI to household head")
+            Result.failure(error)
+        }
+    }
+
+    fun promoteToNewHousehold(
+        membershipRelationship: org.dhis2.community.relationships.Relationship,
+        parentRelationshipType: String,
+        parentTeiUid: String,
+        targetProgram: String,
+        targetTeiType: String,
+        autoIncrementAttribute: String?,
+        oldHouseholdTeiUid: String,
+        memberTeiUid: String
+    ): Result<Pair<String, String>> {
+        // Tracks how far we got so a mid-way failure can be unwound. The new household is only
+        // safe to delete on rollback until the member has actually been moved onto it; after that
+        // point, deleting it would leave the member with a dangling relationship, so we prefer to
+        // leave the (recoverable) state as-is and surface the error.
+        var createdHouseholdUid: String? = null
+        var memberMoved = false
+
+        return try {
+            val orgUnit = d2.trackedEntityModule()
+                .trackedEntityInstances()
+                .uid(oldHouseholdTeiUid)
+                .blockingGet()
+                ?.organisationUnit()
+                ?: throw IllegalStateException("Organisation unit not found for household $oldHouseholdTeiUid")
+
+            val newHouseholdUid = d2.trackedEntityModule().trackedEntityInstances().blockingAdd(
+                TrackedEntityInstanceCreateProjection.builder()
+                    .organisationUnit(orgUnit)
+                    .trackedEntityType(targetTeiType)
+                    .build()
+            )
+            createdHouseholdUid = newHouseholdUid
+
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(newHouseholdUid)
+                    .program(targetProgram)
+                    .organisationUnit(orgUnit)
+                    .build()
+            )
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(Date())
+            d2.enrollmentModule().enrollments().uid(enrollmentUid).setIncidentDate(Date())
+
+            // Same identity attributes used for in-place head promotion, copied
+            // member -> new household instead of member -> existing household.
+            applyAttributeMappings(
+                sourceTeiUid = memberTeiUid,
+                targetTeiUid = newHouseholdUid,
+                mappings = membershipRelationship.headPromotionAttributes.mapNotNull { mapping ->
+                    val householdAttribute = mapping.sourceAttribute
+                    if (householdAttribute.isNullOrBlank()) {
+                        null
+                    } else {
+                        AttributeMapping(
+                            sourceAttribute = mapping.targetAttribute,
+                            targetAttribute = householdAttribute,
+                            defaultValue = null
+                        )
+                    }
+                }
+            )
+
+            if (autoIncrementAttribute != null) {
+                val siblingCount = d2.relationshipModule().relationships()
+                    .byRelationshipType().eq(parentRelationshipType)
+                    .byItem(RelationshipHelper.teiItem(parentTeiUid))
+                    .blockingGetUids()
+                    .size
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(autoIncrementAttribute, newHouseholdUid)
+                    .blockingSet((siblingCount + 1).toString())
+            }
+
+            // Attach the new household to the same parent (Community) as the old one
+            createAndAddRelationship(
+                selectedTeiUid = parentTeiUid,
+                relationshipTypeUid = parentRelationshipType,
+                teiUid = newHouseholdUid,
+                relationshipSide = RelationshipConstraintSide.FROM
+            ).getOrThrow()
+
+            // Attach the member to the new household first, so if this fails we can still roll the
+            // new household back cleanly. Only once this succeeds do we drop the old link.
+            createAndAddRelationship(
+                selectedTeiUid = memberTeiUid,
+                relationshipTypeUid = membershipRelationship.access.targetRelationshipUid,
+                teiUid = newHouseholdUid,
+                relationshipSide = RelationshipConstraintSide.FROM
+            ).getOrThrow()
+            memberMoved = true
+
+            membershipRelationship.headAttribute?.let { headAttribute ->
+                d2.trackedEntityModule().trackedEntityAttributeValues()
+                    .value(headAttribute, memberTeiUid)
+                    .blockingSet("true")
+            }
+
+            // Destructive step last: drop the member's link to the old household.
+            deleteRelationship(
+                relationshipType = membershipRelationship.access.targetRelationshipUid,
+                teiUid = oldHouseholdTeiUid,
+                relatedTeiUid = memberTeiUid
+            ).getOrThrow()
+
+            Result.success(newHouseholdUid to enrollmentUid)
+        } catch (error: Exception) {
+            Timber.e(error, "Error promoting TEI to head of a new household")
+            if (createdHouseholdUid != null && !memberMoved) {
+                deleteTeiBestEffort(createdHouseholdUid)
+            }
+            Result.failure(error)
+        }
+    }
+
+    /** Best-effort removal of a just-created TEI when a later step of its creation failed. */
+    private fun deleteTeiBestEffort(teiUid: String) {
+        try {
+            d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingDelete()
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to roll back orphan TEI $teiUid")
+        }
     }
 
     private fun applyAttributeMappings(

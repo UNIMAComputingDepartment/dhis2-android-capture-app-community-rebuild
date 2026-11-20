@@ -30,10 +30,11 @@ import org.dhis2.usescases.main.domain.LogoutUser
 import org.dhis2.usescases.settings.DeleteUserData
 import org.dhis2.utils.customviews.navigationbar.NavigationPageConfigurator
 import org.hisp.dhis.android.core.D2
+import org.dhis2.community.tasking.repositories.TaskingRepository
 
 @Module
 class MainModule(
-    val view: MainView,
+    private val view: MainView,
     private val forceToNotSynced: Boolean,
 ) {
     @Provides
@@ -100,6 +101,7 @@ class MainModule(
         preferencesProvider: PreferenceProvider,
         cryptographyManager: CryptographicActions,
         domainErrorMapper: DomainErrorMapper,
+        taskingRepository: TaskingRepository,
     ): HomeRepository =
         HomeRepositoryImpl(
             d2,
@@ -108,7 +110,15 @@ class MainModule(
             cryptographyManager,
             Dispatcher(),
             domainErrorMapper,
+            taskingRepository,
         )
+
+    @Provides
+    @PerActivity
+    fun provideTaskingRepository(
+        d2: D2,
+    ): TaskingRepository =
+        TaskingRepository(d2)
 
     @Provides
     @PerActivity

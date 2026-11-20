@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,6 +46,7 @@ import org.dhis2.community.tasking.filters.ui.ProgramFilterBottomSheet
 import org.dhis2.community.tasking.filters.ui.StatusFilterBottomSheet
 import org.dhis2.community.tasking.filters.ui.TaskFilterBar
 import org.dhis2.community.tasking.notifications.TaskReminderScheduler
+import org.hisp.dhis.mobile.ui.designsystem.component.SearchBar
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import timber.log.Timber
 
@@ -67,7 +69,8 @@ fun TaskingUi(
     viewModel: TaskingViewModelContract,
     filterState: TaskFilterState,
     onOrgUnitFilterSelected: () -> Unit,
-    showFilterBar: Boolean
+    showFilterBar: Boolean,
+    showSearchBar: Boolean
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     var activeFilterSheet by remember { mutableStateOf<FilterSheetType?>(null) }
@@ -78,6 +81,7 @@ fun TaskingUi(
 
     // Collect progress tasks from ViewModel's StateFlow
     val progressTasks by viewModel.progressTasks.collectAsState()
+    val searchQuery = filterState.searchQuery
 
     // Calculate progress bar data
     val completedTaskCount = progressTasks.count { it.status == TaskingStatus.COMPLETED }
@@ -122,6 +126,28 @@ fun TaskingUi(
                 .padding(contentPadding)
                 .background(Color.White)
         ) {
+            AnimatedVisibility(visible = showSearchBar) {
+                SearchBar(
+                    text = searchQuery,
+                    placeHolderText = "Search for person...",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 6.dp, vertical = 12.dp),
+                    onQueryChange = { viewModel.onSearchQueryChanged(it) }
+                )
+            }
+
+            // Divider between search and progress section
+            AnimatedVisibility(visible = showSearchBar) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .padding(horizontal = 12.dp)
+                        .background(TextColor.OnSurfaceLight.copy(alpha = 0.2f))
+                )
+            }
+
             // Filter Bar with Animation
             AnimatedVisibility(visible = showFilterBar) {
                 TaskFilterBar(
@@ -219,7 +245,11 @@ fun TaskingUi(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No tasks available",
+                            text = if (searchQuery.isNotBlank()) {
+                                "No results found for '$searchQuery'"
+                            } else {
+                                "No tasks available"
+                            },
                             textAlign = TextAlign.Center,
                             color = TextColor.OnSurface
                         )

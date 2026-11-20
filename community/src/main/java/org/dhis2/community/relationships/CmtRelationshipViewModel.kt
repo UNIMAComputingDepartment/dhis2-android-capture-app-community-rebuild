@@ -9,7 +9,8 @@ data class CmtRelationshipViewModel(
     val uid: String,
     val iconName: String,
     val programUid: String,
-    val enrollmentUid: String
+    val enrollmentUid: String,
+    val isHead: Boolean = false
 )
 
 data class CmtRelationshipTypeViewModel(
@@ -20,7 +21,9 @@ data class CmtRelationshipTypeViewModel(
     val relatedProgramName: String,
     val relatedProgramUid: String,
     val relatedTeis: List<CmtRelationshipViewModel>,
-    val maxCount: Int = Int.MAX_VALUE
+    val maxCount: Int = Int.MAX_VALUE,
+    val supportsHeadPromotion: Boolean = false,
+    val supportsNewHouseholdPromotion: Boolean = false
 ) {
 
 }

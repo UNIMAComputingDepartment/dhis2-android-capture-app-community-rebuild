@@ -2,6 +2,7 @@ package org.dhis2.community.tasking.repositories
 
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.dhis2.community.common.COMMUNITY_NAMESPACE
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.models.TaskingConfig
 import org.dhis2.community.tasking.utils.Constants
@@ -16,6 +17,7 @@ import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
 import timber.log.Timber
+import java.util.Collections
 import java.util.Date
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Singleton
@@ -36,6 +38,15 @@ class TaskingRepository(
 
     fun getCachedConfig() = cachedConfig
 
+    fun getTaskProgramUids(): List<String> =
+        getTaskingConfig()
+            .taskProgramConfig
+            .mapNotNull { config ->
+                config.programUid.trim().takeIf { uid -> uid.isNotEmpty() }
+            }
+
+    fun getTaskProgramUid(): String? = getTaskProgramUids().firstOrNull()
+
     @Synchronized
     fun getTaskingConfig(): TaskingConfig {
         Timber.d("getTaskingConfig() called - START")
@@ -46,10 +57,10 @@ class TaskingRepository(
 
         val config = try {
             val entries = d2.dataStoreModule().dataStore()
-                .byNamespace().eq("community_redesign")
+                .byNamespace().eq(COMMUNITY_NAMESPACE)
                 .blockingGet()
 
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
+            Timber.d("Found ${entries.size} entries in '$COMMUNITY_NAMESPACE' namespace")
 
             val taskingEntry = entries.firstOrNull { it.key() == "tasking" }
 
@@ -94,7 +105,8 @@ class TaskingRepository(
                 )
             }
 
-            val config = Gson().fromJson(value, TaskingConfig::class.java)
+            val parsed = Gson().fromJson(value, TaskingConfig::class.java)
+            val config = parsed.sanitized()
             Timber.d("Successfully parsed tasking config: ${config.taskProgramConfig.size} task programs")
             config
         } catch (e: Exception) {
@@ -115,6 +127,66 @@ class TaskingRepository(
 
     private fun TaskingConfig.hasAnyConfig(): Boolean {
         return programTasks.isNotEmpty() || taskProgramConfig.isNotEmpty()
+    }
+
+    /**
+     * Drops structurally-incomplete task configs so evaluation never dereferences a null
+     * [Reference][TaskingConfig.ProgramTasks.TaskConfig.Reference].
+     *
+     * Gson builds these data classes by reflection, bypassing the Kotlin constructor — so a
+     * `condition` whose JSON omits `lhs`/`rhs`, or a `dueDate` missing `anchor`, ends up holding a
+     * real `null` in a field declared non-null (the same hazard documented on [Period.rules]).
+     * The engine later reads `.ref` on those references and throws
+     * `NullPointerException: ... Reference.getRef() on a null object reference`. A malformed entry
+     * can't be evaluated meaningfully anyway, so we log and drop it rather than crash the worker.
+     */
+    private fun TaskingConfig.sanitized(): TaskingConfig {
+        val safePrograms = (programTasks ?: emptyList()).map { program ->
+            val configs = program.taskConfigs ?: emptyList()
+            val validConfigs = configs.filter { it.isStructurallyValid() }
+            val dropped = configs.size - validConfigs.size
+            if (dropped > 0) {
+                Timber.w(
+                    "Dropped $dropped malformed task config(s) with null references in program " +
+                        "'${program.programUid}'"
+                )
+            }
+            program.copy(taskConfigs = validConfigs)
+        }
+        return copy(programTasks = safePrograms)
+    }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Reference?.isPresent(): Boolean =
+        this != null && this.ref != null
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.Condition?.isValid(): Boolean =
+        this != null && this.lhs.isPresent() && this.rhs.isPresent()
+
+    private fun TaskingConfig.ProgramTasks.TaskConfig.DueDateSpec?.isValid(): Boolean =
+        this != null && this.anchor.isPresent()
+
+    /** A (possibly null) condition list is valid only if every element resolves both references. */
+    private fun List<TaskingConfig.ProgramTasks.TaskConfig.Condition>?.allValid(): Boolean =
+        this == null || this.all { it.isValid() }
+
+    @Suppress("SENSELESS_COMPARISON")
+    private fun TaskingConfig.ProgramTasks.TaskConfig.isStructurallyValid(): Boolean {
+        val trigger = this.trigger ?: return false
+        if (!trigger.condition.allValid()) return false
+
+        val period = this.period ?: return false
+        if (!period.default.isValid()) return false
+        period.rules?.forEach { rule ->
+            if (rule == null) return false
+            if (!rule.condition.allValid()) return false
+            if (!rule.dueDate.isValid()) return false
+        }
+
+        val completion = this.completion ?: return false
+        if (!completion.condition.allValid()) return false
+
+        return true
     }
 
     fun getOrgUnit(taskTeiUid: String): String? {
@@ -368,6 +440,7 @@ class TaskingRepository(
             )
             if (enrollmentUid.isEmpty()) {
                 Timber.tag("CreationEvaluator").e("Enrollment creation failed: enrollmentUid is null")
+                deleteOrphanTei(newTeiUid)
                 return false
             }
             val today = Date()
@@ -379,8 +452,25 @@ class TaskingRepository(
         } catch (e: D2Error) {
             Timber.tag("CreationEvaluator")
                 .e("Enrollment failed: code=${e.errorCode()} desc=${e.errorDescription()}")
+            // The task TEI was already created; without the enrollment it is an orphan that
+            // would sync as a bare TEI, so roll it back.
+            deleteOrphanTei(newTeiUid)
             return false
         }
+    }
+
+    /** Best-effort removal of a just-created TEI when a later step of its creation failed. */
+    private fun deleteOrphanTei(teiUid: String) {
+        try {
+            d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingDelete()
+        } catch (e: Exception) {
+            Timber.tag("CreationEvaluator").e(e, "Failed to roll back orphan TEI $teiUid")
+        }
+    }
+
+    fun getEventDate(eventUid: String): Date? {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        return event?.eventDate() ?: event?.dueDate() ?: event?.created()
     }
 
     fun getLatestEvent(
@@ -396,7 +486,15 @@ class TaskingRepository(
                     .byProgramStage().eq(it.uid())
                     .byDataElement().eq(dataElementUid)
                     .blockingGet().isNotEmpty()
-            } ?: return null
+            }
+
+        if (stage == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: no stage of program $programUid declares data element " +
+                    "$dataElementUid as a stage data element — cannot search for it"
+            )
+            return null
+        }
 
         val events = if (eventUid == null)
             d2.eventModule().events()
@@ -410,10 +508,29 @@ class TaskingRepository(
                 .withTrackedEntityDataValues()
                 .blockingGet()
 
-        return events
-            .maxByOrNull {
-                it.created() ?: it.eventDate() ?: Date(0)
-            }
+        fun hasTargetValue(event: Event): Boolean =
+            event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true
+
+        val result = events.maxByOrNull {
+            it.created() ?: it.eventDate() ?: Date(0)
+        }
+
+        if (result == null) {
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: stage ${stage.uid()} declares $dataElementUid but no matching " +
+                    "event found (enrollment=$enrollmentUd, eventUid=$eventUid, candidates=${events.size})"
+            )
+        } else if (!hasTargetValue(result)) {
+            val eventsWithValue = events.filter { hasTargetValue(it) }
+            Timber.tag("TaskingRepository").w(
+                "getLatestEvent: picked event ${result.uid()} for $dataElementUid has no value; " +
+                    "${events.size} candidate event(s) in stage ${stage.uid()}, " +
+                    "${eventsWithValue.size} of them do have a value " +
+                    "(${eventsWithValue.map { it.uid() + "@" + (it.eventDate() ?: it.created()) }})"
+            )
+        }
+
+        return result
     }
 
     fun countEventsByDataValue(
@@ -425,7 +542,10 @@ class TaskingRepository(
     ): Int {
         try {
             val stage = if (!stageUid.isNullOrBlank()) {
-                d2.programModule().programStages().byUid().eq(stageUid).one().blockingGet()
+                d2.programModule().programStages()
+                    .byUid().eq(stageUid)
+                    .one()
+                    .blockingGet()
             } else {
                 d2.programModule().programStages().byProgramUid()
                     .eq(programUid).blockingGet()
@@ -433,7 +553,8 @@ class TaskingRepository(
                         d2.programModule().programStageDataElements()
                             .byProgramStage().eq(it.uid())
                             .byDataElement().eq(dataElementUid)
-                            .blockingGet().isNotEmpty()
+                            .blockingGet()
+                            .isNotEmpty()
                     }
             } ?: return 0
 
@@ -462,4 +583,70 @@ class TaskingRepository(
 
     fun getEnrollment(enrollmentUid: String) =
         d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()
+
+
+    fun getPeriodEventsForProgramStage(
+        programUid: String,
+        stageUid: String,
+        teiUid: String,
+        startDate: Date,
+        endDate: Date,
+    ): List<Event> {
+
+        val occurredEvents =  d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byEventDate().after(startDate)
+            .byEventDate().before(endDate)
+            .blockingGet()
+
+        val scheduledEvents = d2.eventModule().events()
+            .byProgramUid().eq(programUid)
+            .byProgramStageUid().eq(stageUid)
+            .byTrackedEntityInstanceUids(Collections.singletonList(teiUid))
+            .byDueDate().after(startDate)
+            .byDueDate().before(endDate)
+            .byEventDate().isNull
+            .blockingGet()
+
+        return (occurredEvents + scheduledEvents).distinctBy { it.uid() }
+
+    }
+
+    fun getTeiUidsWithActiveEnrollmentForProgram(programUid: String): List<String> {
+        return d2.enrollmentModule().enrollments()
+            .byProgram().eq(programUid)
+            .byStatus().eq(EnrollmentStatus.ACTIVE)
+            .blockingGet()
+            .map { it.trackedEntityInstance() as String }
+    }
+
+    fun getEnrollmentLatestEvent(enrollmentUid: String, programUid: String): Event? {
+        val events = d2.eventModule().events()
+            .byEnrollmentUid().eq(enrollmentUid)
+            .byProgramUid().eq(programUid)
+            .withTrackedEntityDataValues()
+            .blockingGet()
+
+        return events
+            .maxByOrNull {
+                it.created() ?: it.eventDate() ?: Date(0)
+            }
+    }
+
+    fun hasAccessToProgram(programUid: String): Boolean {
+        val program = d2.programModule().programs()
+            .byUid().eq(programUid)
+            .one()
+            .blockingGet()
+        return program != null
+    }
+
+    fun hasDataAccessToTasking(): Boolean {
+        val taskProgramUid = getTaskProgramUid() ?: return false
+        val program = d2.programModule().programs().uid(taskProgramUid).blockingGet()
+        val dataAccess = program?.access()?.data()
+        return dataAccess?.read() == true && dataAccess.write() == true
+    }
 }

@@ -1,5 +1,7 @@
 package org.dhis2.community.tasking.engine
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import org.dhis2.community.tasking.models.Task
 import org.dhis2.community.tasking.repositories.TaskingRepository
 import org.dhis2.community.tasking.utils.Constants
@@ -10,6 +12,7 @@ class DefaultingEvaluator(
     private val repository: TaskingRepository
 ) : TaskingEvaluator(repository) {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun evaluateForDefaultingEvent(
         sourceTeiUid: String,
         programUid: String,
@@ -31,16 +34,6 @@ class DefaultingEvaluator(
                 val taskConfigs = programTaskConfig.taskConfigs
                     .firstOrNull { it.name == task.name }
                     ?: return@forEach
-
-               /* if (!evaluateConditions(
-                        conditions = taskConfigs.trigger,
-                        teiUid = sourceTeiUid,
-                        programUid = programUid,
-                        eventUid = taskTriggerEventUid,
-                    ).all { it }
-                ) {
-                    defaultTask(task)
-                }*/
 
                 val results = evaluateConditions(
                     conditions = taskConfigs.trigger,
@@ -83,10 +76,15 @@ class DefaultingEvaluator(
             Constants.DEFAULTED,
             task.teiUid
         )
-        repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-            .setStatus(EnrollmentStatus.CANCELLED)
-        repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
-            .setCompletedDate(Date())
+        // taskTeiEnrollmentUid is null when the TEI has no ACTIVE enrollment in the task
+        // program; calling uid(null).setStatus(...) makes the SDK cast a null lookup to
+        // non-null and throws NPE, so only touch the enrollment when one actually exists.
+        if (taskTeiEnrollmentUid != null) {
+            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                .setStatus(EnrollmentStatus.CANCELLED)
+            repository.d2.enrollmentModule().enrollments().uid(taskTeiEnrollmentUid)
+                .setCompletedDate(Date())
+        }
     }
 
     private fun defaultForEnrollment(

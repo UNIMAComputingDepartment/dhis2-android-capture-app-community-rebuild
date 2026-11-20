@@ -144,8 +144,8 @@ class DashboardViewModel(
                 ),
             )
         }
-// Comment Here
-        if (pageConfigurator.displayRelationships()) {
+// Comment Here to remove relationship icon
+        /*if (pageConfigurator.displayRelationships()) {
             enrollmentItems.add(
                 NavigationBarItem(
                     id = TEIDashboardItems.RELATIONSHIPS,
@@ -154,7 +154,7 @@ class DashboardViewModel(
                     label = resourcesManager.getString(R.string.navigation_relations),
                 ),
             )
-        }
+        }*/
 
         enrollmentItems.add(
             NavigationBarItem(

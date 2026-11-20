@@ -15,6 +15,7 @@ import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisProgramUtils
 import org.dhis2.data.service.SyncStatusController
 import org.hisp.dhis.android.core.D2
+import org.dhis2.community.tasking.repositories.TaskingRepository
 
 @Module
 class ProgramModule(
@@ -60,4 +61,11 @@ class ProgramModule(
             metadataIconProvider,
             schedulerProvider,
         )
+
+    @Provides
+    @PerFragment
+    internal fun provideTaskingRepository(
+        d2: D2,
+    ): TaskingRepository =
+        TaskingRepository(d2)
 }

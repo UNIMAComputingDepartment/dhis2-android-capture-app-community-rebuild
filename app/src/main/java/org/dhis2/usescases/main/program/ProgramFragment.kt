@@ -13,10 +13,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.dhis2.App
 import org.dhis2.R
 import org.dhis2.commons.sync.OnDismissListener
@@ -30,12 +33,16 @@ import org.dhis2.utils.analytics.TYPE_PROGRAM_SELECTED
 import org.dhis2.utils.granularsync.SyncStatusDialog
 import timber.log.Timber
 import javax.inject.Inject
+import org.dhis2.community.tasking.repositories.TaskingRepository
 
 class ProgramFragment :
     FragmentGlobalAbstract(),
     ProgramView {
     @Inject
     lateinit var programViewModelFactory: ProgramViewModelFactory
+
+    @Inject
+    lateinit var taskingRepository: TaskingRepository
 
     val programViewModel: ProgramViewModel by viewModels {
         programViewModelFactory
@@ -67,14 +74,23 @@ class ProgramFragment :
             setContent {
                 val items by programViewModel.programs.observeAsState()
                 val downloadState by programViewModel.downloadState().collectAsState()
+                val taskProgramUids by produceState(initialValue = emptyList<String>()) {
+                    value = withContext(Dispatchers.IO) {
+                        taskingRepository.getTaskProgramUids()
+                    }
+                }
 
                 LaunchedEffect(downloadState) {
                     programViewModel.setIsDownloading()
                 }
                 ProgramList(
                     downLoadState = downloadState,
-                    //TODO
-                    programs = items?.filter { it.uid !=  "mIn6hesS2yR"},
+                    programs =
+                        if (taskProgramUids.isNotEmpty()) {
+                            items?.filterNot { it.uid in taskProgramUids }
+                        } else {
+                            items
+                        },
                     onItemClick = {
                         programViewModel.onItemClick(it)
                     },

@@ -17,7 +17,7 @@ class HomePageConfigurator(
     override fun displayPrograms(): Boolean = true
 
     override fun displayTasks(): Boolean {
-        return true
+        return homeRepository.hasTaskingProgram()
     }
 
     override fun displayAnalytics(): Boolean = homeRepository.hasHomeAnalytics()
@@ -31,13 +31,15 @@ class HomePageConfigurator(
                     label = resourceManager.getString(R.string.navigation_programs),
                 ),
             )
-            add(
-                NavigationBarItem(
-                    id = NavigationPage.TASKS,
-                    icon = Icons.Filled.TaskAlt,
-                    label = resourceManager.getString(R.string.navigation_tasks),
-                ),
-            )
+            if (displayTasks()) {
+                add(
+                    NavigationBarItem(
+                        id = NavigationPage.TASKS,
+                        icon = Icons.Filled.TaskAlt,
+                        label = resourceManager.getString(R.string.navigation_tasks),
+                    ),
+                )
+            }
             if (displayAnalytics()) {
                 add(
                     NavigationBarItem(

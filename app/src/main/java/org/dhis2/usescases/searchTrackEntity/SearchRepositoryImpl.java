@@ -6,6 +6,8 @@ import androidx.annotation.Nullable;
 import org.dhis2.R;
 import org.dhis2.bindings.ExtensionsKt;
 import org.dhis2.bindings.ValueExtensionsKt;
+import org.dhis2.community.enrollmentfilters.AttributeFilterConfigRepository;
+import org.dhis2.community.enrollmentfilters.AttributeFilterInjector;
 import org.dhis2.commons.Constants;
 import org.dhis2.commons.data.EntryMode;
 import org.dhis2.commons.data.EventModel;
@@ -39,6 +41,7 @@ import org.dhis2.tracker.relationships.model.RelationshipOwnerType;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.teiDownload.TeiDownloader;
 import org.dhis2.utils.ValueUtils;
+import org.dhis2.community.mappers.di.DataMappers;
 import org.hisp.dhis.android.core.D2;
 import org.hisp.dhis.android.core.arch.call.D2Progress;
 import org.hisp.dhis.android.core.arch.helpers.UidsHelper;
@@ -125,6 +128,8 @@ public class SearchRepositoryImpl implements SearchRepository {
     private final MetadataIconProvider metadataIconProvider;
     private final ProfilePictureProvider profilePictureProvider;
     private CustomIntentRepository customIntentRepository;
+    // Community: pushes enrollment-list attribute filters (eq/like/in) into the SDK query.
+    private final AttributeFilterInjector attributeFilterInjector;
 
     SearchRepositoryImpl(String teiType,
                          @Nullable String initialProgram,
@@ -165,6 +170,7 @@ public class SearchRepositoryImpl implements SearchRepository {
         this.metadataIconProvider = metadataIconProvider;
         this.profilePictureProvider = profilePictureProvider;
         this.customIntentRepository = customIntentRepository;
+        this.attributeFilterInjector = new AttributeFilterInjector(d2, new AttributeFilterConfigRepository(d2));
     }
 
 
@@ -240,6 +246,12 @@ public class SearchRepositoryImpl implements SearchRepository {
                 trackedEntityInstanceQuery = getTrackedEntityQuery(dataId, dataValues, isUnique, isOptionSet);
             }
         }
+
+        // Community: apply enrollment-list attribute filters (keyword/options/boolean) to the query.
+        String selectedProgramUid = searchParametersModel.getSelectedProgram() != null
+                ? searchParametersModel.getSelectedProgram().uid()
+                : null;
+        trackedEntityInstanceQuery = attributeFilterInjector.applyTo(trackedEntityInstanceQuery, selectedProgramUid);
 
         return trackedEntityInstanceQuery;
     }
@@ -343,6 +355,13 @@ public class SearchRepositoryImpl implements SearchRepository {
                         .map(enrollmentUid -> {
                             d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(dateUtils.getStartOfDay(new Date()));
                             d2.enrollmentModule().enrollments().uid(enrollmentUid).setFollowUp(false);
+
+                            // Enrolling from search reaches here for an existing TEI as well as a new
+                            // one (teiUid is only null in the latter case), so cross-programme mapping
+                            // has to run. For a genuinely new TEI there is nothing to read and the
+                            // engine simply reports nothing applied.
+                            DataMappers.INSTANCE.runForNewEnrollment(d2, uid, programUid, enrollmentUid);
+
                             return new Pair<>(enrollmentUid, uid);
                         })
         ).toObservable();

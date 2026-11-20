@@ -48,8 +48,13 @@ class UpdateEvaluator(
                 .firstOrNull { it.name == existingTask.name }
                 ?: return@forEach
 
-            if (!taskConfig.period.anchor.uid.isNullOrBlank()) {
-                val newDueDate = super.calculateDueDate(taskConfig = taskConfig, teiUid = sourceTeiUid, programUid = programUid)
+            if (super.hasDynamicAnchor(taskConfig.period)) {
+                val newDueDate = super.calculateDueDate(
+                    taskConfig = taskConfig,
+                    teiUid = sourceTeiUid,
+                    programUid = programUid,
+                    eventUid = existingTask.sourceEventUid
+                )
                 repository.updateTaskAttrValue(dueDateAttrUid, newDueDate, existingTask.teiUid)
             }
             return@forEach

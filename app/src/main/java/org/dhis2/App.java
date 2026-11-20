@@ -28,6 +28,7 @@ import org.dhis2.commons.orgunitselector.OUTreeComponent;
 import org.dhis2.commons.orgunitselector.OUTreeModule;
 import org.dhis2.commons.prefs.Preference;
 import org.dhis2.commons.prefs.PreferenceModule;
+import org.dhis2.community.mappers.di.DataMappers;
 import org.dhis2.commons.schedulers.SchedulerModule;
 import org.dhis2.commons.schedulers.SchedulersProviderImpl;
 import org.dhis2.commons.service.SessionManagerModule;
@@ -103,9 +104,13 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
 
         MapController.Companion.init(this);
 
+        // Gives the cross-program mapping engine somewhere to persist write provenance, so a re-run
+        // can tell its own earlier writes from a health worker's manual correction.
+        DataMappers.INSTANCE.init(this);
+
         setUpAppComponent();
         if (BuildConfig.DEBUG) {
-            Timber.tag(String.valueOf(new DebugTree()));
+            Timber.plant(new DebugTree());
         }
 
         setUpSecurityProvider();

@@ -1,7 +1,11 @@
 package org.dhis2.community.workflow
 
 import com.google.gson.Gson
+import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
+import org.dhis2.community.common.readCommunityConfig
+import org.dhis2.community.mappers.di.DataMappers
 import org.hisp.dhis.android.core.enrollment.EnrollmentCreateProjection
+import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.relationship.RelationshipHelper
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection
@@ -11,63 +15,19 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+private const val AUTO_ENROLL_COMBINATION_OR = "or"
+private const val SOURCE_TYPE_ATTRIBUTE = "attribute"
+private const val SOURCE_TYPE_TEI_ATTRIBUTE = "tei_attribute"
+private const val SOURCE_TYPE_DATA_ELEMENT = "data_element"
+private const val SOURCE_TYPE_DATA_ELEMENT_ALT = "dataelement"
+private const val SOURCE_TYPE_EVENT_DATA = "event_data"
+
 class WorkflowRepository(
     private val d2: org.hisp.dhis.android.core.D2
 ) {
 
-    fun getWorkflowConfig(): WorkflowConfig {
-        Timber.d("getWorkflowConfig() called - START")
-        return try {
-            val entries = d2.dataStoreModule()
-                .dataStore()
-                .byNamespace()
-                .eq("community_redesign")
-                .blockingGet()
-
-            Timber.d("Found ${entries.size} entries in 'community_redesign' namespace")
-
-            val workflowEntry = entries.firstOrNull { it.key() == "workflow" }
-
-            if (workflowEntry == null) {
-                Timber.w("No workflow entry found in dataStore")
-                return WorkflowConfig(emptyList())
-            }
-
-            Timber.d("Found workflow entry: ${workflowEntry.key()}")
-
-            val rawValue = workflowEntry.value()
-            Timber.d("Raw value type: ${rawValue?.javaClass?.name}")
-            Timber.d("Raw workflow config value (first 200 chars): ${rawValue?.take(200)}")
-
-            if (rawValue.isNullOrBlank()) {
-                Timber.w("Workflow config value is null or blank")
-                return WorkflowConfig(emptyList())
-            }
-
-            // Extract JSON from JsonWrapper format if needed
-            val value = if (rawValue.startsWith("JsonWrapper(json=")) {
-                Timber.d("Detected JsonWrapper format, extracting JSON")
-                // Remove "JsonWrapper(json=" prefix and trailing ")"
-                rawValue.removePrefix("JsonWrapper(json=").removeSuffix(")")
-            } else {
-                rawValue
-            }
-
-            Timber.d("Extracted value (first 200 chars): ${value.take(200)}")
-
-            if (!value.trim().startsWith("{")) {
-                Timber.w("Workflow config value does not start with '{': ${value.take(100)}")
-                return WorkflowConfig(emptyList())
-            }
-
-            val config = Gson().fromJson(value, WorkflowConfig::class.java)
-            Timber.d("Successfully parsed workflow config: ${config.teiCreatablePrograms.size} creatable programs")
-            config
-        } catch (e: Exception) {
-            Timber.e(e, "Error parsing workflow config")
-            WorkflowConfig(emptyList())
-        }
-    }
+    fun getWorkflowConfig(): WorkflowConfig =
+        d2.readCommunityConfig("workflow", WorkflowConfig(emptyList()))
 
     fun getTeiAttributes(teiUid: String): Map<String, String> {
 
@@ -76,11 +36,15 @@ class WorkflowRepository(
             .byTrackedEntityInstance().eq(teiUid)
             .blockingGet()
 
-        return attributeValues
-            .filter { !it.value().isNullOrEmpty() }
-            .associate { attributeValue ->
-                (attributeValue.trackedEntityAttribute() to attributeValue.value()!!.trim()) as Pair<String, String>
+        return attributeValues.mapNotNull { attributeValue ->
+            val attributeUid = attributeValue.trackedEntityAttribute()
+            val value = attributeValue.value()?.trim()
+            if (!attributeUid.isNullOrBlank() && !value.isNullOrEmpty()) {
+                attributeUid to value
+            } else {
+                null
             }
+        }.toMap()
     }
 
     fun addMemberToHousehold(memberTeiUid: String, householdUid: String, relationshipType: String) {
@@ -92,7 +56,6 @@ class WorkflowRepository(
             )
         )
     }
-
 
 
     fun searchTeiByAttributes(
@@ -122,7 +85,7 @@ class WorkflowRepository(
 
 
         // 3️⃣ Fetch TEI and ensure correct TEI type
-         return d2.trackedEntityModule()
+        return d2.trackedEntityModule()
             .trackedEntityInstances()
             .byUid().`in`(intersectedUids.toList())
             .byTrackedEntityType().eq(teiType)
@@ -156,39 +119,55 @@ class WorkflowRepository(
                     .build()
             )
 
-        val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
-            EnrollmentCreateProjection.builder()
-                .trackedEntityInstance(targetTeiUid)
-                .program(autoCreationConfig.targetProgram)
-                .organisationUnit(orgUnit)
-                .build()
-        )
-
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setEnrollmentDate(Date())
-        d2.enrollmentModule().enrollments()
-            .uid(enrollmentUid)
-            .setIncidentDate(Date())
-
-        // Copy main attributes from source TEI to target TEI
-        autoCreationConfig.attributesMappings.forEach { pair ->
-            val sourceValue = sourceTei.trackedEntityAttributeValues()?.find {
-                it.trackedEntityAttribute() == pair.sourceAttribute
-            }?.value() ?: pair.defaultValue
-            if (sourceValue != null)
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                    .value(pair.targetAttribute, targetTeiUid)
-                    .blockingSet(sourceValue)
-        }
-
-        d2.relationshipModule().relationships().blockingAdd(
-            RelationshipHelper.teiToTeiRelationship(
-                teiUid, targetTeiUid, autoCreationConfig.relationshipType
+        // Roll the freshly created TEI back if any later step fails, so a failure can't leave a
+        // bare orphan TEI (no enrollment / no relationship) queued for sync.
+        return try {
+            val enrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                EnrollmentCreateProjection.builder()
+                    .trackedEntityInstance(targetTeiUid)
+                    .program(autoCreationConfig.targetProgram)
+                    .organisationUnit(orgUnit)
+                    .build()
             )
-        )
 
-        return targetTeiUid to enrollmentUid
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setEnrollmentDate(Date())
+            d2.enrollmentModule().enrollments()
+                .uid(enrollmentUid)
+                .setIncidentDate(Date())
+
+            // Copy main attributes from source TEI to target TEI
+            autoCreationConfig.attributesMappings.forEach { pair ->
+                val sourceValue = sourceTei.trackedEntityAttributeValues()?.find {
+                    it.trackedEntityAttribute() == pair.sourceAttribute
+                }?.value() ?: pair.defaultValue
+                if (sourceValue != null)
+                    d2.trackedEntityModule().trackedEntityAttributeValues()
+                        .value(pair.targetAttribute, targetTeiUid)
+                        .blockingSet(sourceValue)
+            }
+
+            d2.relationshipModule().relationships().blockingAdd(
+                RelationshipHelper.teiToTeiRelationship(
+                    teiUid, targetTeiUid, autoCreationConfig.relationshipType
+                )
+            )
+
+            // Deliberately not running the mapping engine here: this path creates a *different* TEI
+            // and copies across a relationship, whereas the engine's TriggerContext addresses a single
+            // TEI. Cross-TEI mapping is the deferred relationship-hop case (see the design doc's open
+            // questions); calling it with the new TEI would read a source enrollment that TEI does not
+            // have. The legacy attributesMappings above remain the mechanism for this path.
+            targetTeiUid to enrollmentUid
+        } catch (error: Exception) {
+            try {
+                d2.trackedEntityModule().trackedEntityInstances().uid(targetTeiUid).blockingDelete()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to roll back orphan TEI $targetTeiUid")
+            }
+            throw error
+        }
     }
 
     fun enrollAblePrograms(programUids: List<String>, trackedEntityId: String): List<String> {
@@ -207,17 +186,28 @@ class WorkflowRepository(
             .filter { programUid ->
                 programEnrollmentControl.none { control ->
                     val attribute = attributes.find {
-                        it.trackedEntityAttribute() == control.attributeUid }
+                        it.trackedEntityAttribute() == control.attributeUid
+                    }
 
                     val attributeValue = attribute?.value() ?: return@none false
 
                     // Check if value is date and convert it years
                     val isDate = attributeValue.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))
-                    val valueToCheck = if (isDate) {
+                    val birthDate = if (isDate) {
                         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val birthDate = dateFormat.parse(attributeValue)
+                            .apply { isLenient = false }
+                        try {
+                            dateFormat.parse(attributeValue)
+                        } catch (e: Exception) {
+                            // Regex-shaped but not a real date (e.g. month 13); treat as non-date.
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    val valueToCheck = if (birthDate != null) {
                         val now = Calendar.getInstance().time
-                        val diffMillis = now.time - birthDate!!.time
+                        val diffMillis = now.time - birthDate.time
                         val years = diffMillis / (365.2425 * 24 * 60 * 60 * 1000)
                         years.toString()
                     } else {
@@ -230,5 +220,454 @@ class WorkflowRepository(
             }
     }
 
+    fun evaluateAutoEnrollment(
+        triggerProgramUid: String,
+        teiUid: String,
+        enrollmentUid: String?,
+        eventUid: String? = null,
+    ): List<String> {
+        val config = getWorkflowConfig()
+        val autoEnrollmentRules =
+            config.autoEnrollment.filter { it.triggerProgram == triggerProgramUid }
+        if (autoEnrollmentRules.isEmpty()) {
+            return emptyList()
+        }
+
+        val tei = d2.trackedEntityModule()
+            .trackedEntityInstances()
+            .withTrackedEntityAttributeValues()
+            .uid(teiUid)
+            .blockingGet() ?: return emptyList()
+
+        val orgUnitUid = tei.organisationUnit() ?: return emptyList()
+        val teiAttributes = tei.trackedEntityAttributeValues()
+            ?.mapNotNull { attributeValue ->
+                val attributeUid = attributeValue.trackedEntityAttribute()
+                val value = attributeValue.value()?.trim()
+                if (!attributeUid.isNullOrBlank() && !value.isNullOrEmpty()) {
+                    attributeUid to value
+                } else {
+                    null
+                }
+            }
+            ?.toMap()
+            ?: emptyMap()
+
+        val enrolledPrograms = mutableListOf<String>()
+
+        autoEnrollmentRules.forEach { rule ->
+            if (!isAutoEnrollmentConditionMet(
+                    rule,
+                    teiAttributes,
+                    triggerProgramUid,
+                    enrollmentUid,
+                    eventUid
+                )
+            ) {
+                return@forEach
+            }
+
+            if (hasBlockingEnrollment(teiUid, rule.targetProgram)) {
+                Timber.d("Skipping auto-enrollment for program ${rule.targetProgram}; enrollment already exists")
+                return@forEach
+            }
+
+            try {
+                val newEnrollmentUid = d2.enrollmentModule().enrollments().blockingAdd(
+                    EnrollmentCreateProjection.builder()
+                        .trackedEntityInstance(teiUid)
+                        .program(rule.targetProgram)
+                        .organisationUnit(orgUnitUid)
+                        .build()
+                )
+
+                d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setEnrollmentDate(Date())
+                d2.enrollmentModule().enrollments().uid(newEnrollmentUid).setIncidentDate(Date())
+                d2.enrollmentModule().enrollments().uid(newEnrollmentUid)
+                    .setStatus(EnrollmentStatus.ACTIVE)
+                enrolledPrograms.add(rule.targetProgram)
+                Timber.d("Auto-enrolled TEI $teiUid into program ${rule.targetProgram}")
+
+                // Carry the TEI's existing data into the enrollment we just created. Without this the
+                // new enrollment starts empty and a health worker retypes what another program
+                // already recorded. Mapping never throws back — an enrollment must not fail because a
+                // value could not be carried.
+                DataMappers.runForNewEnrollment(
+                    d2 = d2,
+                    teiUid = teiUid,
+                    targetProgramUid = rule.targetProgram,
+                    targetEnrollmentUid = newEnrollmentUid,
+                    sourceProgramUid = triggerProgramUid,
+                    sourceEnrollmentUid = enrollmentUid,
+                    sourceEventUid = eventUid,
+                )?.let { report ->
+                    Timber.d(
+                        "Data mapping into ${rule.targetProgram}: ${report.applied} applied, " +
+                            "${report.skipped} skipped, ${report.failed} failed",
+                    )
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed auto-enrolling TEI $teiUid into program ${rule.targetProgram}")
+            }
+        }
+
+        return enrolledPrograms
+    }
+
+    /**
+     * Propagates a just-saved event's values into target programs the TEI is *already* enrolled in.
+     *
+     * Auto-enrollment only maps enrollments it creates, so without this a value corrected on a later
+     * visit would never reach a target enrollment that already existed. Exposed here rather than
+     * called directly from presenters because this is the layer that holds [d2].
+     */
+    fun propagateMappedData(
+        triggerProgramUid: String,
+        teiUid: String,
+        enrollmentUid: String?,
+        eventUid: String?,
+    ) {
+        DataMappers.runForSavedEvent(
+            d2 = d2,
+            teiUid = teiUid,
+            sourceProgramUid = triggerProgramUid,
+            sourceEnrollmentUid = enrollmentUid,
+            sourceEventUid = eventUid,
+        )?.let { report ->
+            Timber.d(
+                "Data mapping after saving in $triggerProgramUid: ${report.applied} applied, " +
+                    "${report.skipped} skipped, ${report.failed} failed",
+            )
+        }
+    }
+
+    private fun isAutoEnrollmentConditionMet(
+        rule: AutoEnrollmentConfig,
+        teiAttributes: Map<String, String>,
+        triggerProgramUid: String,
+        enrollmentUid: String?,
+        eventUid: String?,
+    ): Boolean {
+        if (rule.conditions.isEmpty()) {
+            return true
+        }
+
+        val results = rule.conditions.map { condition ->
+            val actualValue = resolveAutoEnrollmentValue(
+                condition = condition,
+                teiAttributes = teiAttributes,
+                triggerProgramUid = triggerProgramUid,
+                enrollmentUid = enrollmentUid,
+                eventUid = eventUid,
+            )
+
+            evaluateWorkflowCondition(
+                actualValue = actualValue,
+                expectedValue = condition.value,
+                condition = condition.condition,
+            )
+        }
+
+        return if (rule.combination.equals(AUTO_ENROLL_COMBINATION_OR, ignoreCase = true)) {
+            results.any { it }
+        } else {
+            results.all { it }
+        }
+    }
+
+    private fun resolveAutoEnrollmentValue(
+        condition: AutoEnrollmentCondition,
+        teiAttributes: Map<String, String>,
+        triggerProgramUid: String,
+        enrollmentUid: String?,
+        eventUid: String?,
+    ): String? {
+        return when (condition.sourceType.lowercase()) {
+            SOURCE_TYPE_ATTRIBUTE,
+            SOURCE_TYPE_TEI_ATTRIBUTE,
+                -> teiAttributes[condition.sourceUid]
+
+            SOURCE_TYPE_DATA_ELEMENT,
+            SOURCE_TYPE_DATA_ELEMENT_ALT,
+            SOURCE_TYPE_EVENT_DATA,
+                -> getLatestDataElementValue(
+                enrollmentUid = enrollmentUid,
+                triggerProgramUid = triggerProgramUid,
+                dataElementUid = condition.sourceUid,
+                programStageUid = condition.programStageUid,
+                eventUid = eventUid,
+            )
+
+            else -> null
+        }
+    }
+
+    private fun getLatestDataElementValue(
+        enrollmentUid: String?,
+        triggerProgramUid: String,
+        dataElementUid: String,
+        programStageUid: String?,
+        eventUid: String?,
+    ): String? {
+        if (!eventUid.isNullOrBlank()) {
+            val event = d2.eventModule().events()
+                .byUid().eq(eventUid)
+                .withTrackedEntityDataValues()
+                .one()
+                .blockingGet()
+            val matchesStage =
+                programStageUid.isNullOrBlank() || event?.programStage() == programStageUid
+            if (event?.program() == triggerProgramUid && matchesStage) {
+                val eventValue = event.trackedEntityDataValues()
+                    ?.firstOrNull { it.dataElement() == dataElementUid }
+                    ?.value()
+                if (!eventValue.isNullOrBlank()) {
+                    return eventValue
+                }
+            }
+        }
+
+        if (enrollmentUid.isNullOrBlank()) {
+            return null
+        }
+
+        val events = if (programStageUid.isNullOrBlank()) {
+            d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollmentUid)
+                .withTrackedEntityDataValues()
+                .blockingGet()
+        } else {
+            d2.eventModule().events()
+                .byEnrollmentUid().eq(enrollmentUid)
+                .byProgramStageUid().eq(programStageUid)
+                .withTrackedEntityDataValues()
+                .blockingGet()
+        }
+
+        val latestEventWithValue = events
+            .filter { event ->
+                event.trackedEntityDataValues()?.any { it.dataElement() == dataElementUid } == true
+            }
+            .maxByOrNull { it.lastUpdated() ?: it.created() ?: it.eventDate() ?: Date(0) }
+
+        return latestEventWithValue
+            ?.trackedEntityDataValues()
+            ?.firstOrNull { it.dataElement() == dataElementUid }
+            ?.value()
+    }
+
+    private fun hasBlockingEnrollment(
+        teiUid: String,
+        targetProgramUid: String,
+    ): Boolean {
+        val activeEnrollmentExists = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(targetProgramUid)
+            .byStatus().eq(EnrollmentStatus.ACTIVE)
+            .one()
+            .blockingExists()
+
+        if (activeEnrollmentExists) {
+            return true
+        }
+
+        val onlyEnrollOnce = d2.programModule().programs()
+            .uid(targetProgramUid)
+            .blockingGet()
+            ?.onlyEnrollOnce() == true
+
+        if (!onlyEnrollOnce) {
+            return false
+        }
+
+        return d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(targetProgramUid)
+            .one()
+            .blockingExists()
+    }
+
+    fun getTeiAttributeValue(
+        teiUid: String,
+        attributeUid: String
+    ): String? {
+        if (teiUid.isBlank() || attributeUid.isBlank()) return null
+
+        return d2.trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byTrackedEntityAttribute().eq(attributeUid)
+            .one()
+            .blockingGet()
+            ?.value()
+    }
+
+    fun countRelatedTeis(
+        teiUid: String,
+        relationshipTypeUid: String?,
+        relatedProgramUid: String?,
+    ): Int {
+
+        if (teiUid.isBlank()) return 0
+
+        val relationships = d2.relationshipModule().relationships()
+            .byRelationshipType().eq(relationshipTypeUid)
+            .byItem(RelationshipHelper.teiItem(teiUid))
+            .withItems()
+            .blockingGet()
+
+        if (relationships.isEmpty()) return 0
+
+        return relationships.count { relationship ->
+
+            if (relationship.from() == null || relationship.to() == null) {
+                return@count false
+            }
+
+            if (
+                relationshipTypeUid != null &&
+                relationship.relationshipType() != relationshipTypeUid
+            ) {
+                return@count false
+            }
+
+            val fromTeiUid = relationship.from()
+                ?.trackedEntityInstance()
+                ?.trackedEntityInstance()
+            val toTeiUid = relationship.to()
+                ?.trackedEntityInstance()
+                ?.trackedEntityInstance()
+
+            val relatedTei =
+                when (teiUid) {
+                    fromTeiUid -> toTeiUid
+                    toTeiUid -> fromTeiUid
+                    else -> null
+                } ?: return@count false
+
+            if (relatedProgramUid == null) {
+                return@count true
+            }
+
+            val enrolled = d2.enrollmentModule().enrollments()
+                .byTrackedEntityInstance().eq(relatedTei)
+                .byProgram().eq(relatedProgramUid)
+                .blockingGet()
+
+            enrolled.isNotEmpty()
+        }
+    }
+
+    fun getLatestDataElement(
+        teiUid: String,
+        programUid: String,
+        programStageUid: String?,
+        uid: String,
+        dataElementUid: String?
+    ): String? {
+        if (teiUid.isBlank() || programUid.isBlank() || uid.isBlank()) return null
+
+        val enrollments = d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().eq(programUid)
+            .blockingGet()
+
+        if (enrollments.isEmpty()) return null
+
+        val enrollmentUids = enrollments.map { it.uid() }
+
+        val eventRepository = d2.eventModule().events()
+            .byEnrollmentUid().`in`(enrollmentUids)
+
+        programStageUid?.let {
+            eventRepository.byProgramStageUid().eq(it)
+        }
+
+        val latestEvent = eventRepository
+            .orderByEventDate(RepositoryScope.OrderByDirection.DESC)
+            .blockingGet()
+            .firstOrNull()
+
+        return latestEvent
+            ?.trackedEntityDataValues()
+            ?.firstOrNull { it.dataElement() == dataElementUid }
+            ?.value()
+    }
+
+    fun updateDataValueNew(
+        teiUid: String,
+        eventUid: String?,
+        config: AutoFillValuesConfig
+    ) {
+
+        if (eventUid == null) return
+
+        val currentValue = d2.trackedEntityModule().trackedEntityDataValues()
+            .value(eventUid, config.targetElement)
+            .blockingGet()
+            ?.value()
+
+        if (!currentValue.isNullOrBlank() && config.updateExisting == false) return
+
+        val newValue = resolveAutoAddValues(
+            teiUid = teiUid,
+            programUid = config.triggerProgram
+        )
+
+        if (newValue.isNullOrBlank()) return
+
+        d2.trackedEntityModule().trackedEntityDataValues()
+            .value(eventUid, config.targetElement)
+            .blockingSet(newValue)
+
+    }
+
+    fun resolveAutoAddValues(
+        teiUid: String,
+        programUid: String,
+    ): String? {
+
+        val autoFillConfig = getWorkflowConfig()
+            .autoFillValues.firstOrNull { it.triggerProgram == programUid }
+
+        val source = autoFillConfig?.valueSource ?: return null
+
+        return when (source.valueSourceType) {
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.CONSTANT -> source.value
+            AutoFillValuesConfig.ValueSource.ValueSourceType.TEI_ATTRIBUTE -> {
+                val uid = source.uid ?: return null
+                getTeiAttributeValue(
+                    teiUid = teiUid,
+                    attributeUid = uid
+                )
+            }
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.EVENT_DATA_ELEMENT -> {
+                val uid = source.uid ?: return null
+                getLatestDataElement(
+                    teiUid = teiUid,
+                    programUid = programUid,
+                    uid = uid,
+                    programStageUid = source.computation?.programStageUid,
+                    dataElementUid = source.computation?.dataElementUid
+                )
+            }
+
+            AutoFillValuesConfig.ValueSource.ValueSourceType.COMPUTATION -> {
+                val computationConfig = source.computation ?: return null
+                when (computationConfig.computationType) {
+                    AutoFillValuesConfig.ValueSource.ComputationConfig.ComputationType.RELATED_TEI_COUNT -> {
+                        countRelatedTeis(
+                            teiUid = teiUid,
+                            relationshipTypeUid = computationConfig.relationshipTypeUid,
+                            relatedProgramUid = computationConfig.relatedProgramUid,
+                        ).toString()
+                    }
+                }
+            }
+        }
+
+    }
 
 }

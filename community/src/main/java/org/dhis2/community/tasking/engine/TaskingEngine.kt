@@ -3,6 +3,7 @@ package org.dhis2.community.tasking.engine
 import android.os.Build
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,8 +23,14 @@ class TaskingEngine(
     private val updateEvaluator = UpdateEvaluator(repository)
     private val defaultingEvaluator = DefaultingEvaluator(repository)
 
-    // internal scope for fire-and-forget usage; cancel it when the owner is cleared
-    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    // internal scope for fire-and-forget usage; cancel it when the owner is cleared.
+    // The handler is essential: evaluateInternal rethrows, and an uncaught exception in a
+    // SupervisorJob-rooted launch would otherwise reach the default handler and crash the app.
+    // The structured evaluate() path is unaffected — it runs on the caller's coroutine.
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        Timber.tag(TAG).e(throwable, "TaskingEngine.evaluateAsync failed")
+    }
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher + exceptionHandler)
 
     /** Call this from a ViewModel/lifecycle owner to avoid leaks */
     fun clear() = (scope.coroutineContext[Job])?.cancel()
@@ -76,6 +83,12 @@ class TaskingEngine(
             val config = repository.getTaskingConfig().taskProgramConfig.first()
             val taskProgramUid = config.programUid
             val taskTIETypeUid = config.teiTypeUid
+            val hasTaskingProgramAccess = repository.hasDataAccessToTasking()
+
+            if (!hasTaskingProgramAccess) {
+                Timber.tag(TAG).e("User does not have access to tasking program $taskProgramUid")
+                return
+            }
 
             if (eventUid.isNullOrBlank()) {
                 updateEvaluator.evaluateForUpdate(sourceTieUid, targetProgramUid)

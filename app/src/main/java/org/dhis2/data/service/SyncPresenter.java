@@ -76,4 +76,8 @@ interface SyncPresenter {
     void setNetworkUnavailable();
 
     void taskingDefault();
+
+    void taskingWorker();
+
+    void medicalHistoryWorker();
 }

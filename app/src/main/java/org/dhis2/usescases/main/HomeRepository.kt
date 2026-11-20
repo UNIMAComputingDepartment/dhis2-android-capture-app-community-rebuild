@@ -32,4 +32,5 @@ interface HomeRepository {
     suspend fun logOut(): Result<Unit>
 
     suspend fun clearSessionLock(): Result<Unit>
+    fun hasTaskingProgram(): Boolean
 }

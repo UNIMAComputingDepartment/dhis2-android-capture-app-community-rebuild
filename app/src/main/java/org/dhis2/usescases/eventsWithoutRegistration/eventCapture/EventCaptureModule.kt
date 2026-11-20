@@ -14,6 +14,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.community.tasking.engine.TaskingEngine
 import org.dhis2.community.tasking.repositories.TaskingRepository
+import org.dhis2.community.workflow.WorkflowRepository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -44,7 +45,8 @@ class EventCaptureModule(
         preferences: PreferenceProvider,
         pageConfigurator: NavigationPageConfigurator,
         resourceManager: ResourceManager,
-        taskingEngine: TaskingEngine
+        taskingEngine: TaskingEngine,
+        workflowRepository: WorkflowRepository,
     ): EventCaptureContract.Presenter =
         EventCapturePresenterImpl(
             view,
@@ -54,7 +56,8 @@ class EventCaptureModule(
             preferences,
             pageConfigurator,
             resourceManager,
-            taskingEngine
+            taskingEngine,
+            workflowRepository,
         )
 
     @Provides
@@ -62,11 +65,13 @@ class EventCaptureModule(
     fun provideFieldMapper(
         context: Context,
         fieldFactory: FieldViewModelFactory,
-    ): EventFieldMapper = EventFieldMapper(fieldFactory, context.getString(R.string.field_is_mandatory))
+    ): EventFieldMapper =
+        EventFieldMapper(fieldFactory, context.getString(R.string.field_is_mandatory))
 
     @Provides
     @PerActivity
-    fun provideRepository(d2: D2?): EventCaptureRepository = EventCaptureRepositoryImpl(eventUid, d2)
+    fun provideRepository(d2: D2?): EventCaptureRepository =
+        EventCaptureRepositoryImpl(eventUid, d2)
 
     @Provides
     @PerActivity
@@ -104,7 +109,8 @@ class EventCaptureModule(
     fun searchTEIRepository(
         d2: D2,
         crashReportController: CrashReportController,
-    ): SearchTEIRepository = SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
+    ): SearchTEIRepository =
+        SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
 
     @get:PerActivity
     @get:Provides
@@ -113,7 +119,8 @@ class EventCaptureModule(
 
     @Provides
     @PerActivity
-    fun pageConfigurator(repository: EventCaptureRepository): NavigationPageConfigurator = EventPageConfigurator(repository, isPortrait)
+    fun pageConfigurator(repository: EventCaptureRepository): NavigationPageConfigurator =
+        EventPageConfigurator(repository, isPortrait)
 
     @Provides
     @PerActivity
@@ -128,5 +135,11 @@ class EventCaptureModule(
         d2: D2,
     ): TaskingEngine {
         return TaskingEngine(repository)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideWorkflowRepository(d2: D2): WorkflowRepository {
+        return WorkflowRepository(d2)
     }
 }

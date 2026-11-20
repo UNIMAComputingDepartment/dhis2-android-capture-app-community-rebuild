@@ -24,6 +24,8 @@ import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.viewmodel.DispatcherProvider;
+import org.dhis2.community.enrollmentfilters.AttributeFilterConfigRepository;
+import org.dhis2.community.enrollmentfilters.AttributeFilterInjector;
 import org.dhis2.community.workflow.WorkflowRepository;
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils;
 import org.dhis2.data.enrollment.EnrollmentUiDataHelper;
@@ -329,7 +331,8 @@ public class SearchTEModule {
             DisplayNameProvider displayNameProvider,
             FilterManager filterManager,
             ProgramConfigurationRepository programConfigurationRepository,
-            WorkflowRepository workflowRepository
+            WorkflowRepository workflowRepository,
+            AttributeFilterInjector attributeFilterInjector
     ) {
         return new SearchTeiViewModelFactory(
                 searchRepository,
@@ -349,7 +352,8 @@ public class SearchTEModule {
                 resourceManager,
                 displayNameProvider,
                 filterManager,
-                workflowRepository
+                workflowRepository,
+                attributeFilterInjector
         );
     }
 
@@ -359,6 +363,14 @@ public class SearchTEModule {
             D2 d2
     ) {
         return new WorkflowRepository(d2);
+    }
+
+    @Provides
+    @PerActivity
+    AttributeFilterInjector provideAttributeFilterInjector(
+            D2 d2
+    ) {
+        return new AttributeFilterInjector(d2, new AttributeFilterConfigRepository(d2));
     }
 
     @Provides
